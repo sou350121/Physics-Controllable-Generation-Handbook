@@ -8,7 +8,7 @@
 
 ## 1. One-paragraph TL;DR
 
-2024 年以前 video generation 評估幾乎被 FVD / IS / CLIP-score 三件套壟斷 — 這些 metric 對「像不像影片」很敏感，但對「物理對不對」幾乎零訊號。**VBench** (arxiv 2311.17982, CVPR 2024 Highlight) 第一次把「video generation quality」拆成 16 個 disentangled 子維度，並附 human preference annotation 校準；它讓 Sora / Gen-3 / Kling / Pika 有了同一張比分表。但 VBench v1 的 16 維大多仍屬 **perceptual quality** —— 物理直覺只能從 "motion smoothness" / "dynamic degree" 兩個間接維度推測。**VBench-2.0** (arxiv 2503.21755, Mar 2025) 才正式新增 `Physics` 與 `Commonsense` 兩個 top-level dimension，定義為 "intrinsic faithfulness" 範疇。並行地，**PhysBench** (arxiv 2501.16411, ICLR 2025) 走另一條路 —— 它不評生成模型，而是評 VLM 對物理世界的**理解**能力（10,002 條 video-image-text，4 domains × 19 sub-classes）。三者合起來組成 2026 年看一個「物理可控生成」模型的標準三角形：VBench 看 surface quality / VBench-2.0 看 intrinsic physics / PhysBench 看 evaluator 自己懂不懂物理。
+2024 年以前 video generation 評估幾乎被 FVD / IS / CLIP-score 三件套壟斷 — 這些 metric 對「像不像影片」很敏感，但對「物理對不對」幾乎零訊號。**VBench** (arxiv 2311.17982, CVPR 2024 Highlight) 第一次把「video generation quality」拆成 16 個 disentangled 子維度，並附 human preference annotation 校準；它讓 [Sora](../video-world-models/sora.md) / Gen-3 / Kling / Pika 有了同一張比分表。但 VBench v1 的 16 維大多仍屬 **perceptual quality** —— 物理直覺只能從 "motion smoothness" / "dynamic degree" 兩個間接維度推測。**VBench-2.0** (arxiv 2503.21755, Mar 2025) 才正式新增 `Physics` 與 `Commonsense` 兩個 top-level dimension，定義為 "intrinsic faithfulness" 範疇。並行地，**PhysBench** (arxiv 2501.16411, ICLR 2025) 走另一條路 —— 它不評生成模型，而是評 VLM 對物理世界的**理解**能力（10,002 條 video-image-text，4 domains × 19 sub-classes）。三者合起來組成 2026 年看一個「物理可控生成」模型的標準三角形：VBench 看 surface quality / VBench-2.0 看 intrinsic physics / PhysBench 看 evaluator 自己懂不懂物理。
 
 ---
 
@@ -74,7 +74,7 @@ VLM-only 評估，不評生成器：
 ## 4. ⚡ shines / ❌ breaks
 
 ### ⚡ Where VBench shines
-- **跨模型可比**：Sora / Veo / Kling / Cosmos-Predict / Wan2.2 / CogVideo 都在一張表上，這在 2024-04 之前根本辦不到
+- **跨模型可比**：Sora / [Veo](../video-world-models/veo.md) / Kling / [Cosmos-Predict](../foundation-physics-models/cosmos-wfm.md) / Wan2.2 / CogVideo 都在一張表上，這在 2024-04 之前根本辦不到
 - **disentangled**：拿到一個模型 "subject inconsistency 暴跌" 比 "FVD 92" 可操作得多
 - **public + reproducible**：`pip install vbench` 一行，prompts / generated videos / human anno 全開源
 - **PhysBench**：對 VLM-as-judge 場景特別關鍵 —— 如果你打算用 GPT-4o 評生成影片，先在 PhysBench 上跑一輪確認它至少懂這個物理 sub-domain
@@ -128,9 +128,9 @@ git clone https://github.com/USC-GVL/PhysBench
 | 路線 | VBench v1 | VBench-2.0 | PhysBench | 缺口 |
 |---|---|---|---|---|
 | **pixel-WM** (Sora/Veo/Cosmos) | ✅ 直評 | ✅ 直評含 physics | △ 評 evaluator | downstream-task |
-| **latent-WM** (DreamerV4/JEPA-2) | ❌ 需先 decode | ❌ | △ | latent-space metric |
-| **diff-sim** (Genesis/Brax-render) | ❌ 不適用 | ❌ | ❌ | physics-fidelity-vs-ref |
-| **neural surrogate** (FNO/GraphCast) | ❌ | ❌ | ❌ | PDEBench / 守恆律 |
+| **latent-WM** ([DreamerV4](../latent-world-models/dreamer-v4.md)/[V-JEPA-2](../latent-world-models/v-jepa-2.md)) | ❌ 需先 decode | ❌ | △ | latent-space metric |
+| **diff-sim** ([Genesis](../differentiable-simulators/genesis.md)/Brax-render) | ❌ 不適用 | ❌ | ❌ | physics-fidelity-vs-ref |
+| **neural surrogate** ([FNO](../neural-surrogates/fno.md)/[GraphCast](../neural-surrogates/graphcast.md)) | ❌ | ❌ | ❌ | PDEBench / 守恆律 |
 
 **實務 stack**：top 模型（Sora, Veo, Kling, Cosmos-Predict, Wan2.2）的 VBench / VBench-2.0 公開分目前是「mass-market T2V 模型誰行」的最強 signal；但對 robotics / driving 應用，**真正可靠的 ground truth 是 downstream policy success**（生成的影片去訓 VLA，看 task success rate）—— 這條 evaluation route 還沒有公開 benchmark，是 handbook §3 wishlist 中最大缺口。
 

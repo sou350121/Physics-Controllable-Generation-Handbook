@@ -9,7 +9,7 @@
 [![Pages](https://img.shields.io/badge/pages-105-orange)](./cheat-sheet/functional_map.md)
 [![Dissections](https://img.shields.io/badge/dissections-14_anchor-purple)](./foundations/overview.md)
 [![Ontology](https://img.shields.io/badge/5--axis_ontology-v1-red)](./cheat-sheet/ontology.md)
-[![Audit](https://img.shields.io/badge/audit-167%2F168_pass-success)](./AUDIT_2026-05-25.md)
+[![Audit](https://img.shields.io/badge/audit-196%2F196_pass-success)](./AUDIT_2026-05-26.md)
 [![Sister Repos](https://img.shields.io/badge/sister-VLA_%2B_Spatial-2a9d8f)](#三册一体vla--spatial--physics-gen-的分工)
 
 | | |
@@ -47,7 +47,7 @@
 
 ## 🎭 你是谁？
 
-> *选你的角色 → 跳到对应入口。整本 handbook 的 13 條技術路線 · 6 個下游應用 · 5 個 USP wedge 都有自己的旗艦。*
+> *选你的角色 → 跳到对应入口。整本 handbook 的 13 條技術路線 · 7 個下游應用 · 5 個 USP wedge 都有自己的旗艦。*
 
 | | 角色 | 你的背景 | 👉 推荐起点 |
 |:---:|------|---------|-----------|

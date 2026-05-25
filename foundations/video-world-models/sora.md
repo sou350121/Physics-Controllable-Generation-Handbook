@@ -57,11 +57,11 @@ domain     = generalist
 
 | 對手 | 出處 / 年 | 差異點 |
 |---|---|---|
-| **Google Veo / Veo-2 / Veo-3** | 2024–2025 | 物理感後來居上；Veo-3 加 audio 早於 Sora-2 [TBD: verify Veo-3 audio release timing vs Sora-2] |
+| **[Google Veo / Veo-2 / Veo-3](./veo.md)** | 2024–2025 | 物理感後來居上；Veo-3 加 audio 早於 Sora-2 [TBD: verify Veo-3 audio release timing vs Sora-2] |
 | **Kling**（快手） | 2024+ | 中國線 SOTA；長 clip 與 motion 表現一度被認為超 Sora |
 | **Hunyuan-Video**（騰訊） | 2024-12 | 13B 開源，被 Open-Sora 2.0 / Open-Sora-Plan 視為對標 |
 | **Wan**（阿里） | 2024–2025 | 中國線；開源權重路線 |
-| **Cosmos-Predict**（NVIDIA） | 2025-01 | 同樣 DiT 但對 robotics / driving 微調；附 World Foundation Model 標籤 |
+| **[Cosmos-Predict](../foundation-physics-models/cosmos-wfm.md)**（NVIDIA） | 2025-01 | 同樣 DiT 但對 robotics / driving 微調；附 World Foundation Model 標籤 |
 
 關鍵分歧：Cosmos 公開權重給下游接 robotics conditioning，Sora 完全閉源；Veo 走 Google 線（image-prompt 與 inpaint 更強）；Hunyuan/Wan 開源權重，社區實測物理 case 與 Sora 已可一戰。
 
@@ -112,10 +112,10 @@ VBench-2.0（2026-03）Physics 維度 — 大多數當前 model 仍 < 60% — So
 
 ## 6. Cross-line synthesis
 
-- **vs latent-WM（V-JEPA / DreamerV4）**：Sora 在 pixel 空間直接 rollout，compute 量級遠高於 latent rollout；latent-WM 賭的是「不需要每個 pixel 都正確，只要 affordance / dynamics 對」，更適合 VLA / planning。Sora 路線適合 content / media，不適合 closed-loop agent
+- **vs latent-WM（[V-JEPA](../latent-world-models/v-jepa-2.md) / [DreamerV4](../latent-world-models/dreamer-v4.md)）**：Sora 在 pixel 空間直接 rollout，compute 量級遠高於 latent rollout；latent-WM 賭的是「不需要每個 pixel 都正確，只要 affordance / dynamics 對」，更適合 VLA / planning。Sora 路線適合 content / media，不適合 closed-loop agent
 - **vs 3D-aware (World Labs / NVIDIA Edify3D)**：Sora 沒有顯式 3D 表徵，所以視差 / occlusion / 物件 identity 在大相機運動下會漏；3D-aware 路線用 3DGS / mesh 顯式 anchor object identity — fidelity 與 controllability 不同 trade-off
-- **vs diff-sim / sim-in-loop（Genesis, Cosmos-Reason rollout）**：Sora 完全沒 sim 接口；要做 robotics data-gen 必須外掛 — Cosmos-Predict 就是把 Sora-class backbone 接 NVIDIA sim ecosystem 的範例
-- **vs neural surrogate (FNO, GraphCast)**：完全不同問題；surrogate 走 field/PDE，Sora 走 RGB pixel — 兩條路在 `bridge-to-vla` 才會合流（影片產資料 → policy 學動作 vs surrogate 提供 force/contact 標註）
+- **vs diff-sim / sim-in-loop（[Genesis](../differentiable-simulators/genesis.md), Cosmos-Reason rollout）**：Sora 完全沒 sim 接口；要做 robotics data-gen 必須外掛 — [Cosmos-Predict](../foundation-physics-models/cosmos-wfm.md) 就是把 Sora-class backbone 接 NVIDIA sim ecosystem 的範例
+- **vs neural surrogate ([FNO](../neural-surrogates/fno.md), [GraphCast](../neural-surrogates/graphcast.md))**：完全不同問題；surrogate 走 field/PDE，Sora 走 RGB pixel — 兩條路在 `bridge-to-vla` 才會合流（影片產資料 → policy 學動作 vs surrogate 提供 force/contact 標註）
 
 對本 handbook 的 USP：Sora 是 **Axis-2 implicit-from-data 的 reference point** — 任何宣稱「我加了 constraint-loss / sim-in-loop / hard-PDE」的方法，benchmark 都該回答「比 Sora-class scale 的純資料路線好多少」。
 

@@ -80,11 +80,11 @@ PDE-Refiner reference 實作見 [phlippe/PDE-Refiner](https://github.com/phlippe
 
 ## 6. Cross-line synthesis
 
-- **vs GraphCast**（graph-based surrogate）：GraphCast 用 icosahedral mesh GNN —— 結構天然處理球面非歐 geometry，在 weather production（ECMWF AIFS pipeline）裏壓 FNO 一頭。但 GraphCast 不能 zero-shot resolution，且訓練 cost 更高。**取捨**：規則 grid + periodic → FNO；不規則球面/邊界 → GraphCast。
-- **vs sim-in-loop (Genesis-train, Cosmos-rollout)**：sim-in-loop 用真實 solver 提供 ground truth 或 reward；FNO 是離線 supervised。Compose 方向：用 FNO 做 fast rollout，每 K step 用真 solver 校正（hybrid solver-surrogate scheme）—— PDEBench / NVIDIA Modulus 已有先例。
+- **vs [GraphCast](./graphcast.md)**（graph-based surrogate）：GraphCast 用 icosahedral mesh GNN —— 結構天然處理球面非歐 geometry，在 weather production（ECMWF AIFS pipeline）裏壓 FNO 一頭。但 GraphCast 不能 zero-shot resolution，且訓練 cost 更高。**取捨**：規則 grid + periodic → FNO；不規則球面/邊界 → GraphCast。
+- **vs sim-in-loop ([Genesis](../differentiable-simulators/genesis.md)-train, [Cosmos](../foundation-physics-models/cosmos-wfm.md)-rollout)**：sim-in-loop 用真實 solver 提供 ground truth 或 reward；FNO 是離線 supervised。Compose 方向：用 FNO 做 fast rollout，每 K step 用真 solver 校正（hybrid solver-surrogate scheme）—— PDEBench / NVIDIA Modulus 已有先例。
 - **與 diffusion-based generation 結合**：PDE-Refiner 本身就是「FNO/U-Net backbone + diffusion-style K-step refinement」的典範。延伸方向 —— 把 score-based diffusion guidance（physics gradient）疊在 FNO 上做可控 generation，與本倉 `score-conditioned` injection axis 接上。
 - **與 video WM 互補**：FNO 生成「場」（velocity / pressure），video WM 生成「像素」。Compose：FNO 算 fluid field → renderer 轉 pixel → video WM 拿來條件生成 visual 觀察。這條路在 `bridge-to-VLA/` 是 robotic manipulation with deformables 的潛在組合。
-- **與 latent WM 對比**：DreamerV4 在 latent space rollout，FNO 在 physical field space rollout。前者 task-driven、後者 physics-driven —— 不直接競爭，但對 long-horizon 預測誰更穩仍是開放問題。
+- **與 latent WM 對比**：[DreamerV4](../latent-world-models/dreamer-v4.md) 在 latent space rollout，FNO 在 physical field space rollout。前者 task-driven、後者 physics-driven —— 不直接競爭，但對 long-horizon 預測誰更穩仍是開放問題。
 
 ## 7. References
 

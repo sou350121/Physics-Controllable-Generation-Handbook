@@ -69,7 +69,7 @@ energy-based MPC：在 latent 空間 rollout 多個 action sequence，選 L1(ima
 
 ## 3. 五軸定位 + 同軸對手
 
-| 軸 | V-JEPA 2(-AC) | DreamerV4 | Genie-2 | Cosmos-Predict |
+| 軸 | V-JEPA 2(-AC) | [DreamerV4](./dreamer-v4.md) | [Genie-2](./genie-2.md) | [Cosmos-Predict](../foundation-physics-models/cosmos-wfm.md) |
 |---|---|---|---|---|
 | Output | `latent` (action-free) / `latent` rollout (AC) | `latent` (RSSM) | `latent` + decoded pixel | `pixel-video` |
 | Injection | `implicit-from-data` | `implicit-from-data` | `implicit-from-data` | `implicit-from-data` |
@@ -117,9 +117,9 @@ energy-based MPC：在 latent 空間 rollout 多個 action sequence，選 L1(ima
 ## 6. Cross-line synthesis
 
 - **vs pixel WM (Cosmos / Sora-style)**：核心對撞點，詳見 `crossing/pixel-vs-latent-physics/`。V-JEPA-2-AC 賭 "latent 空間夠用且便宜"，Cosmos 賭 "pixel 才能跨任務 transfer + 給人看 + 給 VLM 看"。兩條路線目前各自證明了一塊版圖：pixel 派 fidelity 高、language goal 好接；latent 派 sample/inference 效率高、與 robot planning loop 融合便宜。
-- **× diff-sim**：latent WM 可以給 differentiable simulator 提供 representation prior（用 encoder 做 perception module），但 V-JEPA 系列目前沒這條接口；可組合方向見 `crossing/sim-vs-gen-data/`。
+- **× diff-sim**：latent WM 可以給 differentiable simulator（如 [MuJoCo MJX](../differentiable-simulators/mujoco-mjx.md) / [Genesis](../differentiable-simulators/genesis.md)）提供 representation prior（用 encoder 做 perception module），但 V-JEPA 系列目前沒這條接口；可組合方向見 `crossing/sim-vs-gen-data/`。
 - **× VLA**：V-JEPA-2-AC 對應的是 VLA 中的 "world model 模組"（給 action 預測未來），不是 policy 本體。可作為 RT-2 / Octo / π0 一類 VLA 的輔助 critic 或 imagination module；目前公開資料中沒看到 production 級組合。
-- **× surrogate (FNO/GraphCast)**：兩條路線 domain coupling 不重疊（V-JEPA 是 robotics/generalist，surrogate 是 fluid/weather），唯一交點是 "latent dynamics + PDE residual 是否能 hybrid"——未見實證。
+- **× surrogate ([FNO](../neural-surrogates/fno.md)/[GraphCast](../neural-surrogates/graphcast.md))**：兩條路線 domain coupling 不重疊（V-JEPA 是 robotics/generalist，surrogate 是 fluid/weather），唯一交點是 "latent dynamics + PDE residual 是否能 hybrid"——未見實證。
 
 ## 7. References
 

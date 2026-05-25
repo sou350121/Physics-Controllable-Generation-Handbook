@@ -42,7 +42,7 @@ mjData ────────┘                       │
 | 對手 | 相對於 MJX 的差異 | 何時選對手 |
 |---|---|---|
 | **Brax** | 純 JAX，contact 模型更簡（spring-damper），更快但 sim2real 落差大；Brax envs 已被官方建議遷移到 MuJoCo Playground | 純 locomotion + 不在意 contact 細節 |
-| **Genesis** | 統一 rigid+soft+fluid，Taichi backend，自稱 10-80× 快於 MJX（社群實測有爭議，見 issue #2303） | mixed-material 場景；不在意官方 RL stack |
+| **[Genesis](./genesis.md)** | 統一 rigid+soft+fluid，Taichi backend，自稱 10-80× 快於 MJX（社群實測有爭議，見 issue #2303） | mixed-material 場景；不在意官方 RL stack |
 | **NVIDIA Warp** | CUDA-first，MJX-Warp 變體解決了 MJX-JAX 的 contact 擴展瓶頸，**但 Warp 版目前不支援 differentiability** | NVIDIA 卡 + 純 forward sim + mesh collision |
 | **Isaac Sim (Isaac Lab)** | 工業強度、Omniverse 渲染、與 Cosmos 接得最深；但不可微、學術門檻高 | sim-to-real with photoreal pixels |
 
@@ -105,10 +105,10 @@ MJX 對另外 4 條技術路線怎麼接：
 
 | 路線 | 接法 |
 |---|---|
-| **pixel-WM** (Sora/Cosmos-Predict/Genie-2) | MJX + Madrona batch renderer 產出 paired (state, RGB, depth, action) → 用作 video WM finetuning 資料；NVIDIA Cosmos 走 Isaac/Omniverse 是同一思路的對手實作 |
-| **latent-WM** (DreamerV4 / V-JEPA-2) | MJX 作 sim-in-loop oracle：Dreamer 訓練時讓 latent rollout 跟 MJX rollout 算 KL/MSE；可微梯度允許直接 BPTT 進 latent encoder（但要小心 contact noise） |
-| **diff-sim 路線本身** | MJX 是 baseline；研究方向是修它 — DiffMJX 補 contact gradient，Genesis 換 Taichi backend，Warp 換 CUDA。所有 diff-sim 論文都對著 MJX 跑 head-to-head |
-| **neural surrogate** (GraphCast / MeshGraphNet 風) | MJX 產出大量 trajectory 當 supervised data 訓 surrogate → 推理時用 surrogate 取代 MJX 拉速度。剛體 manipulation surrogate（如 `arXiv` 2024 ContactNets-style）這條路線在重啟 |
+| **pixel-WM** ([Sora](../video-world-models/sora.md)/[Cosmos-Predict](../foundation-physics-models/cosmos-wfm.md)/[Genie-2](../latent-world-models/genie-2.md)) | MJX + Madrona batch renderer 產出 paired (state, RGB, depth, action) → 用作 video WM finetuning 資料；NVIDIA Cosmos 走 Isaac/Omniverse 是同一思路的對手實作 |
+| **latent-WM** ([DreamerV4](../latent-world-models/dreamer-v4.md) / [V-JEPA-2](../latent-world-models/v-jepa-2.md)) | MJX 作 sim-in-loop oracle：Dreamer 訓練時讓 latent rollout 跟 MJX rollout 算 KL/MSE；可微梯度允許直接 BPTT 進 latent encoder（但要小心 contact noise） |
+| **diff-sim 路線本身** | MJX 是 baseline；研究方向是修它 — DiffMJX 補 contact gradient，[Genesis](./genesis.md) 換 Taichi backend，Warp 換 CUDA。所有 diff-sim 論文都對著 MJX 跑 head-to-head |
+| **neural surrogate** ([GraphCast](../neural-surrogates/graphcast.md) / MeshGraphNet 風) | MJX 產出大量 trajectory 當 supervised data 訓 surrogate → 推理時用 surrogate 取代 MJX 拉速度。剛體 manipulation surrogate（如 `arXiv` 2024 ContactNets-style）這條路線在重啟 |
 
 最關鍵 composition：**MJX (state oracle) × pixel-WM (perception) × VLA (action policy)** — Playground 已示範前兩件，VLA 端的整合是 2026 的開放戰場。
 

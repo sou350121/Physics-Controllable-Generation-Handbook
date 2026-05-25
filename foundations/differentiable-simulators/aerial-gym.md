@@ -63,7 +63,7 @@ Aerial Gym 不發明新 physics solver，而是「**在 Isaac Gym rigid-body bac
 | Domain | **robotics+rigid（aerial-only）** | aerial+rigid | aerial+rigid | aerial+rigid（aerodynamics-first） | aerial+rigid | aerial+rigid+driving |
 | Parallel envs (典型) | **65,536 / 4.43M steps·s⁻¹** | ~10s (Unity 限) | ~100 (CPU) | 1 (教學用) | thousands (Omniverse) | 1-2 (Unreal 限) |
 | Differentiable | ❌ | ❌ | ❌ | ✅ (Python autograd-friendly) | ❌ | ❌ |
-| Sim2real demo | ✅ quadrotor 0.09 m | ✅ Champion-Swift (Kaufmann '23) | partial | educational only | partial | ✅ (PX4 widely) |
+| Sim2real demo | ✅ quadrotor 0.09 m | ✅ [Champion-Swift](../../use-cases/aerial-sim/champion-level-drone-racing.md) (Kaufmann '23) | partial | educational only | partial | ✅ (PX4 widely) |
 
 **同軸對手分群**：
 
@@ -113,11 +113,11 @@ Aerial Gym 的獨佔位置 = **「GPU 並行 × 多 airframe × 多層 controlle
 
 對本 handbook（generation 視角）的接點：
 
-- **vs Cosmos（aerial scenes）**：Cosmos-Predict 對地面駕駛 / 室內 manipulation 訓得多，aerial / 空拍視角資料稀；可把 Aerial Gym 當「aerial sim → Warp depth/RGB → Cosmos 條件 generation」的 ground-truth 工廠（同 Genesis 餵 Cosmos 的模式 1：作為訓練資料源）
-- **vs Champion-Swift（Kaufmann et al. Nature 2023）**：Swift 用 Flightmare + on-policy RL 把 drone racing 推到人類冠軍水平；Aerial Gym v2 等於「同一條 recipe 但 GPU 並行 10-100× + 多 airframe」，是接續 Swift 路線最直接的工具
+- **vs [Cosmos](../foundation-physics-models/cosmos-wfm.md)（aerial scenes）**：Cosmos-Predict 對地面駕駛 / 室內 manipulation 訓得多，aerial / 空拍視角資料稀；可把 Aerial Gym 當「aerial sim → Warp depth/RGB → Cosmos 條件 generation」的 ground-truth 工廠（同 [Genesis](./genesis.md) 餵 Cosmos 的模式 1：作為訓練資料源）
+- **vs [Champion-Swift](../../use-cases/aerial-sim/champion-level-drone-racing.md)（Kaufmann et al. Nature 2023）**：Swift 用 Flightmare + on-policy RL 把 drone racing 推到人類冠軍水平；Aerial Gym v2 等於「同一條 recipe 但 GPU 並行 10-100× + 多 airframe」，是接續 Swift 路線最直接的工具
 - **與 4 條路線怎麼接**：
   - **pixel-WM**：Aerial Gym depth + RGB → 訓 aerial video WM；缺 photoreal 要疊 Cosmos
-  - **latent-WM**：跑 64k env rollout → 餵 DreamerV4-style latent 訓 aerial agent
+  - **latent-WM**：跑 64k env rollout → 餵 [DreamerV4](../latent-world-models/dreamer-v4.md)-style latent 訓 aerial agent
   - **diff-sim**：❌ 直接出局（不可微）；要 first-order 就走 RotorPy / Brax-quadrotor
   - **neural surrogate**：可用 Aerial Gym GPU rollout 蒸 surrogate dynamics model（contact-light、適合 NN fit）
 - **與 Spatial-Handbook 接**：Aerial Gym Warp ray-cast 出 depth + vertex-segmentation，正好餵 spatial-side 的 occupancy / NeRF / 3DGS 訓練；走 `bridge-to-spatial/` 目錄

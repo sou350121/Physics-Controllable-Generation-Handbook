@@ -1,5 +1,14 @@
 # Ontology v1.1 Review (date: 2026-05-25)
 
+> ## 🚧 STATUS: PROPOSAL — NOT YET ADOPTED
+>
+> 這是 v1.1 的 **expert review 提案**，不是當前 ontology spec。
+> 當前 active spec = [`cheat-sheet/ontology.md`](./ontology.md) (v1)。
+>
+> 採納時程：等 30+ dissection 後評估；若採納，14 篇 dissection header 都需同步重簽（最大改動：Axis 2 rename 與 Axis 3 `*-prompt → *-init` rename）。
+
+---
+
 Reviewer voice: engineer, critical. Inputs: Cosmos (2501.03575), LeCun JEPA position paper (2022 OpenReview / Courant), V-JEPA 2 (2506.09985), GAIA-2 (2503.20523), DreamerV3 (Hafner 2023 / Nature 2025), Genie / Genie-2 (2402.15391 + DeepMind blog), GraphCast (Science 2023), Pangu-Weather (2211.02556), FourCastNet (2202.11214), FNO/Geo-FNO (2207.05209), PhysGen (2409.18964), PhysDiff (2212.02500), Force Prompting (2505.19386), NewtonGen (2509.21309), Morpheus benchmark (2504.02918), VJEPA-2-reward (2510.21840), NeurIPS 2025 World-Models / Video-Generation workshops, AlphaFold 3 (Nature 2024).
 
 The TL;DR: the 5-axis frame is structurally sound and worth keeping. Axes 1, 4, 5 are mostly fine. Axis 2 has a real category-confusion problem (`score-conditioned` vs `constraint-loss` overlap) that the v1 TODO already flags. Axis 3 leaks scope. Below are per-axis critiques and a concrete diff.

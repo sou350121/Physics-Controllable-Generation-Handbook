@@ -57,11 +57,11 @@ image prompt ┼─► [Text/Image Encoder (Gemini-family backbone)]
 
 | 方法 | 與 Veo 的差異 |
 |---|---|
-| **Sora 2** (OpenAI, 2024-25) | 同 joint-rollout + DiT；物理分數普遍評為更高；character consistency 較強；但**無 native audio joint diffusion** — audio 走後接路線 |
-| **Cosmos-Predict** (NVIDIA, 2025) | 同 pixel-video / implicit-from-data，但定位 pre-trained WFM 供 robotics/driving fine-tune；Veo 無此 downstream hook |
+| **[Sora 2](./sora.md)** (OpenAI, 2024-25) | 同 joint-rollout + DiT；物理分數普遍評為更高；character consistency 較強；但**無 native audio joint diffusion** — audio 走後接路線 |
+| **[Cosmos-Predict](../foundation-physics-models/cosmos-wfm.md)** (NVIDIA, 2025) | 同 pixel-video / implicit-from-data，但定位 pre-trained WFM 供 robotics/driving fine-tune；Veo 無此 downstream hook |
 | **Kling 2.x / 3.0** (Kuaishou) | 中國線 SOTA；解析度 / 性價比領先（Artificial Analysis leaderboard 第一）；audio 較弱 |
 
-> Genie-2 (DeepMind 內部姊妹) — output 是 `action-seq + pixel-video`、temporal 是 `temporal-transformer-rolling`、control 含 `action` — 與 Veo 是「同公司不同問題」：Veo 解 cinematic generation，Genie 解 agent-playable WM。
+> [Genie-2](../latent-world-models/genie-2.md) (DeepMind 內部姊妹) — output 是 `action-seq + pixel-video`、temporal 是 `temporal-transformer-rolling`、control 含 `action` — 與 Veo 是「同公司不同問題」：Veo 解 cinematic generation，Genie 解 agent-playable WM。
 
 ## 4. ⚡ shines / ❌ breaks
 
@@ -101,9 +101,9 @@ image prompt ┼─► [Text/Image Encoder (Gemini-family backbone)]
 ## 6. Cross-line synthesis
 
 - **vs pixel-WM 同條線（Sora / Cosmos / Kling）**：Veo 是「Google 體系 + audio-first」分支。要做 robotics WM pre-train 還是選 Cosmos-Predict（有 robotics conditioning hook），Veo 沒這條接口
-- **vs latent-WM (DreamerV4 / V-JEPA-2)**：Veo 完全不重疊 — Veo 賣的是生成 fidelity，latent-WM 賣的是 agent 用得起的 rollout cost；Veo 的 latent 不對外暴露，沒法當 dreamer
-- **vs diff-sim (Genesis / Brax 系)**：Veo 是 implicit-from-data 純 black-box，diff-sim 是 white-box；要 sim2real 的 robotics scenario 還是 diff-sim 路線
-- **vs surrogate (GraphCast / FNO)**：完全不同 domain（generalist vs weather/fluid field），無重疊
+- **vs latent-WM ([DreamerV4](../latent-world-models/dreamer-v4.md) / [V-JEPA-2](../latent-world-models/v-jepa-2.md))**：Veo 完全不重疊 — Veo 賣的是生成 fidelity，latent-WM 賣的是 agent 用得起的 rollout cost；Veo 的 latent 不對外暴露，沒法當 dreamer
+- **vs diff-sim ([Genesis](../differentiable-simulators/genesis.md) / Brax 系)**：Veo 是 implicit-from-data 純 black-box，diff-sim 是 white-box；要 sim2real 的 robotics scenario 還是 diff-sim 路線
+- **vs surrogate ([GraphCast](../neural-surrogates/graphcast.md) / [FNO](../neural-surrogates/fno.md))**：完全不同 domain（generalist vs weather/fluid field），無重疊
 - **Veo + diff-sim 合作可能**：用 diff-sim 生 contact-rich rollout → Veo 做 photoreal stylization → 給 robotics policy 當 augmented vision data。**但 Veo 沒 trajectory/action conditioning，這條 pipeline 目前只能單向**
 
 ## 7. References

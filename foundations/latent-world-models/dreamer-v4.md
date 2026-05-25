@@ -61,8 +61,8 @@ Context length 撐到 9.6 秒（前代約 1.5 秒），單 H100 互動 ≥20 FPS
 | 同軸對手 | 差異 |
 |---|---|
 | **TD-MPC2** | latent dynamics + MPC planning（無 actor），更 sample-efficient、但 long-horizon planning cost 線性放大；Dreamer 用 amortized policy 換更便宜的 deploy |
-| **V-JEPA-2** (Meta, 2025) | self-supervised latent 預測 + 後續 action head；強在 representation transfer、弱在 closed-loop control（Dreamer 從 day-1 就 close loop） |
-| **Genie-2** (DeepMind, 2024) | latent action token + autoregressive 對 pixel/latent token，主打 interactive playable WM；不做 RL 內訓練，無 actor-critic |
+| **[V-JEPA-2](./v-jepa-2.md)** (Meta, 2025) | self-supervised latent 預測 + 後續 action head；強在 representation transfer、弱在 closed-loop control（Dreamer 從 day-1 就 close loop） |
+| **[Genie-2](./genie-2.md)** (DeepMind, 2024) | latent action token + autoregressive 對 pixel/latent token，主打 interactive playable WM；不做 RL 內訓練，無 actor-critic |
 | **MuZero / EfficientZero-v2** | latent dynamics + MCTS，仍是 latent-WM 家族但 discrete tree search；Dreamer 用 stochastic latent + gradient-based policy improvement |
 
 ## 4. ⚡ shines / ❌ breaks
@@ -102,7 +102,7 @@ Context length 撐到 9.6 秒（前代約 1.5 秒），單 H100 互動 ≥20 FPS
 
 ## 6. Cross-line synthesis
 
-**vs pixel-WM（Cosmos-Predict / Sora-style / Genie-2 / Oasis）**
+**vs pixel-WM（[Cosmos-Predict](../foundation-physics-models/cosmos-wfm.md) / [Sora](../video-world-models/sora.md)-style / [Genie-2](./genie-2.md) / Oasis）**
 
 - Pixel-WM 強在 visualization 與人類驗證；latent-WM 強在 RL 內訓練的 compute efficiency。Dreamer 系列證明「latent rollout 就夠 agent control 用」— 但 V4 paper 自己也指出同期 pixel-WM 在 Minecraft 上 temporal 崩、所以 latent 暫時是 agent-control 主路線。詳見 `crossing/pixel-vs-latent-physics/`（TODO）。
 
@@ -110,11 +110,11 @@ Context length 撐到 9.6 秒（前代約 1.5 秒），單 H100 互動 ≥20 FPS
 
 - 二者共用 latent dynamics，但 Dreamer 把 planning amortize 進 actor，TD-MPC 每步重新 plan。trade-off：amortize 部署快、re-plan 對 distribution shift 更 robust。Dreamer 在「inference cheap、policy 多次重用」場景勝；MPC 在「task 多變、policy 不好預訓」場景勝。
 
-**vs neural-surrogate（FNO / GraphCast / MeshGraphNet）**
+**vs neural-surrogate（[FNO](../neural-surrogates/fno.md) / [GraphCast](../neural-surrogates/graphcast.md) / MeshGraphNet）**
 
 - Surrogate 解的是「給定 PDE，預測下一狀態」— 沒有 action / reward / policy 概念，injection 是 hard-PDE 或 constraint-loss。Dreamer 是 implicit-from-data 的 agentic WM。兩條線可組：surrogate 當 simulator → Dreamer 在其上訓 policy（類似 PhysGen × RL，文獻仍少）。
 
-**vs V-JEPA-2（self-supervised latent + action head）**
+**vs [V-JEPA-2](./v-jepa-2.md)（self-supervised latent + action head）**
 
 - V-JEPA-2 押注 representation transfer（看大量 unlabeled video 學表示，再 attach action head）；Dreamer-V4 同樣吃 unlabeled video（VPT 2.5K hr，只 100 hr labeled），但 latent 是「為 imagination rollout 與 control 而生」、不是純 representation。兩者在「offline video → controllable agent」這個 2026 主戰場正面對撞，**diff 在 latent 是否一開始就為 dynamics 設計**。
 

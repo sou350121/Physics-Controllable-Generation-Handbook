@@ -12,6 +12,8 @@
 
 `scripts/handbook_audit.py` Check 9 強制 enforce。
 
+> **`N/A` 是合法值**：對於非生成模型的條目（sim like Genesis / MJX / Aerial Gym → output=N/A）以及純評測 benchmark（VBench-Physics → output=N/A injection=N/A）允許 N/A。N/A 表示「此軸不適用於該條目」，不代表「未標」。
+
 ---
 
 ## Axis 1 — Output space

@@ -49,7 +49,7 @@ Injection 軸：GNN 的 permutation/translation symmetry 對球面結構是 **so
 
 - **Pangu-Weather** (Bi et al., Nature, Jul 2023, 華為)：早 GraphCast 幾個月發表，首個聲稱 beat IFS 的 ML 模型，用 **3D Earth-Specific Transformer + hierarchical temporal aggregation**（1h/3h/6h/24h 四個模型 cascade 拼長 lead time）。Pangu 在某些變量上略勝 GraphCast，但 GraphCast 在 verified-against-IFS 的廣度上更全面。
 - **AIFS** (ECMWF, 2024)：ECMWF 自家的 GNN+transformer hybrid，operational evaluation 自 2024 進入，[TBD: verify AIFS 是否已 fully operational 還是 still parallel run as of 2026-05]。
-- **FourCastNet** (Pathak et al., NVIDIA, 2022)：Adaptive Fourier Neural Operator，更早的 ML 天氣模型，精度不如 GraphCast 但速度更快，已被 GraphCast/Pangu 在大多數指標超越。
+- **FourCastNet** (Pathak et al., NVIDIA, 2022)：Adaptive Fourier Neural Operator（[FNO](./fno.md) 變種），更早的 ML 天氣模型，精度不如 GraphCast 但速度更快，已被 GraphCast/Pangu 在大多數指標超越。
 - **GenCast** (Price et al., Nature, Dec 2024, DeepMind)：GraphCast 後繼，**diffusion model on the same mesh**，輸出 50-member ensemble，補 GraphCast 確定性預報在 tail risk / 颶風路徑機率分布上的弱點。
 
 ## 4. Where it shines / where it breaks
@@ -84,7 +84,7 @@ Injection 軸：GNN 的 permutation/translation symmetry 對球面結構是 **so
 
 ## 6. Cross-line synthesis
 
-- **vs FNO（spectral）**：FNO 在 spectral domain 做 global mixing，理論上對 PDE 解集有 universal approximation，但球面網格不天然 fit FFT；GraphCast 用 icosahedral mesh + GNN 解掉這個 mismatch。經驗上 GraphCast 在球面氣象上明確優於 FourCastNet 系（FNO 變種）。
+- **vs [FNO](./fno.md)（spectral）**：FNO 在 spectral domain 做 global mixing，理論上對 PDE 解集有 universal approximation，但球面網格不天然 fit FFT；GraphCast 用 icosahedral mesh + GNN 解掉這個 mismatch。經驗上 GraphCast 在球面氣象上明確優於 FourCastNet 系（FNO 變種）。
 - **vs Pangu transformer**：Transformer 路線（Pangu、AIFS）vs GNN 路線（GraphCast）——兩者收斂到相近精度，差異在 inductive bias 來源：Pangu 靠 3D Earth-Specific position encoding，GraphCast 靠 mesh topology。Operational 來看 ECMWF 同時跑兩種，作為 multi-model ensemble。
 - **Ensemble via GenCast**：GraphCast 確定性 → GenCast diffusion-based ensemble 是 DeepMind 自家的 deterministic→probabilistic 升級路徑。對應 ontology axis 2：`hard-PDE` → `score-conditioned`。
 - **Surrogate × VLA / video WM**：GraphCast 完全在 `field` output 空間，與 pixel-video / latent-WM 路線在 evaluation 標準上**不可直接比較**——這正是 overview.md 強調「surrogate 獨立於 video WM」的原因。但若把 weather field 渲染成 visualization video，可作為 high-fidelity world model 的下游（例如氣象節目自動化、災害可視化）。

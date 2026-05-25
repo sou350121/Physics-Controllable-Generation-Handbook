@@ -45,7 +45,7 @@ action seq   ──► action tokenizer      ─┴─► autoregressive Transfo
 
 **同軸對手**：
 
-- **NVIDIA Cosmos-Drive**（2025）—— 同樣 driving pixel-WM，但開源 checkpoint，走 Cosmos-Predict 底座 + trajectory ControlNet；GAIA 全閉源。trade-off：Cosmos-Drive 可 fine-tune，GAIA 資料 / control 維度更密。
+- **NVIDIA Cosmos-Drive**（2025）—— 同樣 driving pixel-WM，但開源 checkpoint，走 [Cosmos-Predict](../foundation-physics-models/cosmos-wfm.md) 底座 + trajectory ControlNet；GAIA 全閉源。trade-off：Cosmos-Drive 可 fine-tune，GAIA 資料 / control 維度更密。
 - **DriveDreamer / DriveDreamer-2**（2024，學術線）—— 同樣 latent diffusion + 結構化 layout（HD map / 3D box）conditioning，但訓練資料是公開 nuScenes/Waymo，scale 數量級小於 GAIA-2 的 multi-country 自採。
 - **Tesla world model**（公開資訊有限）—— 不走 pixel video，走 **occupancy / 3D scene** output（屬 ontology Axis 1 的 `3d-scene`），跟 GAIA 同樣 driving domain 但 output space 不同；trade-off：occupancy 對 planning 更直接，pixel video 對 perception data augmentation 更直接。
 - **OmniRe / DriveGS / Street Gaussians**（2024-25）—— `3d-scene` output（3DGS-based driving sim），靠 reconstruction 從 real log 重演而非 generate；ego trajectory editing 受限但物理一致性最強。GAIA 反之：高 diversity，幾何精度低。
@@ -88,8 +88,8 @@ action seq   ──► action tokenizer      ─┴─► autoregressive Transfo
 
 ## 6. Cross-line synthesis
 
-- **× pixel-WM 通用線（Sora / Veo / Cosmos-Predict）**：GAIA = 駕駛 domain-adapt 的版本。Cosmos-Predict 底座 + 駕駛 fine-tune 是 NVIDIA 對 GAIA-2 的對位答案；trade-off：通用底座更廣，GAIA 駕駛 prior 更深。
-- **× latent-WM（DreamerV4 / V-JEPA-2）**：GAIA 沒走「latent rollout + decoder」分離結構，GAIA-2 latent diffusion 仍是 pixel-output。若接 latent-WM，可能能解 long-horizon（latent space rollout 較穩）但 Wayve 押寶 pixel realism。
+- **× pixel-WM 通用線（[Sora](./sora.md) / [Veo](./veo.md) / [Cosmos-Predict](../foundation-physics-models/cosmos-wfm.md)）**：GAIA = 駕駛 domain-adapt 的版本。Cosmos-Predict 底座 + 駕駛 fine-tune 是 NVIDIA 對 GAIA-2 的對位答案；trade-off：通用底座更廣，GAIA 駕駛 prior 更深。
+- **× latent-WM（[DreamerV4](../latent-world-models/dreamer-v4.md) / [V-JEPA-2](../latent-world-models/v-jepa-2.md)）**：GAIA 沒走「latent rollout + decoder」分離結構，GAIA-2 latent diffusion 仍是 pixel-output。若接 latent-WM，可能能解 long-horizon（latent space rollout 較穩）但 Wayve 押寶 pixel realism。
 - **× diff-sim**：GAIA 完全沒 physics simulator-in-loop；補 diff-sim 的方向是 "GAIA + CARLA bridge" 之類 hybrid — 但 Wayve 公開資訊不顯示走這條。
 - **× surrogate net (3DGS / occupancy)**：與 OmniRe / DriveGS 是 **互補** 而非替代。3DGS 提供幾何 ground-truth 與可微 closed-loop，GAIA 提供 diversity 與條件控制。產線上會兩者混用（real log → 3DGS replay 做 regression test；GAIA → 合成 long-tail 做 augmentation / OOD）。
 - **× VLA（cross-handbook）**：GAIA-2 的 "external latent embeddings from a proprietary driving model" 暗示 distill 一個 driving policy 的 feature 進 WM，這恰恰是 Pixel-WM ↔ VLA bridge 的工程接口（見 sister `VLA-Handbook`：world model rollout 提供 negative example for policy distillation）。
