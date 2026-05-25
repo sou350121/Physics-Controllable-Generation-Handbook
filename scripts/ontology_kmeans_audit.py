@@ -52,8 +52,6 @@ Limitations
     those is noisy. Axis 2 (injection) is the most actionable.
 """
 
-from __future__ import annotations
-
 import argparse
 import json
 import math
@@ -65,6 +63,7 @@ import urllib.error
 import urllib.request
 from datetime import datetime
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 try:
     import numpy as np
@@ -114,7 +113,8 @@ HEADER_RE = re.compile(
     re.IGNORECASE,
 )
 
-def parse_dissection(path: Path) -> dict | None:
+def parse_dissection(path):
+    # type: (Path) -> Optional[Dict[str, Any]]
     """Parse one dissection: return dict or None if header missing."""
     try:
         text = path.read_text(encoding="utf-8")
@@ -142,7 +142,8 @@ def parse_dissection(path: Path) -> dict | None:
         "header_raw": m.group(0),
     }
 
-def discover_dissections(root: Path = HANDBOOK_ROOT) -> list[dict]:
+def discover_dissections(root=HANDBOOK_ROOT):
+    # type: (Path) -> List[Dict[str, Any]]
     seen = set()
     out = []
     for pattern in DISSECTION_GLOBS:
@@ -158,7 +159,8 @@ def discover_dissections(root: Path = HANDBOOK_ROOT) -> list[dict]:
 
 # ─── Step 2: embedding via DashScope ──────────────────────────────────────────
 
-def embed_one(text: str, api_key: str) -> list[float]:
+def embed_one(text, api_key):
+    # type: (str, str) -> List[float]
     """Single embedding call. Retries 3× on transient errors."""
     payload = {
         "model": EMBED_MODEL,
@@ -190,7 +192,8 @@ def embed_one(text: str, api_key: str) -> list[float]:
             time.sleep(5 * (attempt + 1))
     raise RuntimeError(f"embedding failed after 3 retries: {last_err}")
 
-def embed_all(dissections: list[dict], api_key: str) -> list[list[float]]:
+def embed_all(dissections, api_key):
+    # type: (List[Dict[str, Any]], str) -> List[List[float]]
     """Embed (header + TL;DR) for each dissection."""
     embeds = []
     for i, d in enumerate(dissections, 1):
@@ -202,7 +205,8 @@ def embed_all(dissections: list[dict], api_key: str) -> list[list[float]]:
 
 # ─── Step 3: cosine sim + k-means (pure python fallback) ──────────────────────
 
-def cosine_sim(a, b) -> float:
+def cosine_sim(a, b):
+    # type: (List[float], List[float]) -> float
     if HAS_NUMPY:
         a = np.asarray(a, dtype=np.float64)
         b = np.asarray(b, dtype=np.float64)
@@ -283,14 +287,16 @@ def kmeans_lloyd(vectors, k, max_iter=50, seed=0):
 
 # ─── Step 4: per-axis audit ───────────────────────────────────────────────────
 
-def primary_value(values: list[str]) -> str:
+def primary_value(values):
+    # type: (List[str]) -> str
     """Pick the first non-N/A value as the primary label."""
     for v in values:
         if v and v.upper() != "N/A":
             return v
     return "N/A"
 
-def per_axis_audit(axis: str, dissections: list[dict], embeds: list[list[float]]) -> dict:
+def per_axis_audit(axis, dissections, embeds):
+    # type: (str, List[Dict[str, Any]], List[List[float]]) -> Dict[str, Any]
     """For one axis: compute intra/inter sim + per-dissection nearest-cluster check."""
     labels = [primary_value(d["axes"][axis]) for d in dissections]
     unique_labels = sorted(set(labels))
@@ -369,7 +375,8 @@ def per_axis_audit(axis: str, dissections: list[dict], embeds: list[list[float]]
 
 # ─── Step 5: markdown report ──────────────────────────────────────────────────
 
-def format_report(audits: list[dict], dissections: list[dict]) -> str:
+def format_report(audits, dissections):
+    # type: (List[Dict[str, Any]], List[Dict[str, Any]]) -> str
     today = datetime.now().strftime("%Y-%m-%d")
     out = []
     out.append(f"# Ontology K-Means Audit — {today}\n")
