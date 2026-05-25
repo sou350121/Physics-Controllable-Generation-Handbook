@@ -76,6 +76,7 @@
 | Value | 描述 | 典型問題 |
 |---|---|---|
 | `single-frame` | 一張圖（無時間） | 不適用 video physics |
+| `streaming` | Sim / 連續時間 ODE 解算，無 frame 概念 | Sim2real gap、contact discontinuity |
 | `autoregressive` | 一幀一幀往前生成，下一幀 condition 上一幀 | Drift 累積、exposure bias |
 | `joint-rollout` | 一次生成整段 clip（如 16/24/48 幀） | 長度受限，跨 clip 銜接難 |
 | `latent-rollout` | latent space 中 rollout，最後再 decode 像素 | DreamerV4 主路線；省 compute |
