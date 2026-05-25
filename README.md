@@ -6,8 +6,8 @@
 
 [![Docs Live](https://img.shields.io/badge/docs-Mintlify_Phase_2-lightgrey?style=for-the-badge&logo=readme&logoColor=white)](#status)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue)](./LICENSE)
-[![Pages](https://img.shields.io/badge/pages-68-orange)](./cheat-sheet/functional_map.md)
-[![Dissections](https://img.shields.io/badge/dissections-12_anchor-purple)](./foundations/overview.md)
+[![Pages](https://img.shields.io/badge/pages-105-orange)](./cheat-sheet/functional_map.md)
+[![Dissections](https://img.shields.io/badge/dissections-14_anchor-purple)](./foundations/overview.md)
 [![Ontology](https://img.shields.io/badge/5--axis_ontology-v1-red)](./cheat-sheet/ontology.md)
 [![Audit](https://img.shields.io/badge/audit-167%2F168_pass-success)](./AUDIT_2026-05-25.md)
 [![Sister Repos](https://img.shields.io/badge/sister-VLA_%2B_Spatial-2a9d8f)](#三册一体vla--spatial--physics-gen-的分工)
@@ -27,7 +27,7 @@
 
 | Phase | 內容 | 狀態 |
 |---|---|---|
-| **Phase 1** — Skeleton + Anchor | 13 zones + 6 use-cases + 5 USP wedges + **12 anchor dissections** + 5-axis ontology v1 + ontology v1.1 review | ✅ **完成 (2026-05-25)** — audit 167/168 pass |
+| **Phase 1** — Skeleton + Anchor | 13 zones + **7 use-cases** + 5 USP wedges + **14 anchor dissections** + 5-axis ontology v1 + ontology v1.1 review | ✅ **完成 (2026-05-25)** — audit 167/168 pass + aerial vertical 加入 |
 | **Phase 2** — Mintlify + Pulsar Daily | Mintlify Hobby tier 部署（live URL + /mcp）+ Pulsar 每日 arxiv 抓取 → qwen 評級 → `reports/physics-gen-daily/` | 🚧 規劃中 |
 | **Phase 3** — 30+ Dissection + Cross-handbook | 第二批 18 篇 dissection（PhysGen / ContactGen / Decart / DriveDreamer / PangU / NeuralMPM 等）+ 三冊 cross-handbook insight cron | ⏳ 待 Phase 2 完成後啟動 |
 
@@ -53,6 +53,7 @@
 |:---:|------|---------|-----------|
 | 🤖 | **VLA / robot policy 工程師** | 想用合成資料替代真實 demo | → [Cosmos WFM](./foundations/foundation-physics-models/cosmos-wfm.md) + [V-JEPA-2](./foundations/latent-world-models/v-jepa-2.md) + [`crossing/sim-vs-gen-data/`](./crossing/sim-vs-gen-data/) |
 | 🚗 | **自駕 closed-loop sim 工程師** | GAIA / Cosmos-Drive / Wayve 線 | → [GAIA-2](./foundations/video-world-models/gaia-2.md) + [`foundations/long-horizon-rollout/`](./foundations/long-horizon-rollout/) + [`use-cases/autonomous-driving-sim/`](./use-cases/autonomous-driving-sim/) |
+| 🚁 | **無人機 autonomy 工程師** | Aerial Gym / Flightmare / Swift / Dream-to-Fly | → [`use-cases/aerial-sim/`](./use-cases/aerial-sim/) ★ + [Aerial Gym](./foundations/differentiable-simulators/aerial-gym.md) + [Champion-Level Drone Racing](./use-cases/aerial-sim/champion-level-drone-racing.md) + Spatial-Handbook `embodiments/aerial/` |
 | 🎬 | **影片生成工程師** | Sora / Veo / Kling 路線 | → [Sora](./foundations/video-world-models/sora.md) + [Veo](./foundations/video-world-models/veo.md) + [`crossing/conservation-violation-atlas/`](./crossing/conservation-violation-atlas/) |
 | 🌊 | **神經 PDE / surrogate 研究者** | GraphCast / FNO / 氣象 / 流體 | → [GraphCast](./foundations/neural-surrogates/graphcast.md) + [FNO](./foundations/neural-surrogates/fno.md) + [`use-cases/scientific-discovery/`](./use-cases/scientific-discovery/) |
 | 🎮 | **互動式 latent WM 工程師** | Genie / Decart / V-JEPA / Dreamer | → [Genie-2](./foundations/latent-world-models/genie-2.md) + [DreamerV4](./foundations/latent-world-models/dreamer-v4.md) + [`crossing/pixel-vs-latent-physics/`](./crossing/pixel-vs-latent-physics/) |
@@ -75,7 +76,7 @@ graph TD
     START["⚔️ START HERE<br/>选你的角色"] --> FOUND["🏗️ Foundations<br/>跨技术路线共享底层<br/>13 zones"]
     START --> CROSS["🔭 Crossing ★ USP<br/>5 wedges 横向合流"]
 
-    FOUND -->|"工具箱原语"| USE["🎯 Use-cases<br/>6 下游<br/>robotics-data-gen / driving<br/>embodied / scientific<br/>media / digital-twin"]
+    FOUND -->|"工具箱原语"| USE["🎯 Use-cases<br/>7 下游<br/>robotics-data-gen / driving<br/>aerial-sim 🚁 / embodied<br/>scientific / media / digital-twin"]
     FOUND -->|"per-method 拆解"| CROSS
 
     USE -->|"per-use-case 实战"| CROSS
@@ -142,9 +143,9 @@ graph TD
 &nbsp;
 
 <details>
-<summary><h3>🎯 2. <code>use-cases/</code> — 6 个下游应用 &nbsp;<code>NOT embodiments</code></h3></summary>
+<summary><h3>🎯 2. <code>use-cases/</code> — 7 个下游应用 &nbsp;<code>NOT embodiments</code></h3></summary>
 
-**一句话**：6 条下游 lane — robotics-data-gen / autonomous-driving-sim / embodied-policy-rollout / scientific-discovery / media-and-content / digital-twin，每条是「生成模型给谁用」的实战切片。
+**一句话**：7 条下游 lane — robotics-data-gen / autonomous-driving-sim / **aerial-sim 🚁** / embodied-policy-rollout / scientific-discovery / media-and-content / digital-twin，每条是「生成模型给谁用」的实战切片。
 
 **为什么这目录存在**：跟 Spatial-Handbook 按 *embodiment*（aerial / manipulation / marine）切不一样 — 物理可控生成是 **upstream pipeline**，下游可以是不同 embodiment、不同行业。同一套 video WM 既可以给 robotics 当数据引擎，也可以给 driving 当 closed-loop sim、还可以给 media 做镜头。按 use-case 切才能写清「这套生成模型在这个下游会遇到什么物理约束、什么验收指标」。
 
@@ -152,12 +153,13 @@ graph TD
 |--------|------|------|
 | [`robotics-data-gen/`](./use-cases/robotics-data-gen/) | 生成 video/latent/sim 替代真实 demo | video-WM · latent-WM · diff-sim · data-engine |
 | [`autonomous-driving-sim/`](./use-cases/autonomous-driving-sim/) | Closed-loop driving WM | video-WM · long-horizon · controllability |
+| [`aerial-sim/`](./use-cases/aerial-sim/) ★ | 無人機 closed-loop sim + 合成 aerial footage | diff-sim · long-horizon · data-engine |
 | [`embodied-policy-rollout/`](./use-cases/embodied-policy-rollout/) | WM-as-policy / MPC-on-WM | latent-WM · long-horizon · evaluation |
 | [`scientific-discovery/`](./use-cases/scientific-discovery/) | Neural surrogate 替代 PDE solver | neural-surrogates · material-and-dynamics |
 | [`media-and-content/`](./use-cases/media-and-content/) | 影片 / 广告 / 电影 | video-WM · diffusion-physics · controllability |
 | [`digital-twin/`](./use-cases/digital-twin/) | 工厂 / 手术 / 工业 | diff-sim · 3d-aware · data-engine |
 
-> 与 sister handbook 对应：`robotics-data-gen` / `embodied-policy-rollout` ↔ VLA-Handbook；`autonomous-driving-sim` ↔ Spatial-Handbook driving embodiment；`digital-twin` / `scientific-discovery` 是本仓独有下游。
+> 与 sister handbook 对应：`robotics-data-gen` / `embodied-policy-rollout` ↔ VLA-Handbook；`autonomous-driving-sim` ↔ Spatial-Handbook driving embodiment；**`aerial-sim` ↔ Spatial-Handbook `embodiments/aerial/` ★**（spatial 最深 embodiment）；`digital-twin` / `scientific-discovery` 是本仓独有下游。
 
 </details>
 
@@ -399,6 +401,19 @@ crossing/controllability-vs-fidelity
 
 &nbsp;
 
+### 🚁 無人機 autonomy（4 篇）
+
+```
+use-cases/aerial-sim/overview →
+foundations/differentiable-simulators/aerial-gym →
+use-cases/aerial-sim/champion-level-drone-racing →
+Spatial-Handbook embodiments/aerial/ (cross-ref)
+```
+
+[开始 →](./use-cases/aerial-sim/) — 先看 aerial-sim use-case 全景（Aerial Gym / Flightmare / Swift / Dream-to-Fly），再 deep-dive Aerial Gym diff-sim 與 Swift sim-to-real，最後跨倉到 Spatial-Handbook 的 aerial embodiment 看 VIO / dynamics
+
+&nbsp;
+
 ### 🎬 视频生成 + 物理感（3 篇）
 
 ```
@@ -521,6 +536,7 @@ foundations/overview.md
 | World model 作为生成器（Cosmos-Predict / Sora / Veo） | **Physics-Gen** | 两个 sister handbook 引结论 |
 | Differentiable simulator（Genesis / MuJoCo MJX） | **Physics-Gen** | VLA 经 bridge-to-vla 引 |
 | Driving WM 像素端（GAIA-2 / Cosmos-Drive） | **Physics-Gen** | Spatial 经 bridge-to-spatial 引 |
+| 無人機 sim（Aerial Gym / Flightmare） + sim-to-real 範式 | **Physics-Gen** | Spatial `embodiments/aerial/` ★ 引動力學/VIO 側 |
 | Neural PDE surrogate（GraphCast / FNO） | **Physics-Gen** | 其他册不收 |
 | Sim2real（动力学侧） | **VLA-Handbook** | Physics-Gen 引 representation 侧的处理 |
 
