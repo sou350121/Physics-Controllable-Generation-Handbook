@@ -82,7 +82,7 @@
 
 ![Physics Conditioning Timeline 2017-2026](./assets/physics-conditioning-timeline.svg)
 
-> **圖 3**：5 代物理 conditioning 演化（按 v2 injection 軸切 lane）。2017 PINN `aux-loss` → 2019 HNN `hard-constraint` → 2020 MeshGraphNet `architecture-bias-soft`（v2 NEW lane）→ 2022 PhysDiff `guidance-gradient` → 2024 PhysGen `sim-in-loop-train` → 2025 Force Prompting / NewtonGen / Cosmos Reason1。**`hard-constraint` lane 2020 後停滯**（紅虛線標註）；2024-25 是 `sim-in-loop` + `architecture-bias-soft` 爆發期。
+> **圖 3**：5 代物理 conditioning 演化（按 v2 injection 軸切 lane）。2017 PINN `aux-loss` → 2019 HNN `hard-constraint` → 2020 MeshGraphNet `architecture-bias-soft`（v2 NEW lane — 紅色標註）→ 2022 PhysDiff `guidance-gradient` → 2024 PhysGen `sim-in-loop-train` → 2025 Force Prompting / NewtonGen / Cosmos Reason1。**`hard-constraint` lane 2020 後停滯**（灰色 "stalled post-2020" 微標註）；2024-25 是 `sim-in-loop` + `architecture-bias-soft` 爆發期。
 
 ---
 
@@ -209,7 +209,7 @@ v1 review 列出 5 條 cross-axis 議題，v2 把其中 3 條變成 audit 強制
 
 ![v1 → v2 Ontology Migration Sankey](./assets/v1-to-v2-migration.svg)
 
-> **圖 5**：5 軸 sankey 視圖。**藍** = rename（5 處）；**橘** = split（1 處，`sim-in-loop` → train/infer + `latent` 拆 2）；**青** = merge（1 處，`3d-scene + mesh` → `3d-explicit`）；**紫 ★** = v2 NEW value（4 個：`3d-implicit` · `motion` · `architecture-bias-soft` · `camera` · `layout` · `astro`）；**紅 ⊘** = demote/delete（2 處，`energy-based` + `multi`）。19 篇 dissection 全部重簽。下方有對應細表。
+> **圖 5**：5 軸 sankey 視圖。改動類型用 **線形 + 拓樸** 編碼，不用顏色：直線=unchanged · 直線+新名=rename · Y 分支=split · 反 Y=merge · 刪除線=demote/delete · **紅點 ●** = v2 NEW value（只有這一個紅 accent）。19 篇 dissection 全部重簽。下方有對應細表。
 
 | Axis | v1 value | v2 value | 影響本倉 dissection 數 (估) |
 |---|---|---|---|
