@@ -6,8 +6,8 @@
 
 [![Docs Live](https://img.shields.io/badge/docs-Mintlify_Phase_2-lightgrey?style=for-the-badge&logo=readme&logoColor=white)](#status)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue)](./LICENSE)
-[![Pages](https://img.shields.io/badge/pages-105-orange)](./cheat-sheet/functional_map.md)
-[![Dissections](https://img.shields.io/badge/dissections-14_anchor-purple)](./foundations/overview.md)
+[![Pages](https://img.shields.io/badge/pages-111-orange)](./cheat-sheet/functional_map.md)
+[![Dissections](https://img.shields.io/badge/dissections-19_anchor-purple)](./foundations/overview.md)
 [![Ontology](https://img.shields.io/badge/5--axis_ontology-v1-red)](./cheat-sheet/ontology.md)
 [![Audit](https://img.shields.io/badge/audit-196%2F196_pass-success)](./AUDIT_2026-05-26.md)
 [![Sister Repos](https://img.shields.io/badge/sister-VLA_%2B_Spatial-2a9d8f)](#三册一体vla--spatial--physics-gen-的分工)
@@ -27,7 +27,7 @@
 
 | Phase | 內容 | 狀態 |
 |---|---|---|
-| **Phase 1** — Skeleton + Anchor | 13 zones + **7 use-cases** + 5 USP wedges + **14 anchor dissections** + 5-axis ontology v1 + ontology v1.1 review | ✅ **完成 (2026-05-25)** — audit 167/168 pass + aerial vertical 加入 |
+| **Phase 1** — Skeleton + Anchor | 13 zones + **7 use-cases** + 5 USP wedges + **19 anchor dissections** + 5-axis ontology v1 + ontology v1.1 review | ✅ **完成 (2026-05-25)** — audit 196/196 pass + aerial vertical + **physics-conditioning zone 5 篇深度補完** |
 | **Phase 2** — Mintlify + Pulsar Daily | Mintlify Hobby tier 部署（live URL + /mcp）+ Pulsar 每日 arxiv 抓取 → qwen 評級 → `reports/physics-gen-daily/` | 🚧 規劃中 |
 | **Phase 3** — 30+ Dissection + Cross-handbook | 第二批 18 篇 dissection（PhysGen / ContactGen / Decart / DriveDreamer / PangU / NeuralMPM 等）+ 三冊 cross-handbook insight cron | ⏳ 待 Phase 2 完成後啟動 |
 
@@ -55,6 +55,7 @@
 | 🚗 | **自駕 closed-loop sim 工程師** | GAIA / Cosmos-Drive / Wayve 線 | → [GAIA-2](./foundations/video-world-models/gaia-2.md) + [`foundations/long-horizon-rollout/`](./foundations/long-horizon-rollout/) + [`use-cases/autonomous-driving-sim/`](./use-cases/autonomous-driving-sim/) |
 | 🚁 | **無人機 autonomy 工程師** | Aerial Gym / Flightmare / Swift / Dream-to-Fly | → [`use-cases/aerial-sim/`](./use-cases/aerial-sim/) ★ + [Aerial Gym](./foundations/differentiable-simulators/aerial-gym.md) + [Champion-Level Drone Racing](./use-cases/aerial-sim/champion-level-drone-racing.md) + Spatial-Handbook `embodiments/aerial/` |
 | 🎬 | **影片生成工程師** | Sora / Veo / Kling 路線 | → [Sora](./foundations/video-world-models/sora.md) + [Veo](./foundations/video-world-models/veo.md) + [`crossing/conservation-violation-atlas/`](./crossing/conservation-violation-atlas/) |
+| 🧠 | **物理 conditioning 研究者** | PINN · HNN/LNN · PhysDiff · Force Prompting 線 | → [`foundations/physics-conditioning/`](./foundations/physics-conditioning/) ★★ — 整 zone 5 篇 anchor 是本倉 USP 核心 |
 | 🌊 | **神經 PDE / surrogate 研究者** | GraphCast / FNO / 氣象 / 流體 | → [GraphCast](./foundations/neural-surrogates/graphcast.md) + [FNO](./foundations/neural-surrogates/fno.md) + [`use-cases/scientific-discovery/`](./use-cases/scientific-discovery/) |
 | 🎮 | **互動式 latent WM 工程師** | Genie / Decart / V-JEPA / Dreamer | → [Genie-2](./foundations/latent-world-models/genie-2.md) + [DreamerV4](./foundations/latent-world-models/dreamer-v4.md) + [`crossing/pixel-vs-latent-physics/`](./crossing/pixel-vs-latent-physics/) |
 | 🧪 | **Diff-sim 工程師** | MuJoCo MJX / Genesis / Warp | → [Genesis](./foundations/differentiable-simulators/genesis.md) + [MuJoCo MJX](./foundations/differentiable-simulators/mujoco-mjx.md) + [`crossing/sim-vs-gen-data/`](./crossing/sim-vs-gen-data/) |
@@ -128,7 +129,7 @@ graph TD
 |---------|------|
 | [`video-world-models/`](./foundations/video-world-models/) | 直接生成像素，物理 implicit — Sora · Veo · Cosmos-Predict · GAIA · SVD anchors |
 | [`latent-world-models/`](./foundations/latent-world-models/) | 在 latent 空间 rollout，省 compute、贴 agent control — V-JEPA-2 · DreamerV4 · Genie-2 anchors |
-| [`physics-conditioning/`](./foundations/physics-conditioning/) ★ | 物理规律「怎么进」模型 — 本仓真正的 USP zone（PINN / EBM-physics / Hamiltonian-NN） |
+| [`physics-conditioning/`](./foundations/physics-conditioning/) ★★ | 物理规律「怎么进」模型 — **本仓真正的 USP zone**（5 篇 anchor：[PINN](./foundations/physics-conditioning/pinn.md) · [Hamiltonian/Lagrangian NN](./foundations/physics-conditioning/hamiltonian-lagrangian-nn.md) · [PhysGen](./foundations/physics-conditioning/physgen.md) · [PhysDiff](./foundations/physics-conditioning/physdiff.md) · [Force Prompting + NewtonGen](./foundations/physics-conditioning/force-prompting.md)） |
 | [`differentiable-simulators/`](./foundations/differentiable-simulators/) | 可微 sim 作为 oracle / loss / 数据源 — MuJoCo MJX · Genesis · Warp · Brax |
 | [`neural-surrogates/`](./foundations/neural-surrogates/) | NN 替代 PDE solver，最强物理 inductive bias — GraphCast · FNO · PDE-Refiner |
 | [`evaluation-physics/`](./foundations/evaluation-physics/) | 怎么判断生成「物理合理」— VBench-Physics · PhysBench · conservation-violation |
@@ -474,6 +475,20 @@ crossing/controllability-vs-fidelity
 
 &nbsp;
 
+### 🧠 物理 conditioning 深度（5 篇 + overview）
+
+```
+foundations/physics-conditioning/overview (6 injection 對比 + 5 代演化) →
+foundations/physics-conditioning/pinn (constraint-loss 鼻祖) →
+foundations/physics-conditioning/hamiltonian-lagrangian-nn (hard-PDE 鼻祖) →
+foundations/physics-conditioning/physdiff (score-conditioned + sim-in-loop) →
+foundations/physics-conditioning/physgen + force-prompting (2024-25 新潮)
+```
+
+[开始 →](./foundations/physics-conditioning/) ★★ — 整本 handbook 的 USP zone：5 種 injection 機制橫向對比，從 PINN (2017) 到 NewtonGen (2025) 完整演化線；包含 anti-pattern atlas 與 5 代演化 timeline
+
+&nbsp;
+
 ### 🏗️ 系统设计：5-axis ontology（3 篇）
 
 ```
@@ -499,6 +514,7 @@ foundations/overview.md
 | 🥉 | **First Blood** | 读完任意 1 篇 dissection |
 | 🎓 | **Pixel + Latent + Sim** | 读完 Sora + V-JEPA-2 + Genesis 三篇 |
 | 🌍 | **Cross-Line Tour** | 跨 5 條主路線（video-WM · latent-WM · diff-sim · neural-surrogate · 3D-aware-gen）各讀 ≥ 1 篇 |
+| 🧠 | **Injection Atlas Master** | 讀完 physics-conditioning 5 篇 anchor（PINN · HNN/LNN · PhysDiff · PhysGen · Force Prompting）+ overview 的 anti-pattern atlas |
 | 🔭 | **USP Hunter** | 读完 5 个 crossing wedge overview |
 | 🐉 | **Boss Hunter** | 读完 boss monsters 中的 3 篇（见下表） |
 | ⚡ | **Speed Runner** | 完成任意一条 Speed Run |
@@ -514,6 +530,8 @@ foundations/overview.md
 | [crossing/pixel-vs-latent-physics](./crossing/pixel-vs-latent-physics/) | LeCun line vs scale-pill line 的范式之争，要看懂两边判据、当下 evidence 落点、未来 falsifier |
 | [foundations/foundation-physics-models/cosmos-wfm](./foundations/foundation-physics-models/cosmos-wfm.md) | 一篇要跨 Cosmos 4 条子线（Predict / Reason / Drive / Robotics），「物理基础模型」这个概念到底成不成立 |
 | [foundations/differentiable-simulators/genesis](./foundations/differentiable-simulators/genesis.md) | Genesis 150× 速度的争议要拆清楚，diff-sim 在 generation 时代的差异化定位 |
+| [foundations/physics-conditioning/hamiltonian-lagrangian-nn](./foundations/physics-conditioning/hamiltonian-lagrangian-nn.md) | hard-PDE 線最深學術 — Hamilton 動力學 → autograd 鏈式法則 → 為什麼 2020 後停滯 |
+| [foundations/physics-conditioning/pinn](./foundations/physics-conditioning/pinn.md) | NTK 失效分析（Wang 2022）+ 8 條 DeepXDE issue 的踩坑路徑 |
 | [cheat-sheet/ontology-v1.1-review](./cheat-sheet/ontology-v1.1-review.md) | 5 轴 ontology 的完整 critique + canonical references + 修正建议——这本 handbook 的 spine |
 
 </details>
