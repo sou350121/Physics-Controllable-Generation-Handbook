@@ -3,45 +3,45 @@
   <desc>Five-axis sankey-style flow from v1 to v2 ontology values. Greyscale ramp with single red accent for NEW v2 values and USP marker.</desc>
 
   <!-- background -->
-  <rect x="0" y="0" width="1000" height="620" fill="#ffffff"/>
+  <rect x="0" y="0" width="1000" height="620" fill="#0d1117"/>
 
   <!-- Title -->
-  <text x="80" y="40" fill="#0a0a0a" font-size="19" font-weight="600">v1 → v2 Ontology Migration</text>
-  <text x="80" y="58" fill="#525252" font-size="11">32 v1 values → 35 v2 values  •  5 renames • 2 splits • 1 merge • 5 NEW • 2 removed</text>
+  <text x="80" y="40" fill="#f0f6fc" font-size="19" font-weight="600">v1 → v2 Ontology Migration</text>
+  <text x="80" y="58" fill="#8b949e" font-size="11">32 v1 values → 35 v2 values  •  5 renames • 2 splits • 1 merge • 5 NEW • 2 removed</text>
 
   <!-- Summary chip top-right -->
-  <rect x="800" y="28" width="140" height="38" rx="2" fill="none" stroke="#e5e5e5" stroke-width="1"/>
-  <text x="810" y="44" fill="#262626" font-size="10" font-weight="600">19 dissection headers</text>
-  <text x="810" y="56" fill="#525252" font-size="10">re-signed · 2026-05-26</text>
+  <rect x="800" y="28" width="140" height="38" rx="2" fill="none" stroke="#30363d" stroke-width="1"/>
+  <text x="810" y="44" fill="#e6edf3" font-size="10" font-weight="600">19 dissection headers</text>
+  <text x="810" y="56" fill="#8b949e" font-size="10">re-signed · 2026-05-26</text>
 
   <!-- Typographic legend -->
   <g transform="translate(80, 78)" font-size="10">
-    <text x="0" y="0" fill="#a3a3a3" font-weight="600" letter-spacing="0.5">LEGEND</text>
-    <line x1="55" y1="-3" x2="85" y2="-3" stroke="#a3a3a3" stroke-width="1"/>
-    <text x="90" y="0" fill="#525252">unchanged</text>
-    <line x1="150" y1="-3" x2="180" y2="-3" stroke="#a3a3a3" stroke-width="1"/>
-    <text x="185" y="0" fill="#0a0a0a">→ new name</text>
-    <text x="248" y="0" fill="#525252">rename</text>
-    <path d="M 295 -8 L 310 -3 L 295 2 M 310 -3 L 325 -8 M 310 -3 L 325 2" stroke="#a3a3a3" stroke-width="1" fill="none"/>
-    <text x="332" y="0" fill="#525252">split / merge</text>
-    <circle cx="405" cy="-3" r="4" fill="#dc2626"/>
-    <text x="414" y="0" fill="#525252">v2 NEW</text>
-    <text x="465" y="0" fill="#0a0a0a" text-decoration="line-through">demoted</text>
-    <text x="510" y="0" fill="#525252">removed</text>
+    <text x="0" y="0" fill="#6e7681" font-weight="600" letter-spacing="0.5">LEGEND</text>
+    <line x1="55" y1="-3" x2="85" y2="-3" stroke="#6e7681" stroke-width="1"/>
+    <text x="90" y="0" fill="#8b949e">unchanged</text>
+    <line x1="150" y1="-3" x2="180" y2="-3" stroke="#6e7681" stroke-width="1"/>
+    <text x="185" y="0" fill="#f0f6fc">→ new name</text>
+    <text x="248" y="0" fill="#8b949e">rename</text>
+    <path d="M 295 -8 L 310 -3 L 295 2 M 310 -3 L 325 -8 M 310 -3 L 325 2" stroke="#6e7681" stroke-width="1" fill="none"/>
+    <text x="332" y="0" fill="#8b949e">split / merge</text>
+    <circle cx="405" cy="-3" r="4" fill="#f85149"/>
+    <text x="414" y="0" fill="#8b949e">v2 NEW</text>
+    <text x="465" y="0" fill="#f0f6fc" text-decoration="line-through">demoted</text>
+    <text x="510" y="0" fill="#8b949e">removed</text>
   </g>
 
   <!-- Column headers -->
-  <text x="220" y="108" text-anchor="middle" fill="#a3a3a3" font-size="10" font-weight="600" letter-spacing="0.5">V1</text>
-  <text x="700" y="108" text-anchor="middle" fill="#a3a3a3" font-size="10" font-weight="600" letter-spacing="0.5">V2</text>
+  <text x="220" y="108" text-anchor="middle" fill="#6e7681" font-size="10" font-weight="600" letter-spacing="0.5">V1</text>
+  <text x="700" y="108" text-anchor="middle" fill="#6e7681" font-size="10" font-weight="600" letter-spacing="0.5">V2</text>
 
   <!-- ============ AXIS 1: OUTPUT ============ -->
-  <line x1="80" y1="118" x2="920" y2="118" stroke="#e5e5e5" stroke-width="1"/>
-  <text x="80" y="138" fill="#0a0a0a" font-size="13" font-weight="600">Axis 1</text>
-  <text x="80" y="152" fill="#525252" font-size="11">Output</text>
-  <text x="80" y="166" fill="#a3a3a3" font-size="10">7 → 8 values</text>
+  <line x1="80" y1="118" x2="920" y2="118" stroke="#30363d" stroke-width="1"/>
+  <text x="80" y="138" fill="#f0f6fc" font-size="13" font-weight="600">Axis 1</text>
+  <text x="80" y="152" fill="#8b949e" font-size="11">Output</text>
+  <text x="80" y="166" fill="#6e7681" font-size="10">7 → 8 values</text>
 
   <!-- v1 list -->
-  <g font-size="11" fill="#262626">
+  <g font-size="11" fill="#e6edf3">
     <text x="160" y="135">pixel-video</text>
     <text x="160" y="151">latent</text>
     <text x="160" y="167">3d-scene</text>
@@ -51,20 +51,20 @@
     <text x="160" y="231">action-seq</text>
   </g>
   <!-- v2 list -->
-  <g font-size="11" fill="#262626">
+  <g font-size="11" fill="#e6edf3">
     <text x="640" y="135">pixel-video</text>
     <text x="640" y="151">latent-tokens</text>
     <text x="640" y="167">3d-explicit</text>
     <text x="640" y="183">3d-implicit</text>
-    <circle cx="710" cy="179" r="4" fill="#dc2626"/>
+    <circle cx="710" cy="179" r="4" fill="#f85149"/>
     <text x="640" y="199">particle</text>
     <text x="640" y="215">field</text>
     <text x="640" y="231">action-seq</text>
     <text x="640" y="247">motion</text>
-    <circle cx="678" cy="243" r="4" fill="#dc2626"/>
+    <circle cx="678" cy="243" r="4" fill="#f85149"/>
   </g>
   <!-- flows -->
-  <g stroke="#a3a3a3" stroke-width="1" fill="none">
+  <g stroke="#6e7681" stroke-width="1" fill="none">
     <!-- pixel-video unchanged -->
     <line x1="245" y1="131" x2="635" y2="131"/>
     <!-- latent split: to pixel-video (decode) and latent-tokens -->
@@ -82,34 +82,34 @@
   </g>
 
   <!-- ============ AXIS 2: INJECTION (USP) ============ -->
-  <line x1="80" y1="258" x2="920" y2="258" stroke="#e5e5e5" stroke-width="1"/>
-  <text x="80" y="278" fill="#0a0a0a" font-size="13" font-weight="600">Axis 2</text>
-  <text x="118" y="278" fill="#dc2626" font-size="10" font-weight="600">★ USP</text>
-  <text x="80" y="292" fill="#525252" font-size="11">Injection</text>
-  <text x="80" y="306" fill="#a3a3a3" font-size="10">6 → 7 values</text>
+  <line x1="80" y1="258" x2="920" y2="258" stroke="#30363d" stroke-width="1"/>
+  <text x="80" y="278" fill="#f0f6fc" font-size="13" font-weight="600">Axis 2</text>
+  <text x="118" y="278" fill="#f85149" font-size="10" font-weight="600">★ USP</text>
+  <text x="80" y="292" fill="#8b949e" font-size="11">Injection</text>
+  <text x="80" y="306" fill="#6e7681" font-size="10">6 → 7 values</text>
 
   <!-- v1 list -->
-  <g font-size="11" fill="#262626">
+  <g font-size="11" fill="#e6edf3">
     <text x="160" y="275">implicit-from-data</text>
     <text x="160" y="291">constraint-loss</text>
     <text x="160" y="307">sim-in-loop</text>
     <text x="160" y="323">score-conditioned</text>
     <text x="160" y="339">hard-PDE</text>
-    <text x="160" y="355" text-decoration="line-through" fill="#0a0a0a">energy-based</text>
+    <text x="160" y="355" text-decoration="line-through" fill="#f0f6fc">energy-based</text>
   </g>
   <!-- v2 list -->
-  <g font-size="11" fill="#262626">
+  <g font-size="11" fill="#e6edf3">
     <text x="640" y="275">data-only</text>
     <text x="640" y="291">aux-loss</text>
     <text x="640" y="307">sim-in-loop-train</text>
     <text x="640" y="323">sim-in-loop-infer</text>
     <text x="640" y="339">guidance-gradient</text>
     <text x="640" y="355">architecture-bias-soft</text>
-    <circle cx="775" cy="351" r="4" fill="#dc2626"/>
+    <circle cx="775" cy="351" r="4" fill="#f85149"/>
     <text x="640" y="371">hard-constraint</text>
   </g>
   <!-- flows -->
-  <g stroke="#a3a3a3" stroke-width="1" fill="none">
+  <g stroke="#6e7681" stroke-width="1" fill="none">
     <!-- implicit-from-data -> data-only (rename) -->
     <line x1="265" y1="271" x2="635" y2="271"/>
     <!-- constraint-loss -> aux-loss (rename) -->
@@ -124,79 +124,79 @@
   </g>
 
   <!-- ============ AXIS 3: CONTROL ============ -->
-  <line x1="80" y1="384" x2="920" y2="384" stroke="#e5e5e5" stroke-width="1"/>
-  <text x="80" y="404" fill="#0a0a0a" font-size="13" font-weight="600">Axis 3</text>
-  <text x="80" y="418" fill="#525252" font-size="11">Control</text>
-  <text x="80" y="432" fill="#a3a3a3" font-size="10">9 → 10 values</text>
+  <line x1="80" y1="384" x2="920" y2="384" stroke="#30363d" stroke-width="1"/>
+  <text x="80" y="404" fill="#f0f6fc" font-size="13" font-weight="600">Axis 3</text>
+  <text x="80" y="418" fill="#8b949e" font-size="11">Control</text>
+  <text x="80" y="432" fill="#6e7681" font-size="10">9 → 10 values</text>
 
   <!-- v1 compact pills (two-row inline) -->
-  <g font-size="10" fill="#262626">
+  <g font-size="10" fill="#e6edf3">
     <text x="160" y="400">text · action · trajectory · force · contact</text>
     <text x="160" y="414">image-prompt · 3d-prompt · physical-param</text>
-    <text x="160" y="428" text-decoration="line-through" fill="#0a0a0a">multi</text>
+    <text x="160" y="428" text-decoration="line-through" fill="#f0f6fc">multi</text>
   </g>
   <!-- v2 compact pills -->
-  <g font-size="10" fill="#262626">
+  <g font-size="10" fill="#e6edf3">
     <text x="640" y="400">text · action · trajectory · force · contact</text>
-    <text x="640" y="414" fill="#0a0a0a">image-init · 3d-init · param</text>
+    <text x="640" y="414" fill="#f0f6fc">image-init · 3d-init · param</text>
     <text x="640" y="428">camera</text>
-    <circle cx="687" cy="424" r="4" fill="#dc2626"/>
+    <circle cx="687" cy="424" r="4" fill="#f85149"/>
     <text x="700" y="428">·</text>
     <text x="708" y="428">layout</text>
-    <circle cx="753" cy="424" r="4" fill="#dc2626"/>
+    <circle cx="753" cy="424" r="4" fill="#f85149"/>
   </g>
   <!-- flows -->
-  <g stroke="#a3a3a3" stroke-width="1" fill="none">
+  <g stroke="#6e7681" stroke-width="1" fill="none">
     <line x1="370" y1="396" x2="635" y2="396"/>
     <line x1="395" y1="410" x2="635" y2="410"/>
   </g>
 
   <!-- ============ AXIS 4: TEMPORAL ============ -->
-  <line x1="80" y1="448" x2="920" y2="448" stroke="#e5e5e5" stroke-width="1"/>
-  <text x="80" y="468" fill="#0a0a0a" font-size="13" font-weight="600">Axis 4</text>
-  <text x="80" y="482" fill="#525252" font-size="11">Temporal</text>
-  <text x="80" y="496" fill="#a3a3a3" font-size="10">7 → 7 values</text>
+  <line x1="80" y1="448" x2="920" y2="448" stroke="#30363d" stroke-width="1"/>
+  <text x="80" y="468" fill="#f0f6fc" font-size="13" font-weight="600">Axis 4</text>
+  <text x="80" y="482" fill="#8b949e" font-size="11">Temporal</text>
+  <text x="80" y="496" fill="#6e7681" font-size="10">7 → 7 values</text>
 
   <!-- v1 -->
-  <g font-size="10" fill="#262626">
+  <g font-size="10" fill="#e6edf3">
     <text x="160" y="464">single-frame · streaming · autoregressive</text>
     <text x="160" y="478">latent-rollout · hierarchical</text>
     <text x="160" y="492">joint-rollout · temporal-transformer-rolling</text>
   </g>
   <!-- v2 -->
-  <g font-size="10" fill="#262626">
+  <g font-size="10" fill="#e6edf3">
     <text x="640" y="464">single-frame · streaming · autoregressive</text>
     <text x="640" y="478">latent-rollout · hierarchical</text>
-    <text x="640" y="492" fill="#0a0a0a">clip-parallel · streaming-cache</text>
+    <text x="640" y="492" fill="#f0f6fc">clip-parallel · streaming-cache</text>
   </g>
   <!-- flows -->
-  <g stroke="#a3a3a3" stroke-width="1" fill="none">
+  <g stroke="#6e7681" stroke-width="1" fill="none">
     <line x1="395" y1="460" x2="635" y2="460"/>
     <line x1="335" y1="474" x2="635" y2="474"/>
     <line x1="425" y1="488" x2="635" y2="488"/>
   </g>
 
   <!-- ============ AXIS 5: DOMAIN ============ -->
-  <line x1="80" y1="512" x2="920" y2="512" stroke="#e5e5e5" stroke-width="1"/>
-  <text x="80" y="532" fill="#0a0a0a" font-size="13" font-weight="600">Axis 5</text>
-  <text x="80" y="546" fill="#525252" font-size="11">Domain</text>
-  <text x="80" y="560" fill="#a3a3a3" font-size="10">9 → 10 values</text>
+  <line x1="80" y1="512" x2="920" y2="512" stroke="#30363d" stroke-width="1"/>
+  <text x="80" y="532" fill="#f0f6fc" font-size="13" font-weight="600">Axis 5</text>
+  <text x="80" y="546" fill="#8b949e" font-size="11">Domain</text>
+  <text x="80" y="560" fill="#6e7681" font-size="10">9 → 10 values</text>
 
   <!-- v1 single pill -->
-  <rect x="160" y="535" width="380" height="22" rx="2" fill="#fafafa" stroke="#e5e5e5" stroke-width="1"/>
-  <text x="170" y="550" font-size="10" fill="#262626">robotics · driving · fluid · weather · medical · materials · graphics · game · molecular</text>
+  <rect x="160" y="535" width="380" height="22" rx="2" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+  <text x="170" y="550" font-size="10" fill="#e6edf3">robotics · driving · fluid · weather · medical · materials · graphics · game · molecular</text>
 
   <!-- v2 single pill -->
-  <rect x="640" y="535" width="280" height="22" rx="2" fill="#fafafa" stroke="#e5e5e5" stroke-width="1"/>
-  <text x="650" y="550" font-size="10" fill="#262626">… same 9 …</text>
-  <text x="722" y="550" font-size="10" fill="#262626">· astro</text>
-  <circle cx="760" cy="546" r="4" fill="#dc2626"/>
+  <rect x="640" y="535" width="280" height="22" rx="2" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+  <text x="650" y="550" font-size="10" fill="#e6edf3">… same 9 …</text>
+  <text x="722" y="550" font-size="10" fill="#e6edf3">· astro</text>
+  <circle cx="760" cy="546" r="4" fill="#f85149"/>
 
   <!-- flow -->
-  <line x1="545" y1="546" x2="635" y2="546" stroke="#a3a3a3" stroke-width="1"/>
+  <line x1="545" y1="546" x2="635" y2="546" stroke="#6e7681" stroke-width="1"/>
 
   <!-- bottom rule -->
-  <line x1="80" y1="580" x2="920" y2="580" stroke="#e5e5e5" stroke-width="1"/>
-  <text x="80" y="598" fill="#a3a3a3" font-size="10">v1 ontology · 2026-05-25</text>
-  <text x="920" y="598" text-anchor="end" fill="#a3a3a3" font-size="10">v2 ontology · 2026-05-26</text>
+  <line x1="80" y1="580" x2="920" y2="580" stroke="#30363d" stroke-width="1"/>
+  <text x="80" y="598" fill="#6e7681" font-size="10">v1 ontology · 2026-05-25</text>
+  <text x="920" y="598" text-anchor="end" fill="#6e7681" font-size="10">v2 ontology · 2026-05-26</text>
 </svg>

@@ -7,16 +7,16 @@
   </style>
 
   <!-- Background -->
-  <rect width="800" height="540" fill="#ffffff"/>
+  <rect width="800" height="540" fill="#0d1117"/>
 
   <!-- Title block -->
-  <text x="60" y="48" fill="#0a0a0a" font-size="18" font-weight="600" letter-spacing="-0.2">Axis 2: 7 Injection Mechanisms on the Pareto Frontier</text>
-  <text x="60" y="70" fill="#525252" font-size="13" font-weight="400">v2 ontology &#8212; sweet spot is architecture-bias-soft</text>
+  <text x="60" y="48" fill="#f0f6fc" font-size="18" font-weight="600" letter-spacing="-0.2">Axis 2: 7 Injection Mechanisms on the Pareto Frontier</text>
+  <text x="60" y="70" fill="#8b949e" font-size="13" font-weight="400">v2 ontology &#8212; sweet spot is architecture-bias-soft</text>
 
   <!-- Plot area: x = 100..720, y = 110..460 -->
 
   <!-- Grid (very subtle) -->
-  <g stroke="#fafafa" stroke-width="0.5">
+  <g stroke="#161b22" stroke-width="0.5">
     <line x1="100" y1="180" x2="720" y2="180"/>
     <line x1="100" y1="250" x2="720" y2="250"/>
     <line x1="100" y1="320" x2="720" y2="320"/>
@@ -28,81 +28,81 @@
   </g>
 
   <!-- Axes -->
-  <line x1="100" y1="460" x2="720" y2="460" stroke="#262626" stroke-width="1"/>
-  <line x1="100" y1="460" x2="100" y2="110" stroke="#262626" stroke-width="1"/>
+  <line x1="100" y1="460" x2="720" y2="460" stroke="#e6edf3" stroke-width="1"/>
+  <line x1="100" y1="460" x2="100" y2="110" stroke="#e6edf3" stroke-width="1"/>
 
   <!-- Axis labels -->
-  <text x="410" y="495" text-anchor="middle" fill="#262626" font-size="12" font-weight="500">Fidelity &#8594;</text>
-  <text x="410" y="512" text-anchor="middle" fill="#a3a3a3" font-size="10" font-weight="400">soft prior &#183; sim-grounded &#183; hard law</text>
+  <text x="410" y="495" text-anchor="middle" fill="#e6edf3" font-size="12" font-weight="500">Fidelity &#8594;</text>
+  <text x="410" y="512" text-anchor="middle" fill="#6e7681" font-size="10" font-weight="400">soft prior &#183; sim-grounded &#183; hard law</text>
   <g transform="translate(36,285) rotate(-90)">
-    <text x="0" y="0" text-anchor="middle" fill="#262626" font-size="12" font-weight="500">Expressivity &#8593;</text>
+    <text x="0" y="0" text-anchor="middle" fill="#e6edf3" font-size="12" font-weight="500">Expressivity &#8593;</text>
   </g>
   <g transform="translate(52,285) rotate(-90)">
-    <text x="0" y="0" text-anchor="middle" fill="#a3a3a3" font-size="10" font-weight="400">scale-pilled &#183; open-domain &#183; narrow regime</text>
+    <text x="0" y="0" text-anchor="middle" fill="#6e7681" font-size="10" font-weight="400">scale-pilled &#183; open-domain &#183; narrow regime</text>
   </g>
 
   <!-- ====================== Pareto curve (dashed grey) ====================== -->
   <!-- Smooth curve through points, from top-left (high expressivity, low fidelity) to bottom-right (low expressivity, high fidelity) -->
   <path d="M 170,150 C 240,165 300,190 340,215 C 380,240 410,265 430,290 C 470,320 520,355 580,395 C 620,420 660,440 680,448"
-        fill="none" stroke="#a3a3a3" stroke-width="1.5" stroke-dasharray="4 4"/>
-  <text x="270" y="200" fill="#a3a3a3" font-size="10" font-weight="400" font-style="italic">Pareto frontier</text>
+        fill="none" stroke="#6e7681" stroke-width="1.5" stroke-dasharray="4 4"/>
+  <text x="270" y="200" fill="#6e7681" font-size="10" font-weight="400" font-style="italic">Pareto frontier</text>
 
   <!-- Corner annotations -->
-  <text x="710" y="135" text-anchor="end" fill="#a3a3a3" font-size="10" font-weight="400">Hard but narrow</text>
-  <text x="710" y="445" text-anchor="end" fill="#a3a3a3" font-size="10" font-weight="400">Scale-pilled</text>
+  <text x="710" y="135" text-anchor="end" fill="#6e7681" font-size="10" font-weight="400">Hard but narrow</text>
+  <text x="710" y="445" text-anchor="end" fill="#6e7681" font-size="10" font-weight="400">Scale-pilled</text>
 
   <!-- ====================== 7 POINTS ====================== -->
 
   <!-- 1. data-only — top-left (max expressivity, low fidelity) -->
   <g>
-    <circle cx="170" cy="150" r="6" fill="#0a0a0a"/>
-    <text x="182" y="148" fill="#0a0a0a" font-size="11" font-weight="500">data-only</text>
-    <text x="182" y="162" fill="#a3a3a3" font-size="10" font-weight="400">Sora &#183; Veo &#183; Cosmos-Predict</text>
+    <circle cx="170" cy="150" r="6" fill="#f0f6fc"/>
+    <text x="182" y="148" fill="#f0f6fc" font-size="11" font-weight="500">data-only</text>
+    <text x="182" y="162" fill="#6e7681" font-size="10" font-weight="400">Sora &#183; Veo &#183; Cosmos-Predict</text>
   </g>
 
   <!-- 2. aux-loss -->
   <g>
-    <circle cx="310" cy="210" r="6" fill="#0a0a0a"/>
-    <text x="322" y="208" fill="#0a0a0a" font-size="11" font-weight="500">aux-loss</text>
-    <text x="322" y="222" fill="#a3a3a3" font-size="10" font-weight="400">PINN &#183; PhysGen aux</text>
+    <circle cx="310" cy="210" r="6" fill="#f0f6fc"/>
+    <text x="322" y="208" fill="#f0f6fc" font-size="11" font-weight="500">aux-loss</text>
+    <text x="322" y="222" fill="#6e7681" font-size="10" font-weight="400">PINN &#183; PhysGen aux</text>
   </g>
 
   <!-- 6. architecture-bias-soft — v2 NEW (the accent point) -->
   <g>
-    <circle cx="420" cy="278" r="8" fill="#ffffff" stroke="#dc2626" stroke-width="2"/>
-    <text x="434" y="276" fill="#0a0a0a" font-size="11" font-weight="600">architecture-bias-soft</text>
-    <text x="434" y="290" fill="#dc2626" font-size="10" font-weight="500">v2 NEW &#183; sweet spot</text>
-    <text x="434" y="304" fill="#a3a3a3" font-size="10" font-weight="400">NewtonGen &#183; GraphCast &#183; FNO</text>
+    <circle cx="420" cy="278" r="8" fill="#0d1117" stroke="#f85149" stroke-width="2"/>
+    <text x="434" y="276" fill="#f0f6fc" font-size="11" font-weight="600">architecture-bias-soft</text>
+    <text x="434" y="290" fill="#f85149" font-size="10" font-weight="500">v2 NEW &#183; sweet spot</text>
+    <text x="434" y="304" fill="#6e7681" font-size="10" font-weight="400">NewtonGen &#183; GraphCast &#183; FNO</text>
   </g>
 
   <!-- 5. guidance-gradient -->
   <g>
-    <circle cx="380" cy="335" r="6" fill="#0a0a0a"/>
-    <line x1="374" y1="335" x2="318" y2="355" stroke="#e5e5e5" stroke-width="1"/>
-    <text x="312" y="358" text-anchor="end" fill="#0a0a0a" font-size="11" font-weight="500">guidance-gradient</text>
-    <text x="312" y="372" text-anchor="end" fill="#a3a3a3" font-size="10" font-weight="400">PhysDiff &#183; Force Prompting</text>
+    <circle cx="380" cy="335" r="6" fill="#f0f6fc"/>
+    <line x1="374" y1="335" x2="318" y2="355" stroke="#30363d" stroke-width="1"/>
+    <text x="312" y="358" text-anchor="end" fill="#f0f6fc" font-size="11" font-weight="500">guidance-gradient</text>
+    <text x="312" y="372" text-anchor="end" fill="#6e7681" font-size="10" font-weight="400">PhysDiff &#183; Force Prompting</text>
   </g>
 
   <!-- 4. sim-in-loop-infer -->
   <g>
-    <circle cx="510" cy="365" r="6" fill="#0a0a0a"/>
-    <text x="522" y="363" fill="#0a0a0a" font-size="11" font-weight="500">sim-in-loop-infer</text>
-    <text x="522" y="377" fill="#a3a3a3" font-size="10" font-weight="400">PhysDiff &#183; Cosmos-Reason eval</text>
+    <circle cx="510" cy="365" r="6" fill="#f0f6fc"/>
+    <text x="522" y="363" fill="#f0f6fc" font-size="11" font-weight="500">sim-in-loop-infer</text>
+    <text x="522" y="377" fill="#6e7681" font-size="10" font-weight="400">PhysDiff &#183; Cosmos-Reason eval</text>
   </g>
 
   <!-- 3. sim-in-loop-train -->
   <g>
-    <circle cx="590" cy="408" r="6" fill="#0a0a0a"/>
-    <text x="602" y="406" fill="#0a0a0a" font-size="11" font-weight="500">sim-in-loop-train</text>
-    <text x="602" y="420" fill="#a3a3a3" font-size="10" font-weight="400">Genesis &#183; MJX &#183; Aerial Gym</text>
+    <circle cx="590" cy="408" r="6" fill="#f0f6fc"/>
+    <text x="602" y="406" fill="#f0f6fc" font-size="11" font-weight="500">sim-in-loop-train</text>
+    <text x="602" y="420" fill="#6e7681" font-size="10" font-weight="400">Genesis &#183; MJX &#183; Aerial Gym</text>
   </g>
 
   <!-- 7. hard-constraint — bottom-right -->
   <g>
-    <circle cx="680" cy="448" r="6" fill="#0a0a0a"/>
-    <line x1="674" y1="448" x2="624" y2="438" stroke="#e5e5e5" stroke-width="1"/>
-    <text x="618" y="436" text-anchor="end" fill="#0a0a0a" font-size="11" font-weight="500">hard-constraint</text>
-    <text x="618" y="450" text-anchor="end" fill="#a3a3a3" font-size="10" font-weight="400">HNN &#183; LNN &#183; E(3)-equivariant</text>
+    <circle cx="680" cy="448" r="6" fill="#f0f6fc"/>
+    <line x1="674" y1="448" x2="624" y2="438" stroke="#30363d" stroke-width="1"/>
+    <text x="618" y="436" text-anchor="end" fill="#f0f6fc" font-size="11" font-weight="500">hard-constraint</text>
+    <text x="618" y="450" text-anchor="end" fill="#6e7681" font-size="10" font-weight="400">HNN &#183; LNN &#183; E(3)-equivariant</text>
   </g>
 
 </svg>

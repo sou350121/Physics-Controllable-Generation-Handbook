@@ -2,14 +2,14 @@
   <title>Check 9b: Output × Injection Compatibility</title>
   <desc>8 outputs by 7 injection mechanisms compatibility matrix. White background with greyscale glyphs; red used only for ✗ cells and v2 NEW indicators. 47 compatible, 5 rare, 4 require §8 justification.</desc>
 
-  <rect width="880" height="540" fill="#ffffff"/>
+  <rect width="880" height="540" fill="#0d1117"/>
 
   <!-- Title -->
-  <text x="40" y="38" fill="#0a0a0a" font-size="19" font-weight="600" letter-spacing="-0.2">Check 9b: Output × Injection Compatibility</text>
-  <text x="40" y="58" fill="#525252" font-size="13" font-weight="400">✗ cells require §8 explanation · 5 rare + 4 ✗ + 47 ✓</text>
+  <text x="40" y="38" fill="#f0f6fc" font-size="19" font-weight="600" letter-spacing="-0.2">Check 9b: Output × Injection Compatibility</text>
+  <text x="40" y="58" fill="#8b949e" font-size="13" font-weight="400">✗ cells require §8 explanation · 5 rare + 4 ✗ + 47 ✓</text>
 
   <!-- Column headers -->
-  <g font-size="12" font-weight="600" fill="#0a0a0a" text-anchor="middle">
+  <g font-size="12" font-weight="600" fill="#f0f6fc" text-anchor="middle">
     <text x="215" y="106">data-only</text>
     <text x="305" y="106">aux-loss</text>
     <text x="395" y="106">sim-in-loop</text>
@@ -18,7 +18,7 @@
     <text x="665" y="106">arch-bias</text>
     <text x="755" y="106">hard</text>
   </g>
-  <g font-size="10" font-weight="400" fill="#525252" text-anchor="middle">
+  <g font-size="10" font-weight="400" fill="#8b949e" text-anchor="middle">
     <text x="395" y="120">train</text>
     <text x="485" y="120">infer</text>
     <text x="575" y="120">gradient</text>
@@ -26,13 +26,13 @@
     <text x="755" y="120">constraint</text>
   </g>
   <!-- v2 NEW marker on architecture-bias-soft column -->
-  <text x="710" y="100" fill="#dc2626" font-size="10" font-weight="600" text-anchor="middle">★</text>
+  <text x="710" y="100" fill="#f85149" font-size="10" font-weight="600" text-anchor="middle">★</text>
 
   <!-- Header underline -->
-  <line x1="40" y1="128" x2="800" y2="128" stroke="#e5e5e5" stroke-width="1"/>
+  <line x1="40" y1="128" x2="800" y2="128" stroke="#30363d" stroke-width="1"/>
 
-  <!-- ===== Background tint for rare cells (subtle #fafafa) ===== -->
-  <g fill="#fafafa">
+  <!-- ===== Background tint for rare cells (subtle #161b22) ===== -->
+  <g fill="#161b22">
     <rect x="350" y="170" width="90" height="42"/>
     <rect x="440" y="170" width="90" height="42"/>
     <rect x="170" y="296" width="90" height="42"/>
@@ -40,7 +40,7 @@
   </g>
 
   <!-- ===== Horizontal row separators ===== -->
-  <g stroke="#e5e5e5" stroke-width="1">
+  <g stroke="#30363d" stroke-width="1">
     <line x1="40" y1="170" x2="800" y2="170"/>
     <line x1="40" y1="212" x2="800" y2="212"/>
     <line x1="40" y1="254" x2="800" y2="254"/>
@@ -52,7 +52,7 @@
   </g>
 
   <!-- ===== Vertical column separators ===== -->
-  <g stroke="#e5e5e5" stroke-width="1">
+  <g stroke="#30363d" stroke-width="1">
     <line x1="170" y1="128" x2="170" y2="464"/>
     <line x1="260" y1="128" x2="260" y2="464"/>
     <line x1="350" y1="128" x2="350" y2="464"/>
@@ -64,7 +64,7 @@
   </g>
 
   <!-- ===== Row labels ===== -->
-  <g font-size="12" font-weight="600" fill="#0a0a0a">
+  <g font-size="12" font-weight="600" fill="#f0f6fc">
     <text x="50" y="153">pixel-video</text>
     <text x="50" y="195">latent-tokens</text>
     <text x="50" y="237">3d-explicit</text>
@@ -75,85 +75,85 @@
     <text x="50" y="447">motion</text>
   </g>
   <!-- v2 NEW row markers -->
-  <circle cx="138" cy="275" r="3" fill="#dc2626"/>
-  <circle cx="108" cy="443" r="3" fill="#dc2626"/>
+  <circle cx="138" cy="275" r="3" fill="#f85149"/>
+  <circle cx="108" cy="443" r="3" fill="#f85149"/>
 
   <!-- ===== Cell glyphs ===== -->
   <g text-anchor="middle">
     <!-- ROW 1: pixel-video — ✓ ✓ ✓ ✓ ✓ ✓ ✗ -->
-    <text x="215" y="154" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="305" y="154" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="395" y="154" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="485" y="154" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="575" y="154" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="665" y="154" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="755" y="154" fill="#dc2626" font-size="14">✗</text>
+    <text x="215" y="154" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="305" y="154" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="395" y="154" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="485" y="154" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="575" y="154" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="665" y="154" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="755" y="154" fill="#f85149" font-size="14">✗</text>
 
     <!-- ROW 2: latent-tokens — ✓ ✓ rare rare ✓ ✓ ✓ -->
-    <text x="215" y="196" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="305" y="196" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="395" y="196" fill="#525252" font-size="10">rare</text>
-    <text x="485" y="196" fill="#525252" font-size="10">rare</text>
-    <text x="575" y="196" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="665" y="196" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="755" y="196" fill="#0a0a0a" font-size="14">✓</text>
+    <text x="215" y="196" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="305" y="196" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="395" y="196" fill="#8b949e" font-size="10">rare</text>
+    <text x="485" y="196" fill="#8b949e" font-size="10">rare</text>
+    <text x="575" y="196" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="665" y="196" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="755" y="196" fill="#f0f6fc" font-size="14">✓</text>
 
     <!-- ROW 3: 3d-explicit — all ✓ -->
-    <text x="215" y="238" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="305" y="238" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="395" y="238" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="485" y="238" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="575" y="238" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="665" y="238" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="755" y="238" fill="#0a0a0a" font-size="14">✓</text>
+    <text x="215" y="238" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="305" y="238" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="395" y="238" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="485" y="238" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="575" y="238" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="665" y="238" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="755" y="238" fill="#f0f6fc" font-size="14">✓</text>
 
     <!-- ROW 4: 3d-implicit — ✓ ✓ ✗ ✓ ✓ ✓ ✓ -->
-    <text x="215" y="280" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="305" y="280" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="395" y="280" fill="#dc2626" font-size="14">✗</text>
-    <text x="485" y="280" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="575" y="280" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="665" y="280" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="755" y="280" fill="#0a0a0a" font-size="14">✓</text>
+    <text x="215" y="280" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="305" y="280" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="395" y="280" fill="#f85149" font-size="14">✗</text>
+    <text x="485" y="280" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="575" y="280" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="665" y="280" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="755" y="280" fill="#f0f6fc" font-size="14">✓</text>
 
     <!-- ROW 5: particle — rare ✓ ✓ ✓ ✓ ✓ ✓ -->
-    <text x="215" y="322" fill="#525252" font-size="10">rare</text>
-    <text x="305" y="322" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="395" y="322" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="485" y="322" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="575" y="322" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="665" y="322" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="755" y="322" fill="#0a0a0a" font-size="14">✓</text>
+    <text x="215" y="322" fill="#8b949e" font-size="10">rare</text>
+    <text x="305" y="322" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="395" y="322" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="485" y="322" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="575" y="322" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="665" y="322" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="755" y="322" fill="#f0f6fc" font-size="14">✓</text>
 
     <!-- ROW 6: field — rare ✓ ✗ ✓ ✓ ✓ ✓ -->
-    <text x="215" y="364" fill="#525252" font-size="10">rare</text>
-    <text x="305" y="364" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="395" y="364" fill="#dc2626" font-size="14">✗</text>
-    <text x="485" y="364" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="575" y="364" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="665" y="364" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="755" y="364" fill="#0a0a0a" font-size="14">✓</text>
+    <text x="215" y="364" fill="#8b949e" font-size="10">rare</text>
+    <text x="305" y="364" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="395" y="364" fill="#f85149" font-size="14">✗</text>
+    <text x="485" y="364" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="575" y="364" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="665" y="364" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="755" y="364" fill="#f0f6fc" font-size="14">✓</text>
 
     <!-- ROW 7: action-seq — all ✓ -->
-    <text x="215" y="406" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="305" y="406" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="395" y="406" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="485" y="406" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="575" y="406" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="665" y="406" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="755" y="406" fill="#0a0a0a" font-size="14">✓</text>
+    <text x="215" y="406" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="305" y="406" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="395" y="406" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="485" y="406" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="575" y="406" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="665" y="406" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="755" y="406" fill="#f0f6fc" font-size="14">✓</text>
 
     <!-- ROW 8: motion — all ✓ -->
-    <text x="215" y="448" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="305" y="448" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="395" y="448" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="485" y="448" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="575" y="448" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="665" y="448" fill="#0a0a0a" font-size="14">✓</text>
-    <text x="755" y="448" fill="#0a0a0a" font-size="14">✓</text>
+    <text x="215" y="448" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="305" y="448" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="395" y="448" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="485" y="448" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="575" y="448" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="665" y="448" fill="#f0f6fc" font-size="14">✓</text>
+    <text x="755" y="448" fill="#f0f6fc" font-size="14">✓</text>
   </g>
 
   <!-- Bottom legend -->
-  <text x="40" y="498" fill="#525252" font-size="11">✓ compatible  ·  rare = uncommon but allowed  ·  ✗ requires §8 justification</text>
-  <text x="40" y="518" fill="#a3a3a3" font-size="10">★ marks v2 NEW outputs (3d-implicit, motion) and injection (architecture-bias-soft)</text>
+  <text x="40" y="498" fill="#8b949e" font-size="11">✓ compatible  ·  rare = uncommon but allowed  ·  ✗ requires §8 justification</text>
+  <text x="40" y="518" fill="#6e7681" font-size="10">★ marks v2 NEW outputs (3d-implicit, motion) and injection (architecture-bias-soft)</text>
 </svg>

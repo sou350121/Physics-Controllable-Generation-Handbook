@@ -3,14 +3,14 @@
   <desc>Radial diagram: central hub plus five axes (Output, Injection, Control, Temporal, Domain). Axis 2 (Injection) is the handbook USP, marked in red.</desc>
 
   <!-- Background -->
-  <rect width="900" height="580" fill="#ffffff"/>
+  <rect width="900" height="580" fill="#0d1117"/>
 
   <!-- Header -->
-  <text x="60" y="48" fill="#0a0a0a" font-size="19" font-weight="600" letter-spacing="-0.2">Physics-Controllable Generation</text>
-  <text x="60" y="70" fill="#525252" font-size="13" font-weight="400">Five orthogonal axes — each method is a coordinate. Ontology v2.0.</text>
+  <text x="60" y="48" fill="#f0f6fc" font-size="19" font-weight="600" letter-spacing="-0.2">Physics-Controllable Generation</text>
+  <text x="60" y="70" fill="#8b949e" font-size="13" font-weight="400">Five orthogonal axes — each method is a coordinate. Ontology v2.0.</text>
 
   <!-- ====================== Connector lines (drawn first, behind boxes) ====================== -->
-  <g stroke="#e5e5e5" stroke-width="1" fill="none">
+  <g stroke="#30363d" stroke-width="1" fill="none">
     <!-- to top -->
     <line x1="450" y1="295" x2="450" y2="195"/>
     <!-- to top-right (USP) -->
@@ -24,58 +24,58 @@
   </g>
 
   <!-- ====================== CENTER HUB ====================== -->
-  <circle cx="450" cy="320" r="68" fill="#ffffff" stroke="#0a0a0a" stroke-width="2"/>
-  <text x="450" y="312" text-anchor="middle" fill="#0a0a0a" font-size="13" font-weight="600">Physics-Controllable</text>
-  <text x="450" y="330" text-anchor="middle" fill="#0a0a0a" font-size="13" font-weight="600">Generation</text>
-  <text x="450" y="350" text-anchor="middle" fill="#a3a3a3" font-size="10" font-weight="400">5-axis tensor</text>
+  <circle cx="450" cy="320" r="68" fill="#0d1117" stroke="#f0f6fc" stroke-width="2"/>
+  <text x="450" y="312" text-anchor="middle" fill="#f0f6fc" font-size="13" font-weight="600">Physics-Controllable</text>
+  <text x="450" y="330" text-anchor="middle" fill="#f0f6fc" font-size="13" font-weight="600">Generation</text>
+  <text x="450" y="350" text-anchor="middle" fill="#6e7681" font-size="10" font-weight="400">5-axis tensor</text>
 
   <!-- ====================== AXIS 1: Output (top) ====================== -->
   <g>
-    <rect x="330" y="120" width="240" height="78" rx="4" fill="#ffffff" stroke="#e5e5e5" stroke-width="1.5"/>
-    <text x="346" y="143" fill="#a3a3a3" font-size="10" font-weight="500" letter-spacing="0.8">01</text>
-    <text x="376" y="143" fill="#0a0a0a" font-size="13" font-weight="600">Output</text>
-    <text x="346" y="164" fill="#525252" font-size="11" font-weight="400">pixel-video &#183; latent-tokens &#183; 3d-explicit</text>
-    <text x="346" y="180" fill="#525252" font-size="11" font-weight="400">field &#183; motion-trajectory</text>
+    <rect x="330" y="120" width="240" height="78" rx="4" fill="#0d1117" stroke="#30363d" stroke-width="1.5"/>
+    <text x="346" y="143" fill="#6e7681" font-size="10" font-weight="500" letter-spacing="0.8">01</text>
+    <text x="376" y="143" fill="#f0f6fc" font-size="13" font-weight="600">Output</text>
+    <text x="346" y="164" fill="#8b949e" font-size="11" font-weight="400">pixel-video &#183; latent-tokens &#183; 3d-explicit</text>
+    <text x="346" y="180" fill="#8b949e" font-size="11" font-weight="400">field &#183; motion-trajectory</text>
   </g>
 
   <!-- ====================== AXIS 2: Injection (top-right) ★ USP ====================== -->
   <g>
-    <rect x="650" y="100" width="240" height="100" rx="4" fill="#ffffff" stroke="#dc2626" stroke-width="2"/>
-    <text x="666" y="123" fill="#dc2626" font-size="10" font-weight="500" letter-spacing="0.8">02</text>
-    <text x="696" y="123" fill="#0a0a0a" font-size="13" font-weight="600">Injection</text>
-    <text x="666" y="144" fill="#525252" font-size="11" font-weight="400">data-only &#183; aux-loss &#183; sim-in-loop</text>
-    <text x="666" y="160" fill="#525252" font-size="11" font-weight="400">guidance-gradient &#183; arch-bias-soft</text>
-    <text x="666" y="176" fill="#525252" font-size="11" font-weight="400">hard-constraint &#183; <tspan fill="#a3a3a3">7 mechanisms</tspan></text>
-    <text x="666" y="193" fill="#dc2626" font-size="11" font-weight="600">&#9733; USP &#8212; this handbook&#8217;s unique axis</text>
+    <rect x="650" y="100" width="240" height="100" rx="4" fill="#0d1117" stroke="#f85149" stroke-width="2"/>
+    <text x="666" y="123" fill="#f85149" font-size="10" font-weight="500" letter-spacing="0.8">02</text>
+    <text x="696" y="123" fill="#f0f6fc" font-size="13" font-weight="600">Injection</text>
+    <text x="666" y="144" fill="#8b949e" font-size="11" font-weight="400">data-only &#183; aux-loss &#183; sim-in-loop</text>
+    <text x="666" y="160" fill="#8b949e" font-size="11" font-weight="400">guidance-gradient &#183; arch-bias-soft</text>
+    <text x="666" y="176" fill="#8b949e" font-size="11" font-weight="400">hard-constraint &#183; <tspan fill="#6e7681">7 mechanisms</tspan></text>
+    <text x="666" y="193" fill="#f85149" font-size="11" font-weight="600">&#9733; USP &#8212; this handbook&#8217;s unique axis</text>
   </g>
 
   <!-- ====================== AXIS 3: Control (bottom-right) ====================== -->
   <g>
-    <rect x="650" y="430" width="240" height="78" rx="4" fill="#ffffff" stroke="#e5e5e5" stroke-width="1.5"/>
-    <text x="666" y="453" fill="#a3a3a3" font-size="10" font-weight="500" letter-spacing="0.8">03</text>
-    <text x="696" y="453" fill="#0a0a0a" font-size="13" font-weight="600">Control</text>
-    <text x="666" y="474" fill="#525252" font-size="11" font-weight="400">text &#183; action &#183; trajectory &#183; force</text>
-    <text x="666" y="490" fill="#525252" font-size="11" font-weight="400">contact &#183; camera &#183; layout</text>
+    <rect x="650" y="430" width="240" height="78" rx="4" fill="#0d1117" stroke="#30363d" stroke-width="1.5"/>
+    <text x="666" y="453" fill="#6e7681" font-size="10" font-weight="500" letter-spacing="0.8">03</text>
+    <text x="696" y="453" fill="#f0f6fc" font-size="13" font-weight="600">Control</text>
+    <text x="666" y="474" fill="#8b949e" font-size="11" font-weight="400">text &#183; action &#183; trajectory &#183; force</text>
+    <text x="666" y="490" fill="#8b949e" font-size="11" font-weight="400">contact &#183; camera &#183; layout</text>
   </g>
 
   <!-- ====================== AXIS 4: Temporal (bottom-left) ====================== -->
   <g>
-    <rect x="10" y="430" width="240" height="78" rx="4" fill="#ffffff" stroke="#e5e5e5" stroke-width="1.5"/>
-    <text x="26" y="453" fill="#a3a3a3" font-size="10" font-weight="500" letter-spacing="0.8">04</text>
-    <text x="56" y="453" fill="#0a0a0a" font-size="13" font-weight="600">Temporal</text>
-    <text x="26" y="474" fill="#525252" font-size="11" font-weight="400">streaming &#183; autoregressive</text>
-    <text x="26" y="490" fill="#525252" font-size="11" font-weight="400">clip-parallel &#183; latent-rollout</text>
+    <rect x="10" y="430" width="240" height="78" rx="4" fill="#0d1117" stroke="#30363d" stroke-width="1.5"/>
+    <text x="26" y="453" fill="#6e7681" font-size="10" font-weight="500" letter-spacing="0.8">04</text>
+    <text x="56" y="453" fill="#f0f6fc" font-size="13" font-weight="600">Temporal</text>
+    <text x="26" y="474" fill="#8b949e" font-size="11" font-weight="400">streaming &#183; autoregressive</text>
+    <text x="26" y="490" fill="#8b949e" font-size="11" font-weight="400">clip-parallel &#183; latent-rollout</text>
   </g>
 
   <!-- ====================== AXIS 5: Domain (top-left) ====================== -->
   <g>
-    <rect x="10" y="120" width="240" height="78" rx="4" fill="#ffffff" stroke="#e5e5e5" stroke-width="1.5"/>
-    <text x="26" y="143" fill="#a3a3a3" font-size="10" font-weight="500" letter-spacing="0.8">05</text>
-    <text x="56" y="143" fill="#0a0a0a" font-size="13" font-weight="600">Domain</text>
-    <text x="26" y="164" fill="#525252" font-size="11" font-weight="400">generalist &#183; robotics &#183; driving</text>
-    <text x="26" y="180" fill="#525252" font-size="11" font-weight="400">fluid &#183; weather &#183; rigid &#183; soft</text>
+    <rect x="10" y="120" width="240" height="78" rx="4" fill="#0d1117" stroke="#30363d" stroke-width="1.5"/>
+    <text x="26" y="143" fill="#6e7681" font-size="10" font-weight="500" letter-spacing="0.8">05</text>
+    <text x="56" y="143" fill="#f0f6fc" font-size="13" font-weight="600">Domain</text>
+    <text x="26" y="164" fill="#8b949e" font-size="11" font-weight="400">generalist &#183; robotics &#183; driving</text>
+    <text x="26" y="180" fill="#8b949e" font-size="11" font-weight="400">fluid &#183; weather &#183; rigid &#183; soft</text>
   </g>
 
   <!-- Footer caption -->
-  <text x="60" y="553" fill="#a3a3a3" font-size="10" font-weight="400">Every method is a 5-tuple. Axis 2 is what this handbook adds to the literature.</text>
+  <text x="60" y="553" fill="#6e7681" font-size="10" font-weight="400">Every method is a 5-tuple. Axis 2 is what this handbook adds to the literature.</text>
 </svg>

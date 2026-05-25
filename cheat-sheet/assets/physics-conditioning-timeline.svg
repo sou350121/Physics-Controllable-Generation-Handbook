@@ -2,14 +2,14 @@
   <title>Physics Conditioning: 2017 to 2026</title>
   <desc>Horizontal timeline showing 5 generations of physics conditioning across 6 injection mechanism lanes. The architecture-bias-soft lane is highlighted red as the v2 NEW USP. Hard-constraint lane stalls post-2020 while data-only and architecture-bias-soft drive the 2024-2026 explosion.</desc>
 
-  <rect width="1000" height="480" fill="#ffffff"/>
+  <rect width="1000" height="480" fill="#0d1117"/>
 
   <!-- Title block -->
-  <text x="40" y="38" fill="#0a0a0a" font-size="19" font-weight="600" letter-spacing="-0.2">Physics Conditioning: 2017 → 2026</text>
-  <text x="40" y="58" fill="#525252" font-size="13" font-weight="400">5 generations across 7 v2 injection mechanisms</text>
+  <text x="40" y="38" fill="#f0f6fc" font-size="19" font-weight="600" letter-spacing="-0.2">Physics Conditioning: 2017 → 2026</text>
+  <text x="40" y="58" fill="#8b949e" font-size="13" font-weight="400">5 generations across 7 v2 injection mechanisms</text>
 
   <!-- Year axis -->
-  <g font-size="10" fill="#a3a3a3">
+  <g font-size="10" fill="#6e7681">
     <text x="220" y="92" text-anchor="middle">2017</text>
     <text x="305" y="92" text-anchor="middle">2018</text>
     <text x="390" y="92" text-anchor="middle">2019</text>
@@ -23,7 +23,7 @@
   </g>
 
   <!-- Year tick marks -->
-  <g stroke="#e5e5e5" stroke-width="1">
+  <g stroke="#30363d" stroke-width="1">
     <line x1="220" y1="98" x2="220" y2="104"/>
     <line x1="305" y1="98" x2="305" y2="104"/>
     <line x1="390" y1="98" x2="390" y2="104"/>
@@ -37,89 +37,89 @@
   </g>
 
   <!-- Axis baseline under years -->
-  <line x1="220" y1="104" x2="960" y2="104" stroke="#e5e5e5" stroke-width="1"/>
+  <line x1="220" y1="104" x2="960" y2="104" stroke="#30363d" stroke-width="1"/>
 
   <!-- ===== Lane 1: aux-loss (y=140) ===== -->
-  <text x="40" y="144" fill="#0a0a0a" font-size="13" font-weight="500">aux-loss</text>
-  <line x1="220" y1="140" x2="960" y2="140" stroke="#e5e5e5" stroke-width="1"/>
+  <text x="40" y="144" fill="#f0f6fc" font-size="13" font-weight="500">aux-loss</text>
+  <line x1="220" y1="140" x2="960" y2="140" stroke="#30363d" stroke-width="1"/>
   <!-- PINN 2017 -->
-  <circle cx="220" cy="140" r="4" fill="#0a0a0a"/>
-  <text x="230" y="135" fill="#262626" font-size="11" font-weight="500">PINN</text>
-  <text x="230" y="156" fill="#a3a3a3" font-size="10">Raissi 2017</text>
+  <circle cx="220" cy="140" r="4" fill="#f0f6fc"/>
+  <text x="230" y="135" fill="#e6edf3" font-size="11" font-weight="500">PINN</text>
+  <text x="230" y="156" fill="#6e7681" font-size="10">Raissi 2017</text>
   <!-- PhysGen aux 2024 -->
-  <circle cx="815" cy="140" r="4" fill="#0a0a0a"/>
-  <text x="805" y="135" text-anchor="end" fill="#262626" font-size="11" font-weight="500">PhysGen aux</text>
-  <text x="805" y="156" text-anchor="end" fill="#a3a3a3" font-size="10">ECCV 2024</text>
+  <circle cx="815" cy="140" r="4" fill="#f0f6fc"/>
+  <text x="805" y="135" text-anchor="end" fill="#e6edf3" font-size="11" font-weight="500">PhysGen aux</text>
+  <text x="805" y="156" text-anchor="end" fill="#6e7681" font-size="10">ECCV 2024</text>
 
   <!-- ===== Lane 2: hard-constraint (y=190) ===== -->
-  <text x="40" y="194" fill="#0a0a0a" font-size="13" font-weight="500">hard-constraint</text>
-  <line x1="220" y1="190" x2="960" y2="190" stroke="#e5e5e5" stroke-width="1"/>
+  <text x="40" y="194" fill="#f0f6fc" font-size="13" font-weight="500">hard-constraint</text>
+  <line x1="220" y1="190" x2="960" y2="190" stroke="#30363d" stroke-width="1"/>
   <!-- HNN 2019 -->
-  <circle cx="390" cy="190" r="4" fill="#0a0a0a"/>
-  <text x="380" y="185" text-anchor="end" fill="#262626" font-size="11" font-weight="500">HNN</text>
-  <text x="380" y="206" text-anchor="end" fill="#a3a3a3" font-size="10">Greydanus 2019</text>
+  <circle cx="390" cy="190" r="4" fill="#f0f6fc"/>
+  <text x="380" y="185" text-anchor="end" fill="#e6edf3" font-size="11" font-weight="500">HNN</text>
+  <text x="380" y="206" text-anchor="end" fill="#6e7681" font-size="10">Greydanus 2019</text>
   <!-- Symplectic ODE-Net 2019 -->
-  <circle cx="420" cy="190" r="4" fill="#0a0a0a"/>
+  <circle cx="420" cy="190" r="4" fill="#f0f6fc"/>
   <!-- LNN 2020 -->
-  <circle cx="475" cy="190" r="4" fill="#0a0a0a"/>
-  <text x="485" y="185" fill="#262626" font-size="11" font-weight="500">LNN</text>
-  <text x="485" y="206" fill="#a3a3a3" font-size="10">2020 · Symplectic ODE-Net 2019</text>
+  <circle cx="475" cy="190" r="4" fill="#f0f6fc"/>
+  <text x="485" y="185" fill="#e6edf3" font-size="11" font-weight="500">LNN</text>
+  <text x="485" y="206" fill="#6e7681" font-size="10">2020 · Symplectic ODE-Net 2019</text>
   <!-- Stagnation annotation (greyscale italic) -->
-  <text x="760" y="186" text-anchor="middle" fill="#a3a3a3" font-size="10" font-style="italic">stalled post-2020 →</text>
+  <text x="760" y="186" text-anchor="middle" fill="#6e7681" font-size="10" font-style="italic">stalled post-2020 →</text>
 
   <!-- ===== Lane 3: architecture-bias-soft (y=240) — RED USP lane ===== -->
-  <text x="40" y="244" fill="#0a0a0a" font-size="13" font-weight="600">architecture-bias-soft</text>
-  <text x="40" y="259" fill="#dc2626" font-size="10" font-weight="500">★ v2 NEW</text>
-  <line x1="220" y1="240" x2="960" y2="240" stroke="#dc2626" stroke-width="1" stroke-opacity="0.35"/>
+  <text x="40" y="244" fill="#f0f6fc" font-size="13" font-weight="600">architecture-bias-soft</text>
+  <text x="40" y="259" fill="#f85149" font-size="10" font-weight="500">★ v2 NEW</text>
+  <line x1="220" y1="240" x2="960" y2="240" stroke="#f85149" stroke-width="1" stroke-opacity="0.35"/>
   <!-- MeshGraphNet 2020 -->
-  <circle cx="475" cy="240" r="4" fill="#dc2626"/>
-  <text x="485" y="235" fill="#262626" font-size="11" font-weight="500">MeshGraphNet</text>
-  <text x="485" y="256" fill="#a3a3a3" font-size="10">DeepMind 2020</text>
+  <circle cx="475" cy="240" r="4" fill="#f85149"/>
+  <text x="485" y="235" fill="#e6edf3" font-size="11" font-weight="500">MeshGraphNet</text>
+  <text x="485" y="256" fill="#6e7681" font-size="10">DeepMind 2020</text>
   <!-- GraphCast 2023 -->
-  <circle cx="730" cy="240" r="4" fill="#dc2626"/>
-  <text x="740" y="235" fill="#262626" font-size="11" font-weight="500">GraphCast</text>
-  <text x="740" y="256" fill="#a3a3a3" font-size="10">Science 2023</text>
+  <circle cx="730" cy="240" r="4" fill="#f85149"/>
+  <text x="740" y="235" fill="#e6edf3" font-size="11" font-weight="500">GraphCast</text>
+  <text x="740" y="256" fill="#6e7681" font-size="10">Science 2023</text>
   <!-- NewtonGen 2025 -->
-  <circle cx="900" cy="240" r="4" fill="#dc2626"/>
-  <text x="890" y="235" text-anchor="end" fill="#262626" font-size="11" font-weight="500">NewtonGen</text>
-  <text x="890" y="256" text-anchor="end" fill="#a3a3a3" font-size="10">ICLR 2026</text>
+  <circle cx="900" cy="240" r="4" fill="#f85149"/>
+  <text x="890" y="235" text-anchor="end" fill="#e6edf3" font-size="11" font-weight="500">NewtonGen</text>
+  <text x="890" y="256" text-anchor="end" fill="#6e7681" font-size="10">ICLR 2026</text>
 
   <!-- ===== Lane 4: guidance-gradient (y=300) ===== -->
-  <text x="40" y="304" fill="#0a0a0a" font-size="13" font-weight="500">guidance-gradient</text>
-  <line x1="220" y1="300" x2="960" y2="300" stroke="#e5e5e5" stroke-width="1"/>
+  <text x="40" y="304" fill="#f0f6fc" font-size="13" font-weight="500">guidance-gradient</text>
+  <line x1="220" y1="300" x2="960" y2="300" stroke="#30363d" stroke-width="1"/>
   <!-- PhysDiff 2022 -->
-  <circle cx="645" cy="300" r="4" fill="#0a0a0a"/>
-  <text x="635" y="295" text-anchor="end" fill="#262626" font-size="11" font-weight="500">PhysDiff</text>
-  <text x="635" y="316" text-anchor="end" fill="#a3a3a3" font-size="10">ICCV 2023</text>
+  <circle cx="645" cy="300" r="4" fill="#f0f6fc"/>
+  <text x="635" y="295" text-anchor="end" fill="#e6edf3" font-size="11" font-weight="500">PhysDiff</text>
+  <text x="635" y="316" text-anchor="end" fill="#6e7681" font-size="10">ICCV 2023</text>
   <!-- Force Prompting 2025 -->
-  <circle cx="900" cy="300" r="4" fill="#0a0a0a"/>
-  <text x="890" y="295" text-anchor="end" fill="#262626" font-size="11" font-weight="500">Force Prompting</text>
-  <text x="890" y="316" text-anchor="end" fill="#a3a3a3" font-size="10">NeurIPS 2025</text>
+  <circle cx="900" cy="300" r="4" fill="#f0f6fc"/>
+  <text x="890" y="295" text-anchor="end" fill="#e6edf3" font-size="11" font-weight="500">Force Prompting</text>
+  <text x="890" y="316" text-anchor="end" fill="#6e7681" font-size="10">NeurIPS 2025</text>
 
   <!-- ===== Lane 5: sim-in-loop-train (y=355) — slightly darker ===== -->
-  <text x="40" y="359" fill="#262626" font-size="13" font-weight="500">sim-in-loop-train</text>
-  <line x1="220" y1="355" x2="960" y2="355" stroke="#e5e5e5" stroke-width="1"/>
+  <text x="40" y="359" fill="#e6edf3" font-size="13" font-weight="500">sim-in-loop-train</text>
+  <line x1="220" y1="355" x2="960" y2="355" stroke="#30363d" stroke-width="1"/>
   <!-- PhysGen 2024 -->
-  <circle cx="800" cy="355" r="4" fill="#262626"/>
-  <text x="790" y="350" text-anchor="end" fill="#262626" font-size="11" font-weight="500">PhysGen</text>
-  <text x="790" y="371" text-anchor="end" fill="#a3a3a3" font-size="10">ECCV 2024</text>
+  <circle cx="800" cy="355" r="4" fill="#e6edf3"/>
+  <text x="790" y="350" text-anchor="end" fill="#e6edf3" font-size="11" font-weight="500">PhysGen</text>
+  <text x="790" y="371" text-anchor="end" fill="#6e7681" font-size="10">ECCV 2024</text>
   <!-- Genesis Dec 2024 -->
-  <circle cx="855" cy="355" r="4" fill="#262626"/>
-  <text x="865" y="350" fill="#262626" font-size="11" font-weight="500">Genesis</text>
-  <text x="865" y="371" fill="#a3a3a3" font-size="10">Dec 2024</text>
+  <circle cx="855" cy="355" r="4" fill="#e6edf3"/>
+  <text x="865" y="350" fill="#e6edf3" font-size="11" font-weight="500">Genesis</text>
+  <text x="865" y="371" fill="#6e7681" font-size="10">Dec 2024</text>
   <!-- PhysGen3D 2025 -->
-  <circle cx="920" cy="355" r="4" fill="#262626"/>
-  <text x="955" y="350" text-anchor="end" fill="#262626" font-size="11" font-weight="500">PhysGen3D</text>
-  <text x="955" y="371" text-anchor="end" fill="#a3a3a3" font-size="10">CVPR 2025</text>
+  <circle cx="920" cy="355" r="4" fill="#e6edf3"/>
+  <text x="955" y="350" text-anchor="end" fill="#e6edf3" font-size="11" font-weight="500">PhysGen3D</text>
+  <text x="955" y="371" text-anchor="end" fill="#6e7681" font-size="10">CVPR 2025</text>
 
   <!-- ===== Lane 6: sim-in-loop-infer (y=410) — lighter + dashed ===== -->
-  <text x="40" y="414" fill="#737373" font-size="13" font-weight="500">sim-in-loop-infer</text>
-  <line x1="220" y1="410" x2="960" y2="410" stroke="#a3a3a3" stroke-width="1" stroke-dasharray="3,3"/>
+  <text x="40" y="414" fill="#8b949e" font-size="13" font-weight="500">sim-in-loop-infer</text>
+  <line x1="220" y1="410" x2="960" y2="410" stroke="#6e7681" stroke-width="1" stroke-dasharray="3,3"/>
   <!-- Cosmos Reason1 2025 -->
-  <circle cx="920" cy="410" r="4" fill="#737373"/>
-  <text x="910" y="405" text-anchor="end" fill="#262626" font-size="11" font-weight="500">Cosmos Reason1</text>
-  <text x="910" y="426" text-anchor="end" fill="#a3a3a3" font-size="10">NVIDIA 2025</text>
+  <circle cx="920" cy="410" r="4" fill="#8b949e"/>
+  <text x="910" y="405" text-anchor="end" fill="#e6edf3" font-size="11" font-weight="500">Cosmos Reason1</text>
+  <text x="910" y="426" text-anchor="end" fill="#6e7681" font-size="10">NVIDIA 2025</text>
 
   <!-- Bottom caption -->
-  <text x="40" y="464" fill="#a3a3a3" font-size="10">data-only and architecture-bias-soft drive 2024–2026 explosion</text>
+  <text x="40" y="464" fill="#6e7681" font-size="10">data-only and architecture-bias-soft drive 2024–2026 explosion</text>
 </svg>
