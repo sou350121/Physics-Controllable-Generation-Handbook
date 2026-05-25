@@ -6,8 +6,8 @@
 
 [![Docs Live](https://img.shields.io/badge/docs-Mintlify_Phase_2-lightgrey?style=for-the-badge&logo=readme&logoColor=white)](#status)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue)](./LICENSE)
-[![Pages](https://img.shields.io/badge/pages-120-orange)](./cheat-sheet/functional_map.md)
-[![Dissections](https://img.shields.io/badge/dissections-27_anchor-purple)](./foundations/overview.md)
+[![Pages](https://img.shields.io/badge/pages-128-orange)](./cheat-sheet/functional_map.md)
+[![Dissections](https://img.shields.io/badge/dissections-35_anchor-purple)](./foundations/overview.md)
 [![Ontology](https://img.shields.io/badge/5--axis_ontology-v2.0-red)](./cheat-sheet/ontology.md)
 [![Audit](https://img.shields.io/badge/audit-19%2F19_v2_migrated-success)](./AUDIT_2026-05-26-v2.md)
 [![Sister Repos](https://img.shields.io/badge/sister-VLA_%2B_Spatial-2a9d8f)](#三册一体vla--spatial--physics-gen-的分工)
@@ -27,7 +27,7 @@
 
 | Phase | 內容 | 狀態 |
 |---|---|---|
-| **Phase 1** — Skeleton + Anchor | 13 zones + **7 use-cases** + 5 USP wedges + **27 anchor dissections** + 5-axis Ontology **v2.0** | ✅ **完成 (2026-05-26)** — audit GREEN + aerial + physics-conditioning USP zone 5 anchors + **Wave 2: 8 dissections covering 4 previously-empty zones** (material-and-dynamics / 3d-aware-generation / long-horizon-rollout / data-engine) |
+| **Phase 1** — Skeleton + Anchor | 13 zones + **7 use-cases** + 5 USP wedges + **35 anchor dissections** + 5-axis Ontology **v2.0** | ✅ **完成 (2026-05-26)** — audit GREEN + aerial + physics-conditioning USP 5 + Wave 2 (4 empty zones filled) + **Wave 3: 8 more anchors** (SVD · GGS · ContactGen · AnimateDiff · GenCast · PhysBench · DiffTaichi · π0/π0.5) — **all 13 foundations zones + 1 use-case have anchors** |
 | **Phase 2** — Mintlify + Pulsar Daily | Mintlify Hobby tier 部署（live URL + /mcp）+ Pulsar 每日 arxiv 抓取 → qwen 評級 → `reports/physics-gen-daily/` | 🚧 規劃中 |
 | **Phase 3** — 30+ Dissection + Cross-handbook | 第二批 18 篇 dissection（PhysGen / ContactGen / Decart / DriveDreamer / PangU / NeuralMPM 等）+ 三冊 cross-handbook insight cron | ⏳ 待 Phase 2 完成後啟動 |
 
