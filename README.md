@@ -4,28 +4,40 @@
 >
 > **从 Sora 到 Genesis，从 GraphCast 到 GAIA** — 影片生成圈不讀 PDE solver 圈，diff-sim 圈不讀 latent WM 圈，自駕 closed-loop 圈和神經 surrogate 圈各自閉門造 conditioning。**本 handbook 做一件事：把這 5 條技術路線各自如何「把物理灌進生成」攤在桌上橫向對比，並標註誰違反守恆律、誰能 closed-loop、誰能拿 force 當輸入。**
 
-[![Docs Live](https://img.shields.io/badge/docs-Mintlify_deploy_Phase_2-lightgrey?style=for-the-badge&logo=readme&logoColor=white)](#)
+[![Docs Live](https://img.shields.io/badge/docs-Mintlify_Phase_2-lightgrey?style=for-the-badge&logo=readme&logoColor=white)](#status)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue)](./LICENSE)
-[![Pages](https://img.shields.io/badge/pages-62-orange)](./cheat-sheet/functional_map.md)
-[![Dissections](https://img.shields.io/badge/dissections-12-purple)](./crossing/overview.md)
+[![Pages](https://img.shields.io/badge/pages-68-orange)](./cheat-sheet/functional_map.md)
+[![Dissections](https://img.shields.io/badge/dissections-12_anchor-purple)](./foundations/overview.md)
 [![Ontology](https://img.shields.io/badge/5--axis_ontology-v1-red)](./cheat-sheet/ontology.md)
-[![Audit](https://img.shields.io/badge/audit-167/168_pass-success)](./AUDIT_2026-05-25.md)
+[![Audit](https://img.shields.io/badge/audit-167%2F168_pass-success)](./AUDIT_2026-05-25.md)
+[![Sister Repos](https://img.shields.io/badge/sister-VLA_%2B_Spatial-2a9d8f)](#三册一体vla--spatial--physics-gen-的分工)
 
 | | |
 |---|---|
-| 📖 **讀線上版** | 🚧 Mintlify deploy 待 Phase 2 — 現在直接讀 repo markdown |
-| 🚪 **5 分鐘 onboarding** | [`ONBOARDING.md`](./ONBOARDING.md) — 5 條 persona 路徑（VLA / 自駕 / 影片 / PDE / landscape）|
-| 🧭 **5-axis ontology** | [`cheat-sheet/ontology.md`](./cheat-sheet/ontology.md) — output-space × physics-injection × controllability × temporal × domain |
-| 🤖 **AI access via MCP** | 待 Mintlify Phase 2 部署後自帶 `/mcp` endpoint |
+| 📖 **讀線上版** | 🚧 Mintlify deploy 待 Phase 2 — 目前直接讀 repo markdown，所有內鏈 root-relative 已對齊 Mintlify schema |
+| 🚪 **5 分鐘 onboarding** | [`ONBOARDING.md`](./ONBOARDING.md) — 5 條快速分流路徑（A.VLA · B.自駕 · C.影片 · D.PDE · E.landscape）； 細粒度 8-persona 表在下方 🎭 區 |
+| 🧭 **5-axis ontology v1** | [`cheat-sheet/ontology.md`](./cheat-sheet/ontology.md) — output × injection × controllability × temporal × domain（每篇 dissection header 強制 enforce） |
+| 🤖 **AI access via MCP** | 待 Mintlify Phase 2 部署後自帶 `/mcp` endpoint（與 [Spatial MCP](https://kensou.mintlify.app/mcp) 同 schema） |
 | 🌉 **三冊一體 · 姊妹倉** | [VLA-Handbook](https://github.com/sou350121/VLA-Handbook)（action 端）· [Spatial-Intelligence-Handbook](https://github.com/sou350121/Spatial-Intelligence-Handbook)（perception 端，[live](https://kensou.mintlify.app)）· **本倉 = generation 端** |
+
+&nbsp;
+
+<a name="status"></a>
+## 📌 Status & Roadmap
+
+| Phase | 內容 | 狀態 |
+|---|---|---|
+| **Phase 1** — Skeleton + Anchor | 13 zones + 6 use-cases + 5 USP wedges + **12 anchor dissections** + 5-axis ontology v1 + ontology v1.1 review | ✅ **完成 (2026-05-25)** — audit 167/168 pass |
+| **Phase 2** — Mintlify + Pulsar Daily | Mintlify Hobby tier 部署（live URL + /mcp）+ Pulsar 每日 arxiv 抓取 → qwen 評級 → `reports/physics-gen-daily/` | 🚧 規劃中 |
+| **Phase 3** — 30+ Dissection + Cross-handbook | 第二批 18 篇 dissection（PhysGen / ContactGen / Decart / DriveDreamer / PangU / NeuralMPM 等）+ 三冊 cross-handbook insight cron | ⏳ 待 Phase 2 完成後啟動 |
 
 &nbsp;
 
 ## 三句话说清楚这个 Handbook 的价值
 
-1. **不只是综述**：每篇 dissection 顶部带 5-axis ontology header（output-space / physics-injection / controllability / temporal / domain），列 2-3 個同軸對手，並附 §8 GitHub-validated pitfall log——"读懂论文" 和 "踩过坑" 之间的距离，被显式标出来。
-2. **跨 5 條技術路線橫切**：pixel-video（Sora/Veo）/ latent world-model（Genie/V-JEPA）/ differentiable simulator（Genesis/MJX）/ neural surrogate（GraphCast/FNO）/ 3D-aware generation——市場上所有 generative-physics 综述都是單一路線闭门写，這本是第一本把這 5 條 axis 上的 physics injection 機制橫向對比的。
-3. **活的知识库**：Pulsar Phase 2 將自動每日抓 arxiv（cs.CV / cs.LG / physics.flu-dyn）→ qwen 評級 → 每日落地到 `reports/physics-gen-daily/`，不是六個月沒人維護的靜態文檔。
+1. **不只是综述**：每篇 dissection 頂帶 5-axis ontology header（output × injection × controllability × temporal × domain），列 2-3 個同軸對手，並附 §8 GitHub-validated pitfall log —— "讀懂論文" 和 "踩過坑" 之間的距離被顯式標出來。
+2. **跨 5 條技術路線橫切**：pixel-video（Sora/Veo）· latent WM（Genie/V-JEPA）· diff-sim（Genesis/MJX）· neural surrogate（GraphCast/FNO）· 3D-aware gen —— 市場上所有 generative-physics 綜述都是單一路線閉門寫，本倉是第一本把這 5 條路線上的 physics injection 機制橫向對比的。
+3. **活的知识库**：Phase 2 起 Pulsar 自動每日抓 arxiv（cs.CV / cs.LG / cs.GR / cs.RO + physics.flu-dyn / cond-mat.soft）→ qwen 評 ⚡/🔧/📖/❌ → 每日落地到 `reports/physics-gen-daily/`，不是六個月沒人維護的靜態文檔。
 
 &nbsp;
 
@@ -35,18 +47,18 @@
 
 ## 🎭 你是谁？
 
-> *选你的角色 → 跳到对应入口。整本 handbook 的 5 條技術路線 + 6 個下游應用 + 5 個 USP wedge 都有自己的旗艦。*
+> *选你的角色 → 跳到对应入口。整本 handbook 的 13 條技術路線 · 6 個下游應用 · 5 個 USP wedge 都有自己的旗艦。*
 
 | | 角色 | 你的背景 | 👉 推荐起点 |
 |:---:|------|---------|-----------|
-| 🤖 | **VLA / robot policy 工程師** | 想用合成資料替代真實 demo、評估 sim-vs-gen-data 的取捨 | → [`use-cases/robotics-data-gen/`](./use-cases/robotics-data-gen/) + [`crossing/sim-vs-gen-data/`](./crossing/sim-vs-gen-data/) + [`bridge-to-vla/`](./bridge-to-vla/) |
-| 🚗 | **自駕 closed-loop sim 工程師** | 在做 GAIA / Cosmos-Drive / Wayve 線、需要 long-horizon rollout | → [`foundations/long-horizon-rollout/`](./foundations/long-horizon-rollout/) + [`use-cases/autonomous-driving-sim/`](./use-cases/autonomous-driving-sim/) + [`companies/`](./companies/) |
-| 🎬 | **影片生成工程師** | Sora / Veo / Kling 路線、想理解「物理感」從資料還是 inductive bias 來 | → [`foundations/video-world-models/`](./foundations/video-world-models/) + [`foundations/physics-conditioning/`](./foundations/physics-conditioning/) + [`crossing/conservation-violation-atlas/`](./crossing/conservation-violation-atlas/) |
-| 🌊 | **神經 PDE / surrogate 研究者** | GraphCast / FNO / 氣象 / 流體線、想看能不能脫離 solver | → [`foundations/neural-surrogates/`](./foundations/neural-surrogates/) + [`foundations/material-and-dynamics/`](./foundations/material-and-dynamics/) + [`use-cases/scientific-discovery/`](./use-cases/scientific-discovery/) |
-| 🎮 | **互動式 latent WM 工程師** | Genie / Decart / V-JEPA、autoregressive latent rollout | → [`foundations/latent-world-models/`](./foundations/latent-world-models/) + [`foundations/long-horizon-rollout/`](./foundations/long-horizon-rollout/) |
-| 🧪 | **Diff-sim 工程師** | MuJoCo MJX / Genesis / Warp、梯度通過接觸 | → [`foundations/differentiable-simulators/`](./foundations/differentiable-simulators/) + [`crossing/sim-vs-gen-data/`](./crossing/sim-vs-gen-data/) |
-| 🔬 | **找下一個 paper idea 的研究者** | 想看哪些 niche 沒人解 | → [`crossing/`](./crossing/) 5 個 USP wedge —— pixel-vs-latent / sim-vs-gen / controllability-vs-fidelity / 守恆律違反地圖 / text-action-trajectory 譜系，每個 wedge 都是 paper idea 來源 |
-| 🏗️ | **多領域系統架構師** | 同時做 robotics + driving + scientific sim 的平台/公司 | → [`cheat-sheet/ontology.md`](./cheat-sheet/ontology.md) + [`foundations/foundation-physics-models/`](./foundations/foundation-physics-models/) + [`companies/`](./companies/) |
+| 🤖 | **VLA / robot policy 工程師** | 想用合成資料替代真實 demo | → [Cosmos WFM](./foundations/foundation-physics-models/cosmos-wfm.md) + [V-JEPA-2](./foundations/latent-world-models/v-jepa-2.md) + [`crossing/sim-vs-gen-data/`](./crossing/sim-vs-gen-data/) |
+| 🚗 | **自駕 closed-loop sim 工程師** | GAIA / Cosmos-Drive / Wayve 線 | → [GAIA-2](./foundations/video-world-models/gaia-2.md) + [`foundations/long-horizon-rollout/`](./foundations/long-horizon-rollout/) + [`use-cases/autonomous-driving-sim/`](./use-cases/autonomous-driving-sim/) |
+| 🎬 | **影片生成工程師** | Sora / Veo / Kling 路線 | → [Sora](./foundations/video-world-models/sora.md) + [Veo](./foundations/video-world-models/veo.md) + [`crossing/conservation-violation-atlas/`](./crossing/conservation-violation-atlas/) |
+| 🌊 | **神經 PDE / surrogate 研究者** | GraphCast / FNO / 氣象 / 流體 | → [GraphCast](./foundations/neural-surrogates/graphcast.md) + [FNO](./foundations/neural-surrogates/fno.md) + [`use-cases/scientific-discovery/`](./use-cases/scientific-discovery/) |
+| 🎮 | **互動式 latent WM 工程師** | Genie / Decart / V-JEPA / Dreamer | → [Genie-2](./foundations/latent-world-models/genie-2.md) + [DreamerV4](./foundations/latent-world-models/dreamer-v4.md) + [`crossing/pixel-vs-latent-physics/`](./crossing/pixel-vs-latent-physics/) |
+| 🧪 | **Diff-sim 工程師** | MuJoCo MJX / Genesis / Warp | → [Genesis](./foundations/differentiable-simulators/genesis.md) + [MuJoCo MJX](./foundations/differentiable-simulators/mujoco-mjx.md) + [`crossing/sim-vs-gen-data/`](./crossing/sim-vs-gen-data/) |
+| 🔬 | **找下一個 paper idea 的研究者** | 想看哪些 niche 沒人解 | → [`crossing/`](./crossing/overview.md) ★ — 5 個 wedge 即 5 條 paper-idea 礦脈（pixel-vs-latent · sim-vs-gen · controllability-vs-fidelity · 守恆律違反地圖 · text-action-trajectory 譜系）|
+| 🏗️ | **多領域系統架構師** | 平台/公司同時做 robotics + driving + sim | → [`cheat-sheet/ontology.md`](./cheat-sheet/ontology.md) + [Cosmos WFM](./foundations/foundation-physics-models/cosmos-wfm.md) + [`companies/`](./companies/) |
 
 > 不接受 "HR / 招聘" 入口——這是技術 handbook，不是產業地圖（產業地圖見 [`companies/`](./companies/)）。
 
@@ -447,7 +459,7 @@ crossing/controllability-vs-fidelity
 
 &nbsp;
 
-### 🏗️ 系统设计：5-axis ontology（2 篇 + 1 reviewer）
+### 🏗️ 系统设计：5-axis ontology（3 篇）
 
 ```
 cheat-sheet/ontology.md →
@@ -455,7 +467,7 @@ cheat-sheet/ontology-v1.1-review.md →
 foundations/overview.md
 ```
 
-[开始 →](./cheat-sheet/ontology.md) — v1 给你完整 5 轴定义，v1.1 review 把 canonical refs / critique / 修正建议一次列齐，最后回 foundations overview 验证落点
+[开始 →](./cheat-sheet/ontology.md) — v1 給你完整 5 軸定義，v1.1 review 把 canonical refs / critique / 修正建議一次列齊，最後回 foundations overview 驗證落點。**這是想自己加 dissection 必讀**。
 
 &nbsp;
 
@@ -471,7 +483,7 @@ foundations/overview.md
 |:---:|------|---------|
 | 🥉 | **First Blood** | 读完任意 1 篇 dissection |
 | 🎓 | **Pixel + Latent + Sim** | 读完 Sora + V-JEPA-2 + Genesis 三篇 |
-| 🌍 | **Cross-Line Tour** | 跨 5 条技术路线（video-WM / latent-WM / foundation-WM / diff-sim / neural-surrogate）各读 ≥ 1 篇 |
+| 🌍 | **Cross-Line Tour** | 跨 5 條主路線（video-WM · latent-WM · diff-sim · neural-surrogate · 3D-aware-gen）各讀 ≥ 1 篇 |
 | 🔭 | **USP Hunter** | 读完 5 个 crossing wedge overview |
 | 🐉 | **Boss Hunter** | 读完 boss monsters 中的 3 篇（见下表） |
 | ⚡ | **Speed Runner** | 完成任意一条 Speed Run |
