@@ -23,6 +23,6 @@
 
 ## §8 共通 pitfall
 
-- Joint rollout 把長度寫死，跨 clip 銜接靠 image-prompt 不穩
+- Joint rollout 把長度寫死，跨 clip 銜接靠 image-init 不穩
 - AR rollout 的 exposure bias 在 long horizon 放大
 - Hierarchical 模型訓練收斂難

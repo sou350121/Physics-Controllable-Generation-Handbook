@@ -1,4 +1,4 @@
-<!-- ontology-5axis output=latent injection=implicit-from-data control=action|image-prompt temporal=latent-rollout domain=generalist|robotics -->
+<!-- ontology-5axis output=latent-tokens injection=data-only control=action|image-init temporal=latent-rollout domain=robotics -->
 
 # V-JEPA / V-JEPA 2 (with action conditioning)
 
@@ -72,9 +72,9 @@ energy-based MPC：在 latent 空間 rollout 多個 action sequence，選 L1(ima
 | 軸 | V-JEPA 2(-AC) | [DreamerV4](./dreamer-v4.md) | [Genie-2](./genie-2.md) | [Cosmos-Predict](../foundation-physics-models/cosmos-wfm.md) |
 |---|---|---|---|---|
 | Output | `latent` (action-free) / `latent` rollout (AC) | `latent` (RSSM) | `latent` + decoded pixel | `pixel-video` |
-| Injection | `implicit-from-data` | `implicit-from-data` | `implicit-from-data` | `implicit-from-data` |
-| Control | `image-prompt`(goal) + `action`(AC) | `action` | `action` (latent action token) | `text` + `image-prompt` |
-| Temporal | `latent-rollout` (block-causal AR) | `latent-rollout` (RSSM step) | `temporal-transformer-rolling` | `joint-rollout` (diffusion clip) |
+| Injection | `data-only` | `data-only` | `data-only` | `data-only` |
+| Control | `image-init`(goal) + `action`(AC) | `action` | `action` (latent action token) | `text` + `image-init` |
+| Temporal | `latent-rollout` (block-causal AR) | `latent-rollout` (RSSM step) | `streaming-cache` | `clip-parallel` (diffusion clip) |
 | Domain | `generalist` → `robotics` (AC) | `generalist`/`robotics` | `generalist`(game) | `generalist`/`driving` |
 
 **同軸對手細看**：

@@ -1,4 +1,4 @@
-<!-- ontology-5axis output=pixel-video injection=score-conditioned|constraint-loss control=force|contact|physical-param|text temporal=joint-rollout domain=rigid|generalist -->
+<!-- ontology-5axis output=pixel-video injection=guidance-gradient|architecture-bias-soft control=force|contact|param|text temporal=clip-parallel domain=rigid -->
 
 # Force Prompting & NewtonGen — 2025 顯式力/牛頓條件視頻生成雙錨
 
@@ -87,9 +87,9 @@ initial state Z₀ = [x, y, vx, vy, θ, ω, s, l, a]
 ```
                 injection (Axis 2)              control (Axis 3)            temporal (Axis 4)
                 ─────────────────              ──────────────────            ─────────────────
-Force Prompting   data-only +                  force + (text via base)      joint-rollout
+Force Prompting   data-only +                  force + (text via base)      clip-parallel
                   conditioning channel
-NewtonGen         architecture-bias-soft       param (state) + text         joint-rollout
+NewtonGen         architecture-bias-soft       param (state) + text         clip-parallel
                   (neural ODE prior)                                          但 ODE 是 streaming
 ```
 
@@ -101,20 +101,20 @@ NewtonGen         architecture-bias-soft       param (state) + text         join
 
 | Method | Output | Injection | Control | Temporal | Domain |
 |---|---|---|---|---|---|
-| **Force Prompting** | pixel-video | data-only + cond-channel | text+**force** | joint-rollout | rigid+generalist |
-| **NewtonGen** | pixel-video | architecture-bias-soft | text+**param**(state) | joint-rollout | rigid+generalist |
-| Sora (→ [sora.md](../video-world-models/sora.md)) | pixel-video | data-only | text | joint-rollout | generalist |
+| **Force Prompting** | pixel-video | data-only + cond-channel | text+**force** | clip-parallel | rigid+generalist |
+| **NewtonGen** | pixel-video | architecture-bias-soft | text+**param**(state) | clip-parallel | rigid+generalist |
+| Sora (→ [sora.md](../video-world-models/sora.md)) | pixel-video | data-only | text | clip-parallel | generalist |
 | Cosmos-Predict (→ [cosmos-wfm.md](../foundation-physics-models/cosmos-wfm.md)) | pixel-video | data-only + sim-data | text+image+camera | clip-parallel | generalist |
 | PhysGen (→ `./physgen.md`) | pixel-video | sim-in-loop-train (rigid-body sim) | text+image | single-frame→render | rigid |
 | PhysDiff (→ `./physdiff.md`) | motion | sim-in-loop-infer (projection) | text+contact | autoregressive | rigid+soft (human) |
-| ContactGen | particle/mesh | constraint-loss | contact | clip-parallel | rigid |
+| ContactGen | particle/mesh | aux-loss | contact | clip-parallel | rigid |
 
 **同軸對手分析**：
 
 - **vs Sora text-only**：Sora 拒絕接受 "5N 往右" 這種 token；只能 "shake the apple"，且不可微調力的方向/量。Force Prompting 把這條 dial 接出來。
 - **vs Cosmos-Predict (text+image+camera)**：Cosmos 控制軸沒有 force/param；走 camera trajectory 條件。兩者實際 **正交**，可以疊（Cosmos 出基底 + force prompt 局部干預），未來 Cosmos-Force fork 可能出現。
 - **vs PhysGen (hard-sim)**：PhysGen 物理對但需要 image → 3D mesh → 剛體 sim pipeline，asset prep 痛苦；Force Prompting 完全跳過 3D，但物理只是 plausible，不是守恆。trade-off 在 fidelity-vs-controllability 邊界的兩側（→ [`crossing/controllability-vs-fidelity/`](../../crossing/controllability-vs-fidelity/)）。
-- **vs PhysDiff (motion + score-conditioned projection)**：PhysDiff 在 denoising loop 裡丟 simulator projection 修正人體 motion；input 是文字+contact。和本篇兩者比，PhysDiff 更接近「事後物理糾錯」，本篇兩者更接近「事前物理指定」。
+- **vs PhysDiff (motion + guidance-gradient projection)**：PhysDiff 在 denoising loop 裡丟 simulator projection 修正人體 motion；input 是文字+contact。和本篇兩者比，PhysDiff 更接近「事後物理糾錯」，本篇兩者更接近「事前物理指定」。
 - **vs ContactGen**：control 軸的 sibling（接觸 vs 力）；ContactGen 給 contact map，本篇給 force vector / Newtonian state。物理層級上 contact ⊂ force（force = ∫ pressure dA over contact area），但操作上 contact 更容易標。
 
 ---
@@ -185,8 +185,8 @@ NewtonGen         architecture-bias-soft       param (state) + text         join
 ```
 
 - **vs hard-sim (PhysGen → `./physgen.md`)**：PhysGen 走 image→3D→sim→render，物理 exact 但管線脆；Force Prompting/NewtonGen 跳過 3D，物理只是 plausible，但部署成本低一兩個數量級。短期 hard-sim 仍是「我需要這顆球真的等加速度 9.8」的選擇，Force/Newton 是「我要創作 + 大致對」的選擇。
-- **vs score-conditioned 後驗 (PhysDiff → `./physdiff.md`)**：PhysDiff 在 denoising loop 投影到 physics-valid 流形；本篇兩者在 conditioning 端注入。兩者**可疊**：未來 NewtonGen 出 trajectory → PhysDiff-style projection 守住每幀的接觸合法性。
-- **vs constraint-loss (PINN → `./pinn.md`)**：PINN 把 PDE residual 當 aux loss；NewtonGen 走得更深，把 ODE 整段塞進架構（不是 loss）。所以 NewtonGen 是 `architecture-bias-soft`，不是 `aux-loss`。PINN 線今天在 video 還沒打通，主要因 video 沒有逐 pixel 的 PDE GT。
+- **vs guidance-gradient 後驗 (PhysDiff → `./physdiff.md`)**：PhysDiff 在 denoising loop 投影到 physics-valid 流形；本篇兩者在 conditioning 端注入。兩者**可疊**：未來 NewtonGen 出 trajectory → PhysDiff-style projection 守住每幀的接觸合法性。
+- **vs aux-loss (PINN → `./pinn.md`)**：PINN 把 PDE residual 當 aux loss；NewtonGen 走得更深，把 ODE 整段塞進架構（不是 loss）。所以 NewtonGen 是 `architecture-bias-soft`，不是 `aux-loss`。PINN 線今天在 video 還沒打通，主要因 video 沒有逐 pixel 的 PDE GT。
 - **Action ladder 的位置**（指向 [`crossing/text-action-trajectory-spectrum/`](../../crossing/text-action-trajectory-spectrum/)）：text < action < trajectory < **force** < contact + param。Force/NewtonGen 把 video gen 條件梯往上推了一格。下一步若有 multi-object force network、contact graph、constraint topology，會繼續往「全 Newtonian scene specification」靠攏。
 - **同 control 軸 sibling**：ContactGen — 接觸圖 vs 力向量。物理上 force = ∫ pressure dA over contact area，但人類標 contact 比標 force 容易（手指碰桌面 vs 「以 2N 往右下推」）。長期可能 contact-first 較易拿資料、force-first 較準。
 
@@ -206,7 +206,7 @@ NewtonGen         architecture-bias-soft       param (state) + text         join
 - ControlNet-video — 通用 conditioning branch 機制；Force Prompting 的 conditioning 注入借鑑這條
 - Go-with-the-Flow — NewtonGen 的 noise-warping 底座，optical-flow controlled video
 - PhysGen (2409.18964) — hard-sim 對照（→ `./physgen.md`）
-- PhysDiff (2212.02500) — score-conditioned 對照（→ `./physdiff.md`）
+- PhysDiff (2212.02500) — guidance-gradient 對照（→ `./physdiff.md`）
 - Cosmos-Predict (2501.03575) — text/image/camera 條件對照（→ [cosmos-wfm.md](../foundation-physics-models/cosmos-wfm.md)）
 
 ### Ontology cross-ref

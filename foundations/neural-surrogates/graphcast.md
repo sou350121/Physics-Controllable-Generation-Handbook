@@ -1,4 +1,4 @@
-<!-- ontology-5axis output=field injection=hard-PDE|constraint-loss control=physical-param temporal=autoregressive domain=weather -->
+<!-- ontology-5axis output=field injection=architecture-bias-soft|aux-loss control=param temporal=autoregressive domain=weather -->
 
 # GraphCast (+ GenCast)
 
@@ -33,15 +33,15 @@ ERA5 state at t + 6h (residual prediction)
 - **Resolution**：0.25° lat/lon ≈ 28 km，6 surface vars + 5 atmospheric vars × 37 pressure levels ≈ 235M values per state。
 - **Parameters**：~36.7M（小到不可思議——遠少於同期 LLM）。
 
-Injection 軸：GNN 的 permutation/translation symmetry 對球面結構是 **soft inductive bias**（不是嚴格守恆律），所以 `injection=hard-PDE|constraint-loss` 並列——架構偏 hard 一端，訓練 loss 不顯式加 PDE 殘差但靠 ERA5 reanalysis 隱含。
+Injection 軸：GNN 的 permutation/translation symmetry 對球面結構是 **soft inductive bias**（不是嚴格守恆律），所以 `injection=hard-constraint|aux-loss` 並列——架構偏 hard 一端，訓練 loss 不顯式加 PDE 殘差但靠 ERA5 reanalysis 隱含。
 
 ## 3. 五軸定位 + 同軸對手
 
 | Axis | GraphCast | Pangu-Weather | AIFS | FourCastNet | GenCast |
 |---|---|---|---|---|---|
 | **Output** | `field` (3D atmos state) | `field` | `field` | `field` | `field` (ensemble) |
-| **Injection** | hard-PDE\|constraint-loss (GNN symmetry) | implicit-from-data (3D Earth-Specific Transformer) | implicit-from-data (transformer) | hard-PDE (Fourier ops, FNO 變種) | score-conditioned (diffusion) |
-| **Control** | physical-param (initial state) | physical-param | physical-param | physical-param | physical-param |
+| **Injection** | hard-constraint\|aux-loss (GNN symmetry) | data-only (3D Earth-Specific Transformer) | data-only (transformer) | hard-constraint (Fourier ops, FNO 變種) | guidance-gradient (diffusion) |
+| **Control** | param (initial state) | param | param | param | param |
 | **Temporal** | autoregressive (6h) | hierarchical (1/3/6/24h cascade) | autoregressive (6h) | autoregressive (6h) | autoregressive + diffusion sampling |
 | **Domain** | weather | weather | weather | weather | weather |
 
@@ -65,7 +65,7 @@ Injection 軸：GNN 的 permutation/translation symmetry 對球面結構是 **so
 - **Extreme event intensity underestimation**：autoregressive MSE training 系統性地把預報 over-smooth——尤其颶風中心氣壓、極端降水峰值。ECMWF 與多位作者在 talks 中明確指出這是當前 ML weather models 的共通病。GenCast 部分緩解（ensemble spread 提供 tail-risk 量化），但 deterministic GraphCast 本身仍有此問題。
 - **Tropical cyclone intensity**：軌跡好、強度差。`deepmind/graphcast` GitHub issue 與 ECMWF/NOAA 評估報告皆有對應 caveat [TBD: verify specific GitHub issue numbers]。
 - **Out-of-distribution climate regimes**：模型 train 在 ERA5 1979–2017，2018+ 評估；對 climate-change regime shift（warmer-than-training distribution）的外推能力**未有強保證**。
-- **Conservation**：架構不嚴格保證 mass / energy 守恆——稱「hard-PDE」是因為 spherical symmetry，但 PDE residual 不為零。長 rollout（>10 天）會出現非物理 drift。
+- **Conservation**：架構不嚴格保證 mass / energy 守恆——稱「hard-constraint」是因為 spherical symmetry，但 PDE residual 不為零。長 rollout（>10 天）會出現非物理 drift。
 - **Precipitation**：ERA5 precipitation 本身 reanalysis 質量較差，導致 GraphCast 在降水變量上不如 z/t/u/v 等動力學變量。
 
 ## 5. Reproduction notes
@@ -86,7 +86,7 @@ Injection 軸：GNN 的 permutation/translation symmetry 對球面結構是 **so
 
 - **vs [FNO](./fno.md)（spectral）**：FNO 在 spectral domain 做 global mixing，理論上對 PDE 解集有 universal approximation，但球面網格不天然 fit FFT；GraphCast 用 icosahedral mesh + GNN 解掉這個 mismatch。經驗上 GraphCast 在球面氣象上明確優於 FourCastNet 系（FNO 變種）。
 - **vs Pangu transformer**：Transformer 路線（Pangu、AIFS）vs GNN 路線（GraphCast）——兩者收斂到相近精度，差異在 inductive bias 來源：Pangu 靠 3D Earth-Specific position encoding，GraphCast 靠 mesh topology。Operational 來看 ECMWF 同時跑兩種，作為 multi-model ensemble。
-- **Ensemble via GenCast**：GraphCast 確定性 → GenCast diffusion-based ensemble 是 DeepMind 自家的 deterministic→probabilistic 升級路徑。對應 ontology axis 2：`hard-PDE` → `score-conditioned`。
+- **Ensemble via GenCast**：GraphCast 確定性 → GenCast diffusion-based ensemble 是 DeepMind 自家的 deterministic→probabilistic 升級路徑。對應 ontology axis 2：`hard-constraint` → `guidance-gradient`。
 - **Surrogate × VLA / video WM**：GraphCast 完全在 `field` output 空間，與 pixel-video / latent-WM 路線在 evaluation 標準上**不可直接比較**——這正是 overview.md 強調「surrogate 獨立於 video WM」的原因。但若把 weather field 渲染成 visualization video，可作為 high-fidelity world model 的下游（例如氣象節目自動化、災害可視化）。
 - **與 diff-sim 的關係**：GraphCast 不可微地用於 control（雖然 JAX 全程可微，但 control horizon 對氣象無意義）。差分模擬器路線在 robotics / contact 上才有意義，氣象 surrogate 一般只做 forecasting，不做 inverse design。
 

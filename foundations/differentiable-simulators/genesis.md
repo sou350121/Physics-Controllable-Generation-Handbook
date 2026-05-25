@@ -1,4 +1,4 @@
-<!-- ontology-5axis output=N/A injection=sim-in-loop|hard-PDE control=action|trajectory|force|contact|physical-param temporal=streaming domain=robotics|rigid|soft|fluid -->
+<!-- ontology-5axis output=N/A injection=sim-in-loop-train|hard-constraint control=action|trajectory|force|contact|param temporal=streaming domain=robotics|rigid|soft|fluid -->
 
 # Genesis (Genesis-Embodied-AI)
 
@@ -40,7 +40,7 @@ Genesis 的引擎核心是 **Taichi-kernel-on-GPU 的多 solver 統一框架**�
 | 軸 | Genesis | [MuJoCo MJX](./mujoco-mjx.md) | NVIDIA Warp | Brax | DiffTaichi | Isaac Sim/Lab |
 |---|---|---|---|---|---|---|
 | Output | N/A (state/contact/render→RGB) | N/A | N/A | N/A | N/A | N/A + Omniverse RGB |
-| Injection | sim-in-loop（+ 部分 hard-PDE on MPM） | sim-in-loop | sim-in-loop | sim-in-loop | sim-in-loop（PDE-first） | sim-in-loop |
+| Injection | sim-in-loop（+ 部分 hard-constraint on MPM） | sim-in-loop | sim-in-loop | sim-in-loop | sim-in-loop（PDE-first） | sim-in-loop |
 | Control | action+trajectory+force+contact+**param**（最完整） | action+trajectory+force+contact | action+force+contact | action+trajectory | param+force（PDE-first） | action+trajectory+force |
 | Temporal | streaming | streaming | streaming | streaming | streaming | streaming |
 | Domain | robotics+rigid+**soft+fluid+granular** | robotics+rigid | rigid+soft+fluid | rigid（locomotion） | soft+fluid | robotics+rigid（+ Omniverse soft via SDK） |

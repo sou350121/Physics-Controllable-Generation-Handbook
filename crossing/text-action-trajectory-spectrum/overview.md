@@ -6,7 +6,7 @@
 
 ```
 [ 抽象 / 高層意圖 ]                                                [ 具體 / 物理量 ]
-        text → image-prompt → 3d-prompt → action → trajectory → contact → force → physical-param
+        text → image-init → 3d-init → action → trajectory → contact → force → param
        (Sora)    (SVD)        (WorldLabs)  (Genie)  (Cosmos-Drive) (ContactGen) (ForceGen) (NeuralPhysics)
 ```
 

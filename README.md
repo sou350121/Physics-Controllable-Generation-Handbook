@@ -8,8 +8,8 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue)](./LICENSE)
 [![Pages](https://img.shields.io/badge/pages-111-orange)](./cheat-sheet/functional_map.md)
 [![Dissections](https://img.shields.io/badge/dissections-19_anchor-purple)](./foundations/overview.md)
-[![Ontology](https://img.shields.io/badge/5--axis_ontology-v1-red)](./cheat-sheet/ontology.md)
-[![Audit](https://img.shields.io/badge/audit-196%2F196_pass-success)](./AUDIT_2026-05-26.md)
+[![Ontology](https://img.shields.io/badge/5--axis_ontology-v2.0-red)](./cheat-sheet/ontology.md)
+[![Audit](https://img.shields.io/badge/audit-19%2F19_v2_migrated-success)](./AUDIT_2026-05-26-v2.md)
 [![Sister Repos](https://img.shields.io/badge/sister-VLA_%2B_Spatial-2a9d8f)](#三册一体vla--spatial--physics-gen-的分工)
 
 | | |
@@ -479,9 +479,9 @@ crossing/controllability-vs-fidelity
 
 ```
 foundations/physics-conditioning/overview (6 injection 對比 + 5 代演化) →
-foundations/physics-conditioning/pinn (constraint-loss 鼻祖) →
-foundations/physics-conditioning/hamiltonian-lagrangian-nn (hard-PDE 鼻祖) →
-foundations/physics-conditioning/physdiff (score-conditioned + sim-in-loop) →
+foundations/physics-conditioning/pinn (aux-loss 鼻祖) →
+foundations/physics-conditioning/hamiltonian-lagrangian-nn (hard-constraint 鼻祖) →
+foundations/physics-conditioning/physdiff (guidance-gradient + sim-in-loop-infer) →
 foundations/physics-conditioning/physgen + force-prompting (2024-25 新潮)
 ```
 
@@ -530,7 +530,7 @@ foundations/overview.md
 | [crossing/pixel-vs-latent-physics](./crossing/pixel-vs-latent-physics/) | LeCun line vs scale-pill line 的范式之争，要看懂两边判据、当下 evidence 落点、未来 falsifier |
 | [foundations/foundation-physics-models/cosmos-wfm](./foundations/foundation-physics-models/cosmos-wfm.md) | 一篇要跨 Cosmos 4 条子线（Predict / Reason / Drive / Robotics），「物理基础模型」这个概念到底成不成立 |
 | [foundations/differentiable-simulators/genesis](./foundations/differentiable-simulators/genesis.md) | Genesis 150× 速度的争议要拆清楚，diff-sim 在 generation 时代的差异化定位 |
-| [foundations/physics-conditioning/hamiltonian-lagrangian-nn](./foundations/physics-conditioning/hamiltonian-lagrangian-nn.md) | hard-PDE 線最深學術 — Hamilton 動力學 → autograd 鏈式法則 → 為什麼 2020 後停滯 |
+| [foundations/physics-conditioning/hamiltonian-lagrangian-nn](./foundations/physics-conditioning/hamiltonian-lagrangian-nn.md) | hard-constraint 線最深學術 — Hamilton 動力學 → autograd 鏈式法則 → 為什麼 2020 後停滯 |
 | [foundations/physics-conditioning/pinn](./foundations/physics-conditioning/pinn.md) | NTK 失效分析（Wang 2022）+ 8 條 DeepXDE issue 的踩坑路徑 |
 | [cheat-sheet/ontology-v1.1-review](./cheat-sheet/ontology-v1.1-review.md) | 5 轴 ontology 的完整 critique + canonical references + 修正建议——这本 handbook 的 spine |
 

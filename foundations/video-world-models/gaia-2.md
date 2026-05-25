@@ -1,4 +1,4 @@
-<!-- ontology-5axis output=pixel-video injection=implicit-from-data control=text|trajectory|action|image-prompt temporal=joint-rollout domain=driving -->
+<!-- ontology-5axis output=pixel-video injection=data-only control=text|trajectory|action|image-init|camera|layout temporal=clip-parallel domain=driving -->
 
 # Wayve GAIA-1 / GAIA-2 (Driving World Model)
 
@@ -38,9 +38,9 @@ action seq   ──► action tokenizer      ─┴─► autoregressive Transfo
 | Axis | GAIA-1 | GAIA-2 |
 |---|---|---|
 | Output | `pixel-video` | `pixel-video`（multi-view joint） |
-| Injection | `implicit-from-data` | `implicit-from-data`（資料 + 結構化 conditioning，但無 PDE/constraint loss） |
-| Control | `text \| action \| image-prompt` | `text \| trajectory \| action \| image-prompt \| physical-param`（speed/curvature/weather scalar） |
-| Temporal | `autoregressive`（token-level） | `joint-rollout`（latent diffusion clip） |
+| Injection | `data-only` | `data-only`（資料 + 結構化 conditioning，但無 PDE/constraint loss） |
+| Control | `text \| action \| image-init` | `text \| trajectory \| action \| image-init \| param`（speed/curvature/weather scalar） |
+| Temporal | `autoregressive`（token-level） | `clip-parallel`（latent diffusion clip） |
 | Domain | `driving` | `driving`（多國：UK/US/DE） |
 
 **同軸對手**：
@@ -65,7 +65,7 @@ action seq   ──► action tokenizer      ─┴─► autoregressive Transfo
 
 - **Long-horizon drift**（GAIA-1 已被作者承認）—— autoregressive token rollout 超過 ~10s 後場景結構漂移；GAIA-2 latent diffusion clip 長度受限（具體 `[TBD: verify GAIA-2 max clip length]`），跨 clip 銜接仍是公開難題。
 - **Multi-camera consistency 在 sharp maneuver 下脆**：Wayve 自己 demo 仍多為 forward-facing；社群觀察（matt3r.ai blog "Realism Gap"）指出 surround view 在劇烈轉向 / 交會時 inter-view geometry 偶有破綻 `[TBD: verify with specific GAIA-2 demo timestamps]`。
-- **Rare-object 物理破綻**：動物、施工錐、異常車型 — implicit-from-data injection 的通病；訓練資料分布外時 object identity / 物理運動皆會崩。GAIA-2 paper 自己列為 limitation `[TBD: verify exact wording in §Limitations of arXiv 2503.20523]`。
+- **Rare-object 物理破綻**：動物、施工錐、異常車型 — data-only injection 的通病；訓練資料分布外時 object identity / 物理運動皆會崩。GAIA-2 paper 自己列為 limitation `[TBD: verify exact wording in §Limitations of arXiv 2503.20523]`。
 - **No explicit physics / contact model**：碰撞瞬間是「畫出來」的，不是「算出來」的 — 對 safety validation 是 realism gap 的根源（見 matt3r blog）。
 - **Closed-loop 速度與 latency**：latent diffusion clip-by-clip 生成在當前 paper 中沒給即時 fps；要做真正 closed-loop policy training 仍卡 inference cost `[TBD: verify GAIA-2 inference latency or fps]`。
 - **Closed model**：無 checkpoint / 無 inference API 對外，第三方無法獨立驗證；所有 failure mode 來自 Wayve 自己選的 demo + 二手 blog 分析。
@@ -120,6 +120,6 @@ action seq   ──► action tokenizer      ─┴─► autoregressive Transfo
 | §8.3 | matt3r.ai blog "Realism Gap" | 合成 footage 在 safety validation 上仍有 "realism gap"，pixel realism ≠ behavior realism | H | 不要單獨用 GAIA output 做 closed-loop training；混 real log + 3DGS replay |
 | §8.4 | Wayve demo 觀察 | Multi-camera 在 sharp maneuver / 交會 / 鏡像物體下 inter-view geometry 偶有破綻 `[TBD: 特定 demo timestamp]` | M | 限制使用情境到緩動 ego；或下游模型加 cross-view consistency loss |
 | §8.5 | 缺 open weight / API | 第三方無法 benchmark；所有 metric 來自 Wayve 自選 demo | H | 用 Vista / DriveDreamer-2 / Cosmos-Drive 做 open baseline，把 GAIA 當 reference target |
-| §8.6 | 物理 injection = `implicit-from-data` | 碰撞瞬間是「畫出來」，沒有 contact dynamics — 不可用於 fine-grained collision physics validation | H | 加 sim-in-loop（CARLA / Genesis）混合；或 surrogate force model 後處理 |
+| §8.6 | 物理 injection = `data-only` | 碰撞瞬間是「畫出來」，沒有 contact dynamics — 不可用於 fine-grained collision physics validation | H | 加 sim-in-loop（CARLA / Genesis）混合；或 surrogate force model 後處理 |
 | §8.7 | Inference cost `[TBD]` | Latent diffusion multi-cam joint rollout 推理延遲未公開；closed-loop policy training 還是 batch offline 模式 | M | 目前定位是 offline data augmentation / evaluation harness（GAIA-3 明確走這方向），不是 online closed-loop |
 | §8.8 | GAIA-3 evaluation 主張 | "Synthetic-test rejection rates reduced fivefold" 與 "closely mirrors real-world results" 來自 Wayve 自家 study，無第三方覆核 `[TBD: 等獨立 benchmark]` | M | 視為 vendor claim；自家先小規模對比 real road test |

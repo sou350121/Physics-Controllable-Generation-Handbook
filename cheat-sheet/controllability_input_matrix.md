@@ -25,7 +25,7 @@
 ## 觀察
 
 - **影片端**（Sora/Veo/Cosmos-Predict）目前在 text+image 兩根柱子上飽和，trajectory/force 進度慢
-- **遊戲端**（Genie-2 / Decart）action 是原生第一公民，但物理 implicit-from-data，沒 force/contact
+- **遊戲端**（Genie-2 / Decart）action 是原生第一公民，但物理 data-only，沒 force/contact
 - **機器人端**（Cosmos-Drive / Wayve GAIA）trajectory 開始成熟，force/contact 仍稀缺
 - **Sim 端**（Genesis / MJX）幾乎全綠但生成能力 = 0（不是生成模型）
 - **Surrogate 端**（GraphCast / FNO）只吃 param，但 fidelity 在自家領域最高

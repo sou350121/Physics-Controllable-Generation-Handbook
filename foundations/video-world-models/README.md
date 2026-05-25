@@ -1,20 +1,20 @@
 # Video World Models
 
-> 直接生成像素影片。物理 implicit-from-data。最 scale-pilled 的一條路。
+> 直接生成像素影片。物理 data-only。最 scale-pilled 的一條路。
 
 ## 5-axis defaults
 
 - `output=pixel-video`
-- `injection=implicit-from-data`（少數加 constraint-loss）
-- `control=text|image-prompt`（少數加 trajectory）
-- `temporal=joint-rollout` or `autoregressive`
+- `injection=data-only`（少數加 aux-loss）
+- `control=text|image-init`（少數加 trajectory）
+- `temporal=clip-parallel` or `autoregressive`
 - `domain=generalist`（少數 robotics / driving 專版）
 
 ## Anchor methods
 
 | Method | 年份 | 重點 |
 |---|---|---|
-| Sora | 2024 Q1 | 公眾 GPT-moment；長 clip joint-rollout；DiT 架構 |
+| Sora | 2024 Q1 | 公眾 GPT-moment；長 clip clip-parallel；DiT 架構 |
 | Veo / Veo-2 | 2024-25 | Google 線；強 text→video，物理感漸進 |
 | Cosmos-Predict | 2025 | NVIDIA pre-trained WFM；給 robotics/driving 微調 |
 | GAIA-1 / GAIA-2 | 2024-25 | Wayve 駕駛專用 |

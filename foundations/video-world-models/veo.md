@@ -1,4 +1,4 @@
-<!-- ontology-5axis output=pixel-video injection=implicit-from-data control=text|image-prompt temporal=joint-rollout domain=generalist -->
+<!-- ontology-5axis output=pixel-video injection=data-only control=text|image-init temporal=clip-parallel domain=generalist -->
 
 # Google Veo (Veo 1 / Veo 2 / Veo 3 / Veo 3.1)
 
@@ -48,20 +48,20 @@ image prompt ┼─► [Text/Image Encoder (Gemini-family backbone)]
 | 軸 | Veo 3 / 3.1 值 | 備註 |
 |---|---|---|
 | Output | `pixel-video`（+ audio） | Veo 3 起多一條 audio stream，但 ontology 沒有 audio 軸，保留 `pixel-video` |
-| Injection | `implicit-from-data` | 公開資料無 PDE / constraint loss；物理全靠 scale |
-| Control | `text|image-prompt`（3.1 加 ingredients = multi-image reference） | 無 force / contact / trajectory 接口 |
-| Temporal | `joint-rollout`（8s 一段；3.1 可串到 60s） | 不是 streaming AR |
+| Injection | `data-only` | 公開資料無 PDE / constraint loss；物理全靠 scale |
+| Control | `text|image-init`（3.1 加 ingredients = multi-image reference） | 無 force / contact / trajectory 接口 |
+| Temporal | `clip-parallel`（8s 一段；3.1 可串到 60s） | 不是 streaming AR |
 | Domain | `generalist` | 無 robotics / driving 專版 |
 
 同軸對手：
 
 | 方法 | 與 Veo 的差異 |
 |---|---|
-| **[Sora 2](./sora.md)** (OpenAI, 2024-25) | 同 joint-rollout + DiT；物理分數普遍評為更高；character consistency 較強；但**無 native audio joint diffusion** — audio 走後接路線 |
-| **[Cosmos-Predict](../foundation-physics-models/cosmos-wfm.md)** (NVIDIA, 2025) | 同 pixel-video / implicit-from-data，但定位 pre-trained WFM 供 robotics/driving fine-tune；Veo 無此 downstream hook |
+| **[Sora 2](./sora.md)** (OpenAI, 2024-25) | 同 clip-parallel + DiT；物理分數普遍評為更高；character consistency 較強；但**無 native audio joint diffusion** — audio 走後接路線 |
+| **[Cosmos-Predict](../foundation-physics-models/cosmos-wfm.md)** (NVIDIA, 2025) | 同 pixel-video / data-only，但定位 pre-trained WFM 供 robotics/driving fine-tune；Veo 無此 downstream hook |
 | **Kling 2.x / 3.0** (Kuaishou) | 中國線 SOTA；解析度 / 性價比領先（Artificial Analysis leaderboard 第一）；audio 較弱 |
 
-> [Genie-2](../latent-world-models/genie-2.md) (DeepMind 內部姊妹) — output 是 `action-seq + pixel-video`、temporal 是 `temporal-transformer-rolling`、control 含 `action` — 與 Veo 是「同公司不同問題」：Veo 解 cinematic generation，Genie 解 agent-playable WM。
+> [Genie-2](../latent-world-models/genie-2.md) (DeepMind 內部姊妹) — output 是 `action-seq + pixel-video`、temporal 是 `streaming-cache`、control 含 `action` — 與 Veo 是「同公司不同問題」：Veo 解 cinematic generation，Genie 解 agent-playable WM。
 
 ## 4. ⚡ shines / ❌ breaks
 
@@ -102,7 +102,7 @@ image prompt ┼─► [Text/Image Encoder (Gemini-family backbone)]
 
 - **vs pixel-WM 同條線（Sora / Cosmos / Kling）**：Veo 是「Google 體系 + audio-first」分支。要做 robotics WM pre-train 還是選 Cosmos-Predict（有 robotics conditioning hook），Veo 沒這條接口
 - **vs latent-WM ([DreamerV4](../latent-world-models/dreamer-v4.md) / [V-JEPA-2](../latent-world-models/v-jepa-2.md))**：Veo 完全不重疊 — Veo 賣的是生成 fidelity，latent-WM 賣的是 agent 用得起的 rollout cost；Veo 的 latent 不對外暴露，沒法當 dreamer
-- **vs diff-sim ([Genesis](../differentiable-simulators/genesis.md) / Brax 系)**：Veo 是 implicit-from-data 純 black-box，diff-sim 是 white-box；要 sim2real 的 robotics scenario 還是 diff-sim 路線
+- **vs diff-sim ([Genesis](../differentiable-simulators/genesis.md) / Brax 系)**：Veo 是 data-only 純 black-box，diff-sim 是 white-box；要 sim2real 的 robotics scenario 還是 diff-sim 路線
 - **vs surrogate ([GraphCast](../neural-surrogates/graphcast.md) / [FNO](../neural-surrogates/fno.md))**：完全不同 domain（generalist vs weather/fluid field），無重疊
 - **Veo + diff-sim 合作可能**：用 diff-sim 生 contact-rich rollout → Veo 做 photoreal stylization → 給 robotics policy 當 augmented vision data。**但 Veo 沒 trajectory/action conditioning，這條 pipeline 目前只能單向**
 
@@ -140,7 +140,7 @@ image prompt ┼─► [Text/Image Encoder (Gemini-family backbone)]
 - **Source**: Veo 3 Limits and Restrictions (Segmind)
 - **Severity**: High — 任何敘事長片 use case 必踩
 - **Symptom**: 8s 邊界外 character identity / scene continuity 不保
-- **Workaround**: Veo 3.1 ingredients-to-video（多 reference image stitching）部分緩解；但本質仍是 clip-level joint-rollout 限制
+- **Workaround**: Veo 3.1 ingredients-to-video（多 reference image stitching）部分緩解；但本質仍是 clip-level clip-parallel 限制
 
 ### §8.4 Physics vs Sora 2 gap
 - **Source**: Genra AI / Lushbinary / VidGuru 多方 benchmark

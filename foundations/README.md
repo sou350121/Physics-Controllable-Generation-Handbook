@@ -4,7 +4,7 @@
 
 | Zone | 核心問題 | Anchor methods |
 |---|---|---|
-| [video-world-models](video-world-models/overview.md) | 直接生成像素影片，物理 implicit-from-data | Sora · Veo · Cosmos-Predict · GAIA · SVD |
+| [video-world-models](video-world-models/overview.md) | 直接生成像素影片，物理 `data-only`（v2） | Sora · Veo · Cosmos-Predict · GAIA · SVD |
 | [latent-world-models](latent-world-models/overview.md) | 在 latent 空間 rollout，省 compute、貼 agent control | V-JEPA · V-JEPA-2 · DreamerV4 · MuZero-line |
 | [physics-conditioning](physics-conditioning/overview.md) | 物理規律「怎麼進」模型 — 本倉真正的 USP zone | PINN · PhysGen · EBM-physics · Hamiltonian-NN |
 | [diffusion-physics](diffusion-physics/overview.md) | Diffusion score function 加物理梯度 / classifier guidance | PhysDiff · ContactGen-diffusion · ForceGen-diffusion |

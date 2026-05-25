@@ -11,10 +11,13 @@
 | `trajectory` | trajectory embedding / spatial-temporal cond | Cosmos-Drive · GAIA-traj |
 | `force` | force vector → embedding / contact field cond | ForceGen · ContactGen-force |
 | `contact` | contact graph / mask field | ContactNets · CC-Diff |
-| `image-prompt` | image token concat / cross-attn | SVD · Cosmos-img2vid |
-| `3d-prompt` | NeRF/3DGS feature lift → cond | World Labs |
-| `physical-param` | scalar embedding / hypernetwork | NeuralPhysics · ParamControlNet |
-| `multi` | per-stage / cross-attn fusion / token concat | 進階組合 |
+| `image-init` | image token concat / cross-attn | SVD · Cosmos-img2vid |
+| `3d-init` | NeRF/3DGS feature lift → cond | World Labs |
+| `param` | scalar embedding / hypernetwork | NeuralPhysics · ParamControlNet |
+| `camera` | camera pose / extrinsics conditioning（v2 新增） | Cosmos · GAIA-2 · Generative-GS |
+| `layout` | scene-graph / BEV / road-graph（v2 新增） | GAIA-2 · Cosmos-Drive |
+
+> v2 移除 `multi` 字面 keyword —— 多值直接用 `|` 分隔，例如 `control=text|action|trajectory|camera`。
 
 ## ControlNet-for-physics
 

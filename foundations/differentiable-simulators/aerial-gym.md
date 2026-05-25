@@ -1,4 +1,4 @@
-<!-- ontology-5axis output=N/A injection=sim-in-loop control=action|trajectory|force|physical-param temporal=streaming domain=robotics|rigid -->
+<!-- ontology-5axis output=N/A injection=sim-in-loop-train control=action|trajectory|force|param temporal=streaming domain=robotics|rigid -->
 
 # Aerial Gym Simulator (NTNU-ARL / NVIDIA Isaac Gym)
 

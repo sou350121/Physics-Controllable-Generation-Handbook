@@ -1,11 +1,12 @@
 # Ontology v1.1 Review (date: 2026-05-25)
 
-> ## 🚧 STATUS: PROPOSAL — NOT YET ADOPTED
+> ## ✅ STATUS: ADOPTED INTO v2.0（2026-05-26）
 >
-> 這是 v1.1 的 **expert review 提案**，不是當前 ontology spec。
-> 當前 active spec = [`cheat-sheet/ontology.md`](./ontology.md) (v1)。
+> 此 review 提案已全部納入 **[Ontology v2.0](./ontology.md)**（2026-05-26）。本文件保留作為歷史 record：
+> - **本 review 的提案** = v1.1 草案（5 軸完整 critique + concrete diff）
+> - **實際採納版本** = ontology.md v2.0（含本 review 全部 diff + Cross-axis Check 9b/9c 強制檢查）
 >
-> 採納時程：等 30+ dissection 後評估；若採納，14 篇 dissection header 都需同步重簽（最大改動：Axis 2 rename 與 Axis 3 `*-prompt → *-init` rename）。
+> 讀者請以 [ontology.md v2.0](./ontology.md) 為 active spec；本文件僅供理解「v1 → v2 為何這樣改」的設計脈絡。
 
 ---
 

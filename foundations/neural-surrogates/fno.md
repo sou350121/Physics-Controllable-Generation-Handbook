@@ -1,4 +1,4 @@
-<!-- ontology-5axis output=field injection=hard-PDE control=physical-param temporal=autoregressive domain=fluid -->
+<!-- ontology-5axis output=field injection=architecture-bias-soft control=param temporal=autoregressive domain=fluid -->
 
 # Fourier Neural Operator (FNO) + PDE-Refiner
 
@@ -32,8 +32,8 @@ PDE-Refiner 的擴充：把 single-step prediction 改成 K-step iterative refin
 | 軸 | FNO | PDE-Refiner |
 |---|---|---|
 | output | `field`（連續速度/壓力場） | `field` |
-| injection | `hard-PDE`（spectral truncation 隱含 smoothness inductive bias；但**並非嚴格守恆**，見 §8） | `hard-PDE` + diffusion-style refinement |
-| control | `physical-param`（viscosity, IC, BC 作為 input function $a$） | 同 |
+| injection | `hard-constraint`（spectral truncation 隱含 smoothness inductive bias；但**並非嚴格守恆**，見 §8） | `hard-constraint` + diffusion-style refinement |
+| control | `param`（viscosity, IC, BC 作為 input function $a$） | 同 |
 | temporal | `autoregressive`（多步 rollout 是 chain prediction） | `autoregressive` with K-step inner refinement |
 | domain | `fluid`（Burgers / NS / Darcy 為主） | `fluid` |
 
@@ -60,7 +60,7 @@ PDE-Refiner 的擴充：把 single-step prediction 改成 K-step iterative refin
 - **Long-rollout drift**：autoregressive 多步預測時 error 指數累積。原 paper 已坦承 rollout 不穩定；社群實測（PDEBench, Takamoto et al 2022）顯示 FNO 在 t > 50 step 後 NS turbulence 失效。**PDE-Refiner 主要打的就是這個點** —— 在 Kolmogorov flow 上把 stable horizon 從 ~50 拉到 ~400 step。
 - **Irregular geometry**：FFT 要 regular grid + periodic BC，工程上常見的不規則邊界（airfoil、複雜管道）要走 Geo-FNO / F-FNO / domain decomposition 等變體，性能折扣明顯。
 - **Hard boundary condition enforcement**：spectral truncation 不保證 Dirichlet / Neumann BC 嚴格滿足，需要 penalty loss 或 post-processing。
-- **守恆律不嚴格**：雖然 `injection=hard-PDE` 標籤，但 FNO 不像 Hamiltonian NN / E(3)-equivariant 那樣 by-construction 保守 —— 質量/能量在 long rollout 會漂移。
+- **守恆律不嚴格**：雖然 `injection=hard-constraint` 標籤，但 FNO 不像 Hamiltonian NN / E(3)-equivariant 那樣 by-construction 保守 —— 質量/能量在 long rollout 會漂移。
 - **High-Reynolds turbulence**：Re > 10^5 的真實 turbulence FNO 仍力不從心；DeepMind GenCast / GraphCast 的 graph approach 在 weather scale 更穩。
 - **OOD viscosity / IC**：訓練時 viscosity 範圍外的 zero-shot generalization 差，這在原 paper 沒充分驗證。
 
@@ -82,7 +82,7 @@ PDE-Refiner reference 實作見 [phlippe/PDE-Refiner](https://github.com/phlippe
 
 - **vs [GraphCast](./graphcast.md)**（graph-based surrogate）：GraphCast 用 icosahedral mesh GNN —— 結構天然處理球面非歐 geometry，在 weather production（ECMWF AIFS pipeline）裏壓 FNO 一頭。但 GraphCast 不能 zero-shot resolution，且訓練 cost 更高。**取捨**：規則 grid + periodic → FNO；不規則球面/邊界 → GraphCast。
 - **vs sim-in-loop ([Genesis](../differentiable-simulators/genesis.md)-train, [Cosmos](../foundation-physics-models/cosmos-wfm.md)-rollout)**：sim-in-loop 用真實 solver 提供 ground truth 或 reward；FNO 是離線 supervised。Compose 方向：用 FNO 做 fast rollout，每 K step 用真 solver 校正（hybrid solver-surrogate scheme）—— PDEBench / NVIDIA Modulus 已有先例。
-- **與 diffusion-based generation 結合**：PDE-Refiner 本身就是「FNO/U-Net backbone + diffusion-style K-step refinement」的典範。延伸方向 —— 把 score-based diffusion guidance（physics gradient）疊在 FNO 上做可控 generation，與本倉 `score-conditioned` injection axis 接上。
+- **與 diffusion-based generation 結合**：PDE-Refiner 本身就是「FNO/U-Net backbone + diffusion-style K-step refinement」的典範。延伸方向 —— 把 score-based diffusion guidance（physics gradient）疊在 FNO 上做可控 generation，與本倉 `guidance-gradient` injection axis 接上。
 - **與 video WM 互補**：FNO 生成「場」（velocity / pressure），video WM 生成「像素」。Compose：FNO 算 fluid field → renderer 轉 pixel → video WM 拿來條件生成 visual 觀察。這條路在 `bridge-to-VLA/` 是 robotic manipulation with deformables 的潛在組合。
 - **與 latent WM 對比**：[DreamerV4](../latent-world-models/dreamer-v4.md) 在 latent space rollout，FNO 在 physical field space rollout。前者 task-driven、後者 physics-driven —— 不直接競爭，但對 long-horizon 預測誰更穩仍是開放問題。
 
@@ -107,11 +107,11 @@ PDE-Refiner reference 實作見 [phlippe/PDE-Refiner](https://github.com/phlippe
 - **§8.2 Non-periodic BC artifact**（severity: high for engineering apps）。FFT 假設 periodic，Dirichlet/Neumann 邊界在 vanilla FNO 會洩漏 high-freq 振盪到邊界。Workaround：Geo-FNO（learnable deformation map）或 zero-padding + masked loss。社群普遍承認此限制；neuraloperator 官方 docs 建議 non-periodic 場景優先用 U-FNO / F-FNO 變體。
 - **§8.3 Resolution-invariance 有限**（severity: medium）。Zero-shot super-resolution claim 在 paper 是 Burgers / Darcy 的 mild upscale；社群測試（多篇 PDEBench follow-up）顯示 train 64 → test 1024 在 high-Re NS 上仍有顯著 error 增加 —— **claim 真實但被誇大**。
 - **§8.4 Mixed precision instability**（severity: medium）。GitHub issue [#322](https://github.com/neuraloperator/neuraloperator/issues/322)：FP16 訓練 spectral conv 的複數運算數值不穩。Workaround：用 bf16 或 FP32 spectral block + FP16 其他部分。
-- **§8.5 守恆律不嚴**（severity: high for scientific apps）。FNO 不是 by-construction 守恆架構，long rollout 質量/能量會漂移。對需要嚴格守恆的 application（如 climate ensemble）必須補 conservation loss 或後處理投影。**這是 `injection=hard-PDE` 標籤的 caveat** —— 比 Hamiltonian NN 弱。
+- **§8.5 守恆律不嚴**（severity: high for scientific apps）。FNO 不是 by-construction 守恆架構，long rollout 質量/能量會漂移。對需要嚴格守恆的 application（如 climate ensemble）必須補 conservation loss 或後處理投影。**這是 `injection=hard-constraint` 標籤的 caveat** —— 比 Hamiltonian NN 弱。
 - **§8.6 3D extension 不成熟**（severity: medium）。GitHub issue [#704, #697](https://github.com/neuraloperator/neuraloperator/issues) 報 3D FNO 內存爆炸 + 訓練不收斂。3D NS turbulence 仍是 open problem。
 - **§8.7 Dataset / checkpoint reproducibility issues**（severity: low-medium）。Issue [#558, #691, #657](https://github.com/neuraloperator/neuraloperator/issues) 報 checkpoint 加載失敗、dataset 缺失。社群正在搬遷到 PDEBench standard，過渡期踩坑頻發。
 - **§8.8 PDE-Refiner 對 backbone 的依賴**（severity: medium）。Refiner 不是「對任何 backbone 都等量提升」；原 paper appendix 顯示在 U-Net 上效果最強，FNO backbone 增益較小（推測因 FNO 已 frequency-aware，refinement 邊際遞減）。實作時別預期搭 FNO 就拿 paper headline number。
 
 ---
 
-**衍生 dissection 候選**：GraphCast（同 zone）、Geo-FNO（FNO 變體）、Hamiltonian Neural Network（more-hard-PDE 對比）。
+**衍生 dissection 候選**：GraphCast（同 zone）、Geo-FNO（FNO 變體）、Hamiltonian Neural Network（more-hard-constraint 對比）。

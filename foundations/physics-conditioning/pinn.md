@@ -1,4 +1,4 @@
-<!-- ontology-5axis output=field|particle injection=constraint-loss control=physical-param|3d-prompt temporal=autoregressive domain=fluid|rigid|soft -->
+<!-- ontology-5axis output=field|particle injection=aux-loss control=param|3d-init temporal=autoregressive domain=fluid|rigid|soft -->
 
 # Physics-Informed Neural Networks (PINN)
 
@@ -6,7 +6,7 @@
 
 ## 1. One-paragraph TL;DR
 
-純資料驅動的 NN（Sobel-only / pixel L2）對 PDE 系統的兩個致命傷：(a) **資料稀疏**就學不動 — 真實實驗只有 boundary / sensor 幾個點；(b) **OOD extrapolation 失效** — 沒看過的 viscosity / boundary 一外推就崩。PINN 把 PDE residual 本身寫成 auxiliary loss，用 autograd 對網路輸出取 ∂/∂x、∂²/∂x²，硬塞進 total loss。**Prior gap**：把 PDE 從「solver 端硬解」搬到「optimization 端 soft penalty」，於是 inverse problem（從觀測反推未知 PDE 係數）變成跟 forward problem 同一套機制。**為什麼這篇 handbook 把 PINN 當 `constraint-loss` 的標準參考**：所有後續 video / scene / NeRF + physics loss 的論文，基本都是 PINN 把 PDE 換成自家領域守恆律的再包裝；理解 PINN 的 failure mode（多尺度、stiff、loss-weight Pareto）就是理解這條 injection 線的下限。**遺留問題**：原 paper 在 Burgers / Schrödinger / Navier-Stokes（low-Re）漂亮 demo，但 Krishnapriyan et al NeurIPS 2021 證明 convection / reaction / diffusion 稍微把參數調出 trivial regime，vanilla PINN 就直接失效。這個「demo 跑得動但 production 撐不住」的鴻溝，是接下來五年所有 PINN 變體（causal / self-adaptive / hard-constraint）想填的。
+純資料驅動的 NN（Sobel-only / pixel L2）對 PDE 系統的兩個致命傷：(a) **資料稀疏**就學不動 — 真實實驗只有 boundary / sensor 幾個點；(b) **OOD extrapolation 失效** — 沒看過的 viscosity / boundary 一外推就崩。PINN 把 PDE residual 本身寫成 auxiliary loss，用 autograd 對網路輸出取 ∂/∂x、∂²/∂x²，硬塞進 total loss。**Prior gap**：把 PDE 從「solver 端硬解」搬到「optimization 端 soft penalty」，於是 inverse problem（從觀測反推未知 PDE 係數）變成跟 forward problem 同一套機制。**為什麼這篇 handbook 把 PINN 當 `aux-loss` 的標準參考**：所有後續 video / scene / NeRF + physics loss 的論文，基本都是 PINN 把 PDE 換成自家領域守恆律的再包裝；理解 PINN 的 failure mode（多尺度、stiff、loss-weight Pareto）就是理解這條 injection 線的下限。**遺留問題**：原 paper 在 Burgers / Schrödinger / Navier-Stokes（low-Re）漂亮 demo，但 Krishnapriyan et al NeurIPS 2021 證明 convection / reaction / diffusion 稍微把參數調出 trivial regime，vanilla PINN 就直接失效。這個「demo 跑得動但 production 撐不住」的鴻溝，是接下來五年所有 PINN 變體（causal / self-adaptive / hard-constraint）想填的。
 
 ## 2. Core mechanism
 
@@ -41,9 +41,9 @@
 | 軸 | PINN | Hamiltonian/Lagrangian NN | FNO/MeshGraphNet | PhysDiff |
 |---|---|---|---|---|
 | output | `field`（u(x,t) 連續場） | `field`（particle q,p over t） | `field` | `pixel-video` |
-| injection | **`constraint-loss`**（PDE residual as soft penalty） | **`hard-PDE`**（symplectic 架構 by-construction） | `hard-PDE`（spectral inductive bias） | `score-conditioned`（physics gradient 加在 score） |
-| control | `physical-param`（PDE coeff, BC, IC） | `physical-param`（initial state） | `physical-param` | `text` + `physical-param` |
-| temporal | `autoregressive`（在 (x,t) 空間 query 任意 t） | `streaming`（ODE 解算） | `autoregressive` | `joint-rollout` |
+| injection | **`aux-loss`**（PDE residual as soft penalty） | **`hard-constraint`**（symplectic 架構 by-construction） | `hard-constraint`（spectral inductive bias） | `guidance-gradient`（physics gradient 加在 score） |
+| control | `param`（PDE coeff, BC, IC） | `param`（initial state） | `param` | `text` + `param` |
+| temporal | `autoregressive`（在 (x,t) 空間 query 任意 t） | `streaming`（ODE 解算） | `autoregressive` | `clip-parallel` |
 | domain | `fluid` / `rigid` / `soft`（generalist PDE） | `rigid`（conservative system） | `fluid` 為主 | `rigid` |
 
 **同軸對手**：
@@ -92,7 +92,7 @@
 - **PINN 餘味在 video diffusion**：PhysGen（Liu et al, ECCV 2024，[link](./physgen.md)）並非把 PINN 整個搬到 video，而是把 PINN 的「rigid body / contact ODE 寫進 loss」的精神拆出來 — image 端用 generative diffusion 渲染，simulation 端用真 solver，**physics loss 只在中介 latent 上加**。直接把 PDE residual 丟到 video diffusion 的天真做法（PI-Loss for video diffusion）目前沒有成功案例 — score function 是 denoising 方向梯度，PDE residual 是物理約束梯度，**兩者方向不一定相容**，疊加會產生 distribution shift。這條路在 `crossing/controllability-vs-fidelity/` 是 open Pareto。
 - **PINN-meets-NeRF**：NeRF 本質也是「空間座標 → 場值」的 coord-based MLP，跟 PINN 形式上同構。社群已有把 PDE residual 當 aux loss 加在 NeRF 上的嘗試（physics-informed NeRF for fluid reconstruction、PI-MLP for hash-encoded fields），核心難題仍是 spectral bias — NeRF 的 hash encoding 對高頻友好，但 PINN 的 autograd 高階導數在 hash encoding 上數值不穩。[TBD: verify exact arxiv ID for physics-informed NeRF 流體重建 canonical work]。
 - **vs sim-in-loop**：當你有可微 simulator（Genesis、PhysX-diff），sim-in-loop 直接給 ground-truth trajectory 訊號，比 PINN 的 soft PDE penalty 強得多。PINN 主場仍是「**沒 simulator、只有 PDE 數學式 + 稀疏觀測**」這個 niche。
-- **vs `score-conditioned` 線**：PhysDiff / classifier-physics-guided diffusion 是把物理梯度加在 score function 上，本質仍是 soft constraint，但載體是 diffusion 採樣而非 MLP 拟合。可以視為 PINN 在 generative 範式下的近親；但兩者的 generalization 來源不同（PINN 來自 PDE 數學式，PhysDiff 來自大規模 video 預訓 + guidance）。
+- **vs `guidance-gradient` 線**：PhysDiff / classifier-physics-guided diffusion 是把物理梯度加在 score function 上，本質仍是 soft constraint，但載體是 diffusion 採樣而非 MLP 拟合。可以視為 PINN 在 generative 範式下的近親；但兩者的 generalization 來源不同（PINN 來自 PDE 數學式，PhysDiff 來自大規模 video 預訓 + guidance）。
 
 ## 7. References
 
@@ -129,4 +129,4 @@
 
 ---
 
-**衍生 dissection 候選**：Hamiltonian/Lagrangian NN（同 zone hard-PDE 對比）、PhysGen（cross-line 到 video generation）、Self-Adaptive PINN deep-dive（PINN 變體獨立一篇）、PhysDiff（同 zone score-conditioned 對比）。
+**衍生 dissection 候選**：Hamiltonian/Lagrangian NN（同 zone hard-constraint 對比）、PhysGen（cross-line 到 video generation）、Self-Adaptive PINN deep-dive（PINN 變體獨立一篇）、PhysDiff（同 zone guidance-gradient 對比）。

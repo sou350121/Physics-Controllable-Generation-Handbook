@@ -1,4 +1,4 @@
-<!-- ontology-5axis output=pixel-video injection=sim-in-loop|constraint-loss control=image-prompt|force|physical-param temporal=joint-rollout domain=rigid -->
+<!-- ontology-5axis output=pixel-video injection=sim-in-loop-infer|aux-loss control=image-init|force|param temporal=clip-parallel domain=rigid -->
 
 # PhysGen — Rigid-Body Physics-Grounded Image-to-Video Generation
 
@@ -8,7 +8,7 @@
 
 ## 1. One-paragraph TL;DR
 
-PhysGen 是 2024 年第一個把**硬 sim**（2D rigid-body solver, PyMunk）跟**學習式 video diffusion**（SEINE / SVD-class）端到端串起來的 image-to-video 系統。Prior art 兩端是斷的：純 data-driven I2V（Stable Video Diffusion / Sora-class）對「我給這個物體一個 30N 的水平力」這種顯式力學輸入沒有 controllability —— 模型只能從文字或起始幀「猜」要發生什麼；而 graphics 的 rigid simulator 可以精確算碰撞但渲染出來不像照片。PhysGen 的取捨是**把 simulator 放在中間做控制信號生成器**：image → 自動切分剛體 + 估參 → PyMunk 跑 2D dynamics → diffusion 把 simulated motion lift 回 photoreal video。它對 handbook ontology 上 Axis 2 (injection) 的價值在於**它同時是 `sim-in-loop` 與 `constraint-loss`** —— sim 提供 trajectory ground truth，diffusion 端再以這條 trajectory 為 conditioning，這跟下游 Force Prompting / PhysGen3D 一系列「explicit force as control」工作的祖先就是它。
+PhysGen 是 2024 年第一個把**硬 sim**（2D rigid-body solver, PyMunk）跟**學習式 video diffusion**（SEINE / SVD-class）端到端串起來的 image-to-video 系統。Prior art 兩端是斷的：純 data-driven I2V（Stable Video Diffusion / Sora-class）對「我給這個物體一個 30N 的水平力」這種顯式力學輸入沒有 controllability —— 模型只能從文字或起始幀「猜」要發生什麼；而 graphics 的 rigid simulator 可以精確算碰撞但渲染出來不像照片。PhysGen 的取捨是**把 simulator 放在中間做控制信號生成器**：image → 自動切分剛體 + 估參 → PyMunk 跑 2D dynamics → diffusion 把 simulated motion lift 回 photoreal video。它對 handbook ontology 上 Axis 2 (injection) 的價值在於**它同時是 `sim-in-loop` 與 `aux-loss`** —— sim 提供 trajectory ground truth，diffusion 端再以這條 trajectory 為 conditioning，這跟下游 Force Prompting / PhysGen3D 一系列「explicit force as control」工作的祖先就是它。
 
 ## 2. Core mechanism
 
@@ -53,16 +53,16 @@ PhysGen 是 2024 年第一個把**硬 sim**（2D rigid-body solver, PyMunk）跟
 | 軸 | 值 | 註 |
 |---|---|---|
 | Output | `pixel-video` | 16 frame RGB clip |
-| Injection | `sim-in-loop` + `constraint-loss` | PyMunk 在 inference loop；diffusion 端用 motion mask 做 conditioning |
-| Control | `image-prompt` + `force` + `physical-param` | force/torque + 可調 mass/friction |
-| Temporal | `joint-rollout` | 一次 denoise 整段 clip，非 autoregressive |
+| Injection | `sim-in-loop` + `aux-loss` | PyMunk 在 inference loop；diffusion 端用 motion mask 做 conditioning |
+| Control | `image-init` + `force` + `param` | force/torque + 可調 mass/friction |
+| Temporal | `clip-parallel` | 一次 denoise 整段 clip，非 autoregressive |
 | Domain | `rigid` | 2D 剛體，明確排除 soft/fluid |
 
 同軸對手（output=pixel-video）：
 
-- **Sora / Veo** — 純 `implicit-from-data`，無 force conditioning，long-horizon 物理崩潰是 known mode。詳見 [Sora dissection](../video-world-models/sora.md)。PhysGen 用 sim 補了 Sora 缺的「explicit force → trajectory」控制。
+- **Sora / Veo** — 純 `data-only`，無 force conditioning，long-horizon 物理崩潰是 known mode。詳見 [Sora dissection](../video-world-models/sora.md)。PhysGen 用 sim 補了 Sora 缺的「explicit force → trajectory」控制。
 - **Force Prompting** (NeurIPS 2025, [force-prompting.md](./force-prompting.md)) — 同樣 force-conditioned I2V，但**沒有 explicit simulator**：直接讓 CogVideoX-5B + ControlNet 從 15k Blender-synthetic videos 學 force→motion mapping。PhysGen 是「sim 顯式 + render 學習」；Force Prompting 是「sim 完全藏進權重」。後者 generalize 更廣（不限剛體形狀），但 debug 完全黑盒。
-- **PhysDiff** ([physdiff.md](./physdiff.md)) — score-conditioned motion-only diffusion（人體動作 + 物理懲罰），不生像素；跟 PhysGen 在 injection 軸上同為「物理 + diffusion」但 output 不同（motion vs pixel）。
+- **PhysDiff** ([physdiff.md](./physdiff.md)) — guidance-gradient motion-only diffusion（人體動作 + 物理懲罰），不生像素；跟 PhysGen 在 injection 軸上同為「物理 + diffusion」但 output 不同（motion vs pixel）。
 - **PhysDreamer** (Zhang et al., **ECCV 2024**, arXiv [2404.13026](https://arxiv.org/abs/2404.13026)) — 同期不同團隊（MIT/Stanford）的 3D 變體：給定靜態 3DGS，估材料 stiffness，用 MPM 在 3D 跑 elastic dynamics，再用 video model 蒸出 dynamics prior。PhysDreamer 強在 elastic / soft，PhysGen 強在 rigid-body contact；兩者互補，不直接競爭。
 
 > 註：user prompt 把 PhysDreamer 標為 CVPR 2024，**實際是 ECCV 2024**；標題也不是 "Physical Property Estimation from Static 3D Models"，而是 "Physics-Based Interaction with 3D Objects via Video Generation"。此處以 arxiv / ECCV 官方為準。
@@ -106,8 +106,8 @@ pip install -r requirements.txt
 
 PhysGen 在 handbook 五條技術路線上的接口：
 
-- **vs `foundation-physics-models/`（Cosmos-WFM, [cosmos-wfm.md](../foundation-physics-models/cosmos-wfm.md)）**：Cosmos 走 `implicit-from-data` + `text` conditioning，強在 scale 與 generalization；PhysGen 走 `sim-in-loop` + `force`，強在 controllability。兩者可 compose：Cosmos 提供 photoreal prior，PhysGen 的 sim trajectory 作為 ControlNet-style guidance 注入。這是 2026 出現的「foundation video model + per-scene physics adapter」的早期原型。
-- **vs `diffusion-physics/` PINN ([pinn.md](./pinn.md))**：PINN 走純 `constraint-loss`（PDE residual 加到 loss）；PhysGen 的 `constraint-loss` 是 sim 給的 motion mask 跟 diffusion 輸出之間的 L2/perceptual，是**間接 PDE constraint** —— 力學律已經被 PyMunk 解完，diffusion 只負責 visual match。所以 PhysGen 在 injection 軸上是 **hybrid (sim-in-loop ∩ constraint-loss)** 而非單純 PINN。
+- **vs `foundation-physics-models/`（Cosmos-WFM, [cosmos-wfm.md](../foundation-physics-models/cosmos-wfm.md)）**：Cosmos 走 `data-only` + `text` conditioning，強在 scale 與 generalization；PhysGen 走 `sim-in-loop` + `force`，強在 controllability。兩者可 compose：Cosmos 提供 photoreal prior，PhysGen 的 sim trajectory 作為 ControlNet-style guidance 注入。這是 2026 出現的「foundation video model + per-scene physics adapter」的早期原型。
+- **vs `diffusion-physics/` PINN ([pinn.md](./pinn.md))**：PINN 走純 `aux-loss`（PDE residual 加到 loss）；PhysGen 的 `aux-loss` 是 sim 給的 motion mask 跟 diffusion 輸出之間的 L2/perceptual，是**間接 PDE constraint** —— 力學律已經被 PyMunk 解完，diffusion 只負責 visual match。所以 PhysGen 在 injection 軸上是 **hybrid (sim-in-loop ∩ aux-loss)** 而非單純 PINN。
 - **vs `crossing/controllability-vs-fidelity/`**（[controllability-vs-fidelity](../../crossing/controllability-vs-fidelity/)）：PhysGen 是該 trade-off 圖上的一個明確 anchor —— controllability 高（force 顯式可調）但 fidelity 受 SEINE-class 渲染上限，且 domain 窄（rigid 2D）。Sora 在另一端：fidelity 高、controllability 弱。Force Prompting 嘗試 Pareto 中段。
 - **vs `differentiable-simulators/`**：PhysGen 故意**不**用 diff-sim —— PyMunk 不可微，但因 gradient 不需穿過去（sim 只給 conditioning），整體訓練/推理成本遠低於 Genesis-train。代價是失去「用 diffusion loss 反推物理參數」的能力。
 

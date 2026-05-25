@@ -4,9 +4,9 @@
 
 ## 5-axis defaults
 
-- `output=field|mesh|particle`
-- `injection=hard-PDE` or `constraint-loss`
-- `control=physical-param|3d-prompt`
+- `output=field|3d-explicit|particle`（v1 `mesh` 合進 `3d-explicit`）
+- `injection=architecture-bias-soft` 或 `aux-loss`（v2 重歸：GraphCast/FNO 的 inductive bias 是 soft，**非** `hard-constraint`）
+- `control=param|3d-init`
 - `temporal=autoregressive`（多數）
 - `domain=fluid|weather|rigid|soft|granular|bio`
 
@@ -41,5 +41,5 @@
 
 - Long-rollout drift —— 自迴歸 surrogate 累積誤差，PDE-Refiner 嘗試解
 - Boundary condition OOD —— 訓練時沒見過的邊界拓撲
-- Conservation violation —— 即使 hard-PDE 架構也只能保證特定守恆律
+- Conservation violation —— 即使 hard-constraint 架構也只能保證特定守恆律
 - 與真實量測的 gap —— surrogate 訓在 sim/reanalysis，不在真實 sensor

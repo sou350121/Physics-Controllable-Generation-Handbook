@@ -5,9 +5,9 @@
 ## 5-axis defaults
 
 - `output=pixel-video|mesh|particle`
-- `injection=score-conditioned`
+- `injection=guidance-gradient`
 - `control=text|trajectory|force|contact`
-- `temporal=joint-rollout`（少數 latent-rollout）
+- `temporal=clip-parallel`（少數 latent-rollout）
 - `domain=generalist|fluid|rigid`
 
 ## Anchor methods
@@ -23,7 +23,7 @@
 
 - [ ] PhysDiff classifier guidance 機制與失效
 - [ ] Force/Contact conditioning 在 diffusion 中的設計（與 controllability-mechanisms 互鏈）
-- [ ] Score-conditioned 與 constraint-loss 的 Pareto 比較
+- [ ] Score-conditioned 與 aux-loss 的 Pareto 比較
 
 ## §8 共通 pitfall
 

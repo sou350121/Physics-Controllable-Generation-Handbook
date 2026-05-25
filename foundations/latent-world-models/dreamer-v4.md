@@ -1,4 +1,4 @@
-<!-- ontology-5axis output=latent injection=implicit-from-data control=action temporal=latent-rollout domain=robotics|generalist -->
+<!-- ontology-5axis output=latent-tokens injection=data-only control=action temporal=latent-rollout domain=robotics -->
 
 # DreamerV3 → DreamerV4 (Hafner et al.)
 
@@ -53,8 +53,8 @@ Context length 撐到 9.6 秒（前代約 1.5 秒），單 H100 互動 ≥20 FPS
 ## 3. 五軸定位 + 同軸對手
 
 - `output=latent`（V4 另出 pixel 解碼用於 visualization，但 RL 全在 latent 跑）
-- `injection=implicit-from-data`（無 PDE / 守恆 / contact loss；物理是從 VPT video distribution 隱式長出來的）
-- `control=action`（V4 也支援 image-prompt 做 rollout 開頭）
+- `injection=data-only`（無 PDE / 守恆 / contact loss；物理是從 VPT video distribution 隱式長出來的）
+- `control=action`（V4 也支援 image-init 做 rollout 開頭）
 - `temporal=latent-rollout`（V3 GRU、V4 block-causal transformer，兩代都不在 pixel 上 autoregress）
 - `domain=robotics|generalist`（V3 跨 150 tasks 含 DMC robot、V4 主打 Minecraft 但 architecture 是 generalist）
 
@@ -112,7 +112,7 @@ Context length 撐到 9.6 秒（前代約 1.5 秒），單 H100 互動 ≥20 FPS
 
 **vs neural-surrogate（[FNO](../neural-surrogates/fno.md) / [GraphCast](../neural-surrogates/graphcast.md) / MeshGraphNet）**
 
-- Surrogate 解的是「給定 PDE，預測下一狀態」— 沒有 action / reward / policy 概念，injection 是 hard-PDE 或 constraint-loss。Dreamer 是 implicit-from-data 的 agentic WM。兩條線可組：surrogate 當 simulator → Dreamer 在其上訓 policy（類似 PhysGen × RL，文獻仍少）。
+- Surrogate 解的是「給定 PDE，預測下一狀態」— 沒有 action / reward / policy 概念，injection 是 hard-constraint 或 aux-loss。Dreamer 是 data-only 的 agentic WM。兩條線可組：surrogate 當 simulator → Dreamer 在其上訓 policy（類似 PhysGen × RL，文獻仍少）。
 
 **vs [V-JEPA-2](./v-jepa-2.md)（self-supervised latent + action head）**
 

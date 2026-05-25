@@ -1,4 +1,4 @@
-<!-- ontology-5axis output=action-seq|mesh injection=score-conditioned|sim-in-loop control=text|contact temporal=joint-rollout|autoregressive domain=robotics|rigid -->
+<!-- ontology-5axis output=motion|3d-explicit injection=guidance-gradient|sim-in-loop-infer control=text|contact temporal=clip-parallel|autoregressive domain=robotics|rigid -->
 
 # PhysDiff — Physics-Guided Human Motion Diffusion Model
 
@@ -8,7 +8,7 @@
 
 純資料驅動的 human-motion diffusion（MDM 一脈）在文生動作 / 動作生成上分數很高，但生成的骨架普遍 **floating（懸空）/ foot sliding（滑步）/ ground penetration（穿地）**，原因是 denoising 過程裡完全沒有任何接觸或重力訊號 — MDM 用 foot-contact loss 是 soft penalty，無法 hard-enforce。PhysDiff 提出一個極簡的補丁：**在 denoising 迴圈裡夾一個 physics simulator**，每隔幾步把當前的 motion sample 餵給一個已預訓練好的 humanoid imitator（UHC / Isaac Gym + PPO），讓 simulator rollout 一段「真的能站著走的軌跡」，再把這個物理可行的版本注回 diffusion chain 當下一步起點。
 
-這就是 ontology Axis 2 「`score-conditioned`」 + 「`sim-in-loop`」雙軸的 **canonical 樣板**：物理規律不是 architecture-level 進去（像 HNN）、也不是 training-time loss（像 PINN），而是 **inference 時的迭代投影**，所以可以 **plug 在任何 pretrained motion diffusion model 上**而不重訓 score network。對 video-physics / Sora 的 foot-floating 問題，這條路是目前最直接可借鑒的範式。
+這就是 ontology Axis 2 「`guidance-gradient`」 + 「`sim-in-loop`」雙軸的 **canonical 樣板**：物理規律不是 architecture-level 進去（像 HNN）、也不是 training-time loss（像 PINN），而是 **inference 時的迭代投影**，所以可以 **plug 在任何 pretrained motion diffusion model 上**而不重訓 score network。對 video-physics / Sora 的 foot-floating 問題，這條路是目前最直接可借鑒的範式。
 
 實測在 HumanML3D + MDM denoiser 上：ground penetration 11.29mm → 0.998mm、floating 18.88mm → 2.60mm、foot sliding 1.41mm → 0.51mm，整體 Phys-Err 降 86%（作者報數）。
 
@@ -22,7 +22,7 @@ $$
 
 `PhysProj` 把 $\hat{x}_{t-1}$ 餵給 Universal Humanoid Controller（[UHC](https://github.com/ZhengyiLuo/UHC)，後續論文升級到 Isaac Gym + PPO 訓練的 imitator），simulator 內 PD controller + residual force 跑 N 步 rollout 並 imitate 該參考動作 — 跑得出來的軌跡就是物理可行的；跑不出來（contact violation、IK 失敗）就回退或截斷。輸出 $x_{t-1}$ 再走下一輪 denoising。
 
-關鍵設計細節（作者實測最佳）：**"End 4, Space 1"** — 只在 denoising **末段 4 個 timestep** 應用 projection、間隔 1 步。早期高 noise 階段做 projection 反而傷品質（because the simulator can't imitate noise-level garbage），這是 score-conditioned 路線跟 PINN 路線的本質區別：**晚做、少做、做精準**。
+關鍵設計細節（作者實測最佳）：**"End 4, Space 1"** — 只在 denoising **末段 4 個 timestep** 應用 projection、間隔 1 步。早期高 noise 階段做 projection 反而傷品質（because the simulator can't imitate noise-level garbage），這是 guidance-gradient 路線跟 PINN 路線的本質區別：**晚做、少做、做精準**。
 
 ```
 text prompt c
@@ -42,7 +42,7 @@ text prompt c
         │
         x_{t-1} ◄────────────────────────────────────────── feed back
 
-  Loop t = T → 0;  score-conditioned every step, sim-in-loop only last 4.
+  Loop t = T → 0;  guidance-gradient every step, sim-in-loop only last 4.
 ```
 
 注意 PhysProj 是 **non-differentiable**（simulator 是 black box），所以這條路不能用來訓 score network，只能在 sampling 時用 — 跟 Genesis / MJX 的「可微 sim 反傳 gradient 訓 score」是兩條完全不同的路線（見 §6）。
@@ -52,9 +52,9 @@ text prompt c
 | Axis | PhysDiff |
 |---|---|
 | Output | `action-seq` (SMPL pose seq) + `mesh` (rigged human) |
-| Injection | **`score-conditioned` + `sim-in-loop`** — 雙標記，本倉這對組合的範例 |
+| Injection | **`guidance-gradient` + `sim-in-loop`** — 雙標記，本倉這對組合的範例 |
 | Control | `text` (HumanML3D)、`contact` (隱式 via simulator) |
-| Temporal | `joint-rollout`（一次 clip）但 projection 內含 `autoregressive` simulator step |
+| Temporal | `clip-parallel`（一次 clip）但 projection 內含 `autoregressive` simulator step |
 | Domain | `robotics`（humanoid）/ `rigid`（剛體連桿） |
 
 **同軸對手**：
@@ -62,7 +62,7 @@ text prompt c
 - **PINN-style aux loss**（→ [`./pinn.md`](./pinn.md)）— 訓練時加 contact / momentum loss。優勢：inference 0 額外 cost；劣勢：soft constraint、weight tuning 噩夢、超出訓練 distribution 立刻失效。PhysDiff 把「規律檢查」從 train-time 搬到 inference-time，**用 sim 的 ground truth 取代 hand-crafted PDE loss**。
 - **Hamiltonian / Lagrangian NN**（→ [`./hamiltonian-lagrangian-nn.md`](./hamiltonian-lagrangian-nn.md)）— 架構天生保守。優勢：hard guarantee；劣勢：只能處理 closed 動力系統，無法表達 contact discontinuity（人走路的本質就是不斷打開/關閉接觸對）。PhysDiff 用 simulator 代理整個複雜接觸模型，**換掉一整類 PDE 寫不出來的場景**。
 - **PhysGen**（→ [`./physgen.md`](./physgen.md)）— rigid-body pipeline，static image → physics-grounded video。同樣是 sim-in-loop，但 PhysGen 是 **pipeline-style**（perception → sim → render），不是 **iterative-loop**。PhysDiff 把 sim 嵌進 denoising 迴圈，是更深的耦合。
-- **Force Prompting**（→ [`./force-prompting.md`](./force-prompting.md)）— 把力當 conditioning 餵 video diffusion。Injection 比 PhysDiff 弱（`implicit-from-data` + `force` control），完全不接 simulator。
+- **Force Prompting**（→ [`./force-prompting.md`](./force-prompting.md)）— 把力當 conditioning 餵 video diffusion。Injection 比 PhysDiff 弱（`data-only` + `force` control），完全不接 simulator。
 - **MDM (baseline, [Tevet 2022](https://arxiv.org/abs/2209.14916))** — PhysDiff 的 denoiser 就是 MDM。MDM 用 foot-contact loss + sample-prediction（預測 $x_0$ 而非 noise），這讓 PhysDiff 的後處理 projection 變得可行（你要 project 一個 motion，不能 project 一團 noise）。PhysDiff vs MDM 的 ablation 是這條 line 最乾淨的對照組。
 
 ## 4. ⚡ shines / ❌ breaks
@@ -108,7 +108,7 @@ text prompt c
 
 **結論**：兩條路線在 contact-rich 場景目前 **互補不替代**。PhysDiff 是 contact-discontinuity 的暴力解，可微 sim 是 long-term 優雅解但還不成熟。
 
-**對 video generation（Sora-line）的延伸 — 開放問題**：Sora 的 foot-physics / object permanence 也是 score-conditioned model + 違反守恆律的 case。直接搬 PhysDiff 思路的困難：
+**對 video generation（Sora-line）的延伸 — 開放問題**：Sora 的 foot-physics / object permanence 也是 guidance-gradient model + 違反守恆律的 case。直接搬 PhysDiff 思路的困難：
 
 1. Video diffusion 的 latent 不是 SMPL — 沒有對應的「humanoid imitator」可投影。
 2. Video diffusion 的 denoising step 數遠多於 motion（如 100+），projection 算力指數爆炸。

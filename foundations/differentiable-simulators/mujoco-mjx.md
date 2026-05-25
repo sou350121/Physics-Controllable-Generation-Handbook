@@ -1,4 +1,4 @@
-<!-- ontology-5axis output=N/A injection=sim-in-loop|hard-PDE control=action|trajectory|force|contact|physical-param temporal=streaming domain=robotics|rigid -->
+<!-- ontology-5axis output=N/A injection=sim-in-loop-train|hard-constraint control=action|trajectory|force|contact|param temporal=streaming domain=robotics|rigid -->
 
 # MuJoCo MJX
 
@@ -32,8 +32,8 @@ mjData ────────┘                       │
 | 軸 | MJX 值 | 註 |
 |---|---|---|
 | Output | `N/A` | 不是生成模型；產出 ground-truth state/contact/render 給生成模型用 |
-| Injection | `sim-in-loop` (主) / `hard-PDE` (邊界) | 嚴格滿足 Newton-Euler；contact 用 penalty soft model |
-| Control | `action|trajectory|force|contact|physical-param` | ctrl input、external wrench、contact mask 都可作 input |
+| Injection | `sim-in-loop` (主) / `hard-constraint` (邊界) | 嚴格滿足 Newton-Euler；contact 用 penalty soft model |
+| Control | `action|trajectory|force|contact|param` | ctrl input、external wrench、contact mask 都可作 input |
 | Temporal | `streaming` | 一步一步 forward；可微 backward through time |
 | Domain | `robotics|rigid` | 偏 articulated rigid；soft body 透過 flex 但不算主路 |
 

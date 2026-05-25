@@ -10,10 +10,10 @@
 
 ## 5-axis defaults
 
-- `output=3d-scene|mesh`
-- `injection=implicit-from-data` or `constraint-loss`
-- `control=text|image-prompt|3d-prompt`
-- `temporal=joint-rollout` or `hierarchical`
+- `output=3d-explicit`（v1 `3d-scene`/`mesh` 合併；NeRF/SDF 內部用 → `3d-implicit`）
+- `injection=data-only` or `aux-loss`
+- `control=text|image-init|3d-init`
+- `temporal=clip-parallel` or `hierarchical`
 - `domain=generalist`
 
 ## Anchor methods

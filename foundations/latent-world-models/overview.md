@@ -4,9 +4,9 @@
 
 ## 5-axis defaults
 
-- `output=latent`（部分另出 `pixel-video` 為 visualization）
-- `injection=implicit-from-data` or `constraint-loss`
-- `control=action|image-prompt`
+- `output=latent-tokens`（V-JEPA / Dreamer 的純 planning latent；部分另出 `pixel-video` 為 visualization e.g. Cosmos / SVD）
+- `injection=data-only` or `aux-loss`
+- `control=action|image-init`
 - `temporal=latent-rollout` or `hierarchical`
 - `domain=robotics|driving|generalist`
 

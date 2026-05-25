@@ -1,4 +1,4 @@
-<!-- ontology-5axis output=N/A injection=N/A control=text temporal=joint-rollout domain=generalist -->
+<!-- ontology-5axis output=N/A injection=N/A control=text temporal=clip-parallel domain=N/A -->
 
 # VBench / VBench-2.0 / PhysBench — Eval Suite Landscape
 
@@ -56,7 +56,7 @@ VLM-only 評估，不評生成器：
 
 ## 3. 五軸定位 + 同軸對手
 
-**Header 解釋**：`output=N/A injection=N/A` —— eval suite 不生成、不注入物理；`control=text` —— 對 T2V 模型 evaluate；`temporal=joint-rollout` —— 評估目標主要是一次性 clip；`domain=generalist` —— 不限定場域（這也是缺點，見 §4）。
+**Header 解釋**：`output=N/A injection=N/A` —— eval suite 不生成、不注入物理；`control=text` —— 對 T2V 模型 evaluate；`temporal=clip-parallel` —— 評估目標主要是一次性 clip；`domain=generalist` —— 不限定場域（這也是缺點，見 §4）。
 
 | Benchmark | Physics 軸涵蓋 | 評估對象 | 開源 leaderboard |
 |---|---|---|---|
