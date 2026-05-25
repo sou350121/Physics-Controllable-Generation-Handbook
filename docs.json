@@ -1,0 +1,88 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "Physics-Controllable Generation Handbook",
+  "description": "Physics-as-conditioning world models — sister to VLA-Handbook & Spatial-Intelligence-Handbook",
+  "theme": "mint",
+  "colors": {
+    "primary": "#7C3AED",
+    "light": "#A78BFA",
+    "dark": "#5B21B6"
+  },
+  "navigation": [
+    {
+      "group": "Start",
+      "pages": ["README", "ONBOARDING", "AGENTS", "CONTRIBUTING", "MAINTAINER"]
+    },
+    {
+      "group": "Cheat Sheet",
+      "pages": [
+        "cheat-sheet/overview",
+        "cheat-sheet/ontology",
+        "cheat-sheet/functional_map",
+        "cheat-sheet/timeline",
+        "cheat-sheet/controllability_input_matrix"
+      ]
+    },
+    {
+      "group": "Foundations",
+      "pages": [
+        "foundations/overview",
+        "foundations/video-world-models/overview",
+        "foundations/latent-world-models/overview",
+        "foundations/physics-conditioning/overview",
+        "foundations/diffusion-physics/overview",
+        "foundations/differentiable-simulators/overview",
+        "foundations/neural-surrogates/overview",
+        "foundations/controllability-mechanisms/overview",
+        "foundations/evaluation-physics/overview",
+        "foundations/3d-aware-generation/overview",
+        "foundations/long-horizon-rollout/overview",
+        "foundations/material-and-dynamics/overview",
+        "foundations/data-engine/overview",
+        "foundations/foundation-physics-models/overview"
+      ]
+    },
+    {
+      "group": "Use Cases",
+      "pages": [
+        "use-cases/overview",
+        "use-cases/robotics-data-gen/overview",
+        "use-cases/autonomous-driving-sim/overview",
+        "use-cases/embodied-policy-rollout/overview",
+        "use-cases/scientific-discovery/overview",
+        "use-cases/media-and-content/overview",
+        "use-cases/digital-twin/overview"
+      ]
+    },
+    {
+      "group": "Crossing (USP wedges)",
+      "pages": [
+        "crossing/overview",
+        "crossing/pixel-vs-latent-physics/overview",
+        "crossing/sim-vs-gen-data/overview",
+        "crossing/controllability-vs-fidelity/overview",
+        "crossing/conservation-violation-atlas/overview",
+        "crossing/text-action-trajectory-spectrum/overview"
+      ]
+    },
+    {
+      "group": "Deployment",
+      "pages": ["deployment/overview"]
+    },
+    {
+      "group": "Benchmarks",
+      "pages": ["benchmarks/overview"]
+    },
+    {
+      "group": "Companies",
+      "pages": ["companies/overview"]
+    },
+    {
+      "group": "Bridges",
+      "pages": ["bridge-to-vla/overview", "bridge-to-spatial/overview"]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/sou350121/Physics-Controllable-Generation-Handbook"
+  }
+}
