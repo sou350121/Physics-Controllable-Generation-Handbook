@@ -1,0 +1,323 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 540" font-family="-apple-system, system-ui, sans-serif">
+  <title>Check 9b — Output × Injection Compatibility Matrix v2.0</title>
+  <desc>8-by-7 matrix mapping Axis-1 output representations (rows: pixel-video, latent-tokens, 3d-explicit, 3d-implicit, particle, field, action-seq, motion) against Axis-2 injection mechanisms (cols: data-only, aux-loss, sim-in-loop-train, sim-in-loop-infer, guidance-gradient, architecture-bias-soft, hard-constraint). Cells marked compatible with anchor methods (Sora, VideoPoet, PhysGen3D, etc.), rare (yellow), or incompatible (red). Per v2 spec line 141-150: pixel-video × hard-constraint, field × sim-in-loop-train, and 3d-implicit × sim-in-loop-train are incompatible.</desc>
+
+  <!-- Title -->
+  <text x="450" y="22" text-anchor="middle" fill="#bbb" font-size="14" font-weight="700">Check 9b — Output × Injection Compatibility Matrix (v2.0)</text>
+  <text x="450" y="40" text-anchor="middle" fill="#888" font-size="11" font-style="italic">Axis-1 output × Axis-2 injection · anchor dissections in compatible cells</text>
+
+  <!-- Column headers -->
+  <!-- Layout: row-label x=10..150 (140w); cols x=150..780 in 7 × 90 wide -->
+  <g font-size="10" fill="#fff">
+    <!-- corner -->
+    <rect x="10" y="55" width="140" height="50" fill="#0a0a14" stroke="#444"/>
+    <text x="80" y="78" text-anchor="middle" fill="#888" font-size="10" font-style="italic">Output ↓ / Injection →</text>
+
+    <rect x="150" y="55" width="90" height="50" fill="#1a1a2e" stroke="#444"/>
+    <text x="195" y="78" text-anchor="middle" font-weight="700">data-only</text>
+    <text x="195" y="93" text-anchor="middle" fill="#888" font-size="9">scale only</text>
+
+    <rect x="240" y="55" width="90" height="50" fill="#1a1a2e" stroke="#444"/>
+    <text x="285" y="78" text-anchor="middle" font-weight="700">aux-loss</text>
+    <text x="285" y="93" text-anchor="middle" fill="#888" font-size="9">PDE term</text>
+
+    <rect x="330" y="55" width="90" height="50" fill="#1a1a2e" stroke="#444"/>
+    <text x="375" y="74" text-anchor="middle" font-weight="700">sim-loop</text>
+    <text x="375" y="86" text-anchor="middle" font-weight="700">train</text>
+    <text x="375" y="99" text-anchor="middle" fill="#888" font-size="9">diff sim</text>
+
+    <rect x="420" y="55" width="90" height="50" fill="#1a1a2e" stroke="#444"/>
+    <text x="465" y="74" text-anchor="middle" font-weight="700">sim-loop</text>
+    <text x="465" y="86" text-anchor="middle" font-weight="700">infer</text>
+    <text x="465" y="99" text-anchor="middle" fill="#888" font-size="9">verify</text>
+
+    <rect x="510" y="55" width="90" height="50" fill="#1a1a2e" stroke="#444"/>
+    <text x="555" y="74" text-anchor="middle" font-weight="700">guidance</text>
+    <text x="555" y="86" text-anchor="middle" font-weight="700">gradient</text>
+    <text x="555" y="99" text-anchor="middle" fill="#888" font-size="9">classifier</text>
+
+    <rect x="600" y="55" width="90" height="50" fill="#1a1a2e" stroke="#444"/>
+    <text x="645" y="74" text-anchor="middle" font-weight="700">arch-bias</text>
+    <text x="645" y="86" text-anchor="middle" font-weight="700">soft</text>
+    <text x="645" y="99" text-anchor="middle" fill="#9d4edd" font-size="9">★ v2 NEW</text>
+
+    <rect x="690" y="55" width="90" height="50" fill="#1a1a2e" stroke="#444"/>
+    <text x="735" y="74" text-anchor="middle" font-weight="700">hard</text>
+    <text x="735" y="86" text-anchor="middle" font-weight="700">constraint</text>
+    <text x="735" y="99" text-anchor="middle" fill="#888" font-size="9">symplectic</text>
+  </g>
+
+  <!-- Define color tints:
+       compatible (teal): #0e2a2a (subtle dark teal)
+       rare (yellow):     #3a3a1a
+       incompat (red):    #3a1a1a
+  -->
+
+  <!-- ROW 1: pixel-video (y=105..145) -->
+  <g>
+    <rect x="10" y="105" width="140" height="40" fill="#1a1a2e" stroke="#444"/>
+    <text x="140" y="123" text-anchor="end" fill="#fff" font-size="11" font-weight="700">pixel-video</text>
+    <text x="140" y="137" text-anchor="end" fill="#888" font-size="9">RGB frames</text>
+    <!-- data-only ✓ Sora -->
+    <rect x="150" y="105" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="195" y="124" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="195" y="138" text-anchor="middle" fill="#bbb" font-size="9">Sora</text>
+    <!-- aux-loss ✓ PhysGen aux -->
+    <rect x="240" y="105" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="285" y="124" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="285" y="138" text-anchor="middle" fill="#bbb" font-size="9">PhysGen aux</text>
+    <!-- sim-loop train ✓ PhysGen -->
+    <rect x="330" y="105" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="375" y="124" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="375" y="138" text-anchor="middle" fill="#bbb" font-size="9">PhysGen</text>
+    <!-- sim-loop infer ✓ Cosmos -->
+    <rect x="420" y="105" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="465" y="124" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="465" y="138" text-anchor="middle" fill="#bbb" font-size="9">Cosmos</text>
+    <!-- guidance ✓ Force Prompt -->
+    <rect x="510" y="105" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="555" y="124" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="555" y="138" text-anchor="middle" fill="#bbb" font-size="9">Force Prompt</text>
+    <!-- arch-bias soft ✓ NewtonGen -->
+    <rect x="600" y="105" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="645" y="124" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="645" y="138" text-anchor="middle" fill="#bbb" font-size="9">NewtonGen</text>
+    <!-- hard-constraint ✗ too high-dim -->
+    <rect x="690" y="105" width="90" height="40" fill="#3a1a1a" stroke="#444"/>
+    <text x="735" y="124" text-anchor="middle" fill="#e94560" font-size="14" font-weight="700">✗</text>
+    <text x="735" y="138" text-anchor="middle" fill="#e94560" font-size="9">too high-dim</text>
+  </g>
+
+  <!-- ROW 2: latent-tokens (y=145..185) -->
+  <g>
+    <rect x="10" y="145" width="140" height="40" fill="#1a1a2e" stroke="#444"/>
+    <text x="140" y="163" text-anchor="end" fill="#fff" font-size="11" font-weight="700">latent-tokens</text>
+    <text x="140" y="177" text-anchor="end" fill="#888" font-size="9">VAE / VQ codes</text>
+    <!-- data-only ✓ VideoPoet -->
+    <rect x="150" y="145" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="195" y="164" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="195" y="178" text-anchor="middle" fill="#bbb" font-size="9">VideoPoet</text>
+    <!-- aux-loss ✓ -->
+    <rect x="240" y="145" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="285" y="164" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="285" y="178" text-anchor="middle" fill="#bbb" font-size="9">decoder loss</text>
+    <!-- sim-loop train rare -->
+    <rect x="330" y="145" width="90" height="40" fill="#3a3a1a" stroke="#444"/>
+    <text x="375" y="164" text-anchor="middle" fill="#f9c74f" font-size="13" font-weight="700">rare</text>
+    <text x="375" y="178" text-anchor="middle" fill="#f9c74f" font-size="9">decode→sim</text>
+    <!-- sim-loop infer rare -->
+    <rect x="420" y="145" width="90" height="40" fill="#3a3a1a" stroke="#444"/>
+    <text x="465" y="164" text-anchor="middle" fill="#f9c74f" font-size="13" font-weight="700">rare</text>
+    <text x="465" y="178" text-anchor="middle" fill="#f9c74f" font-size="9">decode→sim</text>
+    <!-- guidance ✓ -->
+    <rect x="510" y="145" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="555" y="164" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="555" y="178" text-anchor="middle" fill="#bbb" font-size="9">latent guide</text>
+    <!-- arch-bias soft ✓ -->
+    <rect x="600" y="145" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="645" y="164" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="645" y="178" text-anchor="middle" fill="#bbb" font-size="9">equiv-DiT</text>
+    <!-- hard-constraint ✓ symbolic latent -->
+    <rect x="690" y="145" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="735" y="164" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="735" y="178" text-anchor="middle" fill="#bbb" font-size="9">symbolic z</text>
+  </g>
+
+  <!-- ROW 3: 3d-explicit (y=185..225) -->
+  <g>
+    <rect x="10" y="185" width="140" height="40" fill="#1a1a2e" stroke="#444"/>
+    <text x="140" y="203" text-anchor="end" fill="#fff" font-size="11" font-weight="700">3d-explicit</text>
+    <text x="140" y="217" text-anchor="end" fill="#888" font-size="9">mesh / pointcloud</text>
+    <rect x="150" y="185" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="195" y="204" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="195" y="218" text-anchor="middle" fill="#bbb" font-size="9">Trellis</text>
+    <rect x="240" y="185" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="285" y="204" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="285" y="218" text-anchor="middle" fill="#bbb" font-size="9">SDF loss</text>
+    <rect x="330" y="185" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="375" y="204" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="375" y="218" text-anchor="middle" fill="#bbb" font-size="9">PhysGen3D</text>
+    <rect x="420" y="185" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="465" y="204" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="465" y="218" text-anchor="middle" fill="#bbb" font-size="9">mesh sim</text>
+    <rect x="510" y="185" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="555" y="204" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="555" y="218" text-anchor="middle" fill="#bbb" font-size="9">SDS-physics</text>
+    <rect x="600" y="185" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="645" y="204" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="645" y="218" text-anchor="middle" fill="#bbb" font-size="9">MeshGraphNet</text>
+    <rect x="690" y="185" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="735" y="204" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="735" y="218" text-anchor="middle" fill="#bbb" font-size="9">rigid-body</text>
+  </g>
+
+  <!-- ROW 4: 3d-implicit (y=225..265) -->
+  <g>
+    <rect x="10" y="225" width="140" height="40" fill="#1a1a2e" stroke="#444"/>
+    <text x="140" y="243" text-anchor="end" fill="#fff" font-size="11" font-weight="700">3d-implicit</text>
+    <text x="140" y="257" text-anchor="end" fill="#888" font-size="9">NeRF / 3DGS</text>
+    <rect x="150" y="225" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="195" y="244" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="195" y="258" text-anchor="middle" fill="#bbb" font-size="9">3DGS</text>
+    <rect x="240" y="225" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="285" y="244" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="285" y="258" text-anchor="middle" fill="#bbb" font-size="9">PhysNeRF</text>
+    <!-- sim-loop train ✗ -->
+    <rect x="330" y="225" width="90" height="40" fill="#3a1a1a" stroke="#444"/>
+    <text x="375" y="244" text-anchor="middle" fill="#e94560" font-size="14" font-weight="700">✗</text>
+    <text x="375" y="258" text-anchor="middle" fill="#e94560" font-size="9">non-diff query</text>
+    <rect x="420" y="225" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="465" y="244" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="465" y="258" text-anchor="middle" fill="#bbb" font-size="9">render verify</text>
+    <rect x="510" y="225" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="555" y="244" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="555" y="258" text-anchor="middle" fill="#bbb" font-size="9">SDS</text>
+    <rect x="600" y="225" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="645" y="244" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="645" y="258" text-anchor="middle" fill="#bbb" font-size="9">gauge prior</text>
+    <rect x="690" y="225" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="735" y="244" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="735" y="258" text-anchor="middle" fill="#bbb" font-size="9">SE(3) layer</text>
+  </g>
+
+  <!-- ROW 5: particle (y=265..305) -->
+  <g>
+    <rect x="10" y="265" width="140" height="40" fill="#1a1a2e" stroke="#444"/>
+    <text x="140" y="283" text-anchor="end" fill="#fff" font-size="11" font-weight="700">particle</text>
+    <text x="140" y="297" text-anchor="end" fill="#888" font-size="9">MPM / SPH</text>
+    <!-- data-only rare -->
+    <rect x="150" y="265" width="90" height="40" fill="#3a3a1a" stroke="#444"/>
+    <text x="195" y="284" text-anchor="middle" fill="#f9c74f" font-size="13" font-weight="700">rare</text>
+    <text x="195" y="298" text-anchor="middle" fill="#f9c74f" font-size="9">no large corpus</text>
+    <rect x="240" y="265" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="285" y="284" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="285" y="298" text-anchor="middle" fill="#bbb" font-size="9">cont. loss</text>
+    <rect x="330" y="265" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="375" y="284" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="375" y="298" text-anchor="middle" fill="#bbb" font-size="9">DiffMPM</text>
+    <rect x="420" y="265" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="465" y="284" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="465" y="298" text-anchor="middle" fill="#bbb" font-size="9">step check</text>
+    <rect x="510" y="265" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="555" y="284" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="555" y="298" text-anchor="middle" fill="#bbb" font-size="9">force guide</text>
+    <rect x="600" y="265" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="645" y="284" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="645" y="298" text-anchor="middle" fill="#bbb" font-size="9">GNS</text>
+    <rect x="690" y="265" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="735" y="284" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="735" y="298" text-anchor="middle" fill="#bbb" font-size="9">mass conserv</text>
+  </g>
+
+  <!-- ROW 6: field (y=305..345) -->
+  <g>
+    <rect x="10" y="305" width="140" height="40" fill="#1a1a2e" stroke="#444"/>
+    <text x="140" y="323" text-anchor="end" fill="#fff" font-size="11" font-weight="700">field</text>
+    <text x="140" y="337" text-anchor="end" fill="#888" font-size="9">grid / PDE state</text>
+    <!-- data-only rare -->
+    <rect x="150" y="305" width="90" height="40" fill="#3a3a1a" stroke="#444"/>
+    <text x="195" y="324" text-anchor="middle" fill="#f9c74f" font-size="13" font-weight="700">rare</text>
+    <text x="195" y="338" text-anchor="middle" fill="#f9c74f" font-size="9">no corpus</text>
+    <rect x="240" y="305" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="285" y="324" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="285" y="338" text-anchor="middle" fill="#bbb" font-size="9">PINN</text>
+    <!-- sim-loop train ✗ -->
+    <rect x="330" y="305" width="90" height="40" fill="#3a1a1a" stroke="#444"/>
+    <text x="375" y="324" text-anchor="middle" fill="#e94560" font-size="14" font-weight="700">✗</text>
+    <text x="375" y="338" text-anchor="middle" fill="#e94560" font-size="9">field = sim itself</text>
+    <rect x="420" y="305" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="465" y="324" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="465" y="338" text-anchor="middle" fill="#bbb" font-size="9">PDE check</text>
+    <rect x="510" y="305" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="555" y="324" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="555" y="338" text-anchor="middle" fill="#bbb" font-size="9">DPS</text>
+    <rect x="600" y="305" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="645" y="324" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="645" y="338" text-anchor="middle" fill="#bbb" font-size="9">GraphCast</text>
+    <rect x="690" y="305" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="735" y="324" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="735" y="338" text-anchor="middle" fill="#bbb" font-size="9">div-free op</text>
+  </g>
+
+  <!-- ROW 7: action-seq (y=345..385) -->
+  <g>
+    <rect x="10" y="345" width="140" height="40" fill="#1a1a2e" stroke="#444"/>
+    <text x="140" y="363" text-anchor="end" fill="#fff" font-size="11" font-weight="700">action-seq</text>
+    <text x="140" y="377" text-anchor="end" fill="#888" font-size="9">robot trajectories</text>
+    <rect x="150" y="345" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="195" y="364" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="195" y="378" text-anchor="middle" fill="#bbb" font-size="9">π0 / VLA</text>
+    <rect x="240" y="345" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="285" y="364" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="285" y="378" text-anchor="middle" fill="#bbb" font-size="9">collision aux</text>
+    <rect x="330" y="345" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="375" y="364" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="375" y="378" text-anchor="middle" fill="#bbb" font-size="9">Genesis RL</text>
+    <rect x="420" y="345" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="465" y="364" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="465" y="378" text-anchor="middle" fill="#bbb" font-size="9">MPC rollout</text>
+    <rect x="510" y="345" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="555" y="364" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="555" y="378" text-anchor="middle" fill="#bbb" font-size="9">CFG-physics</text>
+    <rect x="600" y="345" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="645" y="364" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="645" y="378" text-anchor="middle" fill="#bbb" font-size="9">equiv-policy</text>
+    <rect x="690" y="345" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="735" y="364" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="735" y="378" text-anchor="middle" fill="#bbb" font-size="9">joint-limit</text>
+  </g>
+
+  <!-- ROW 8: motion (y=385..425) -->
+  <g>
+    <rect x="10" y="385" width="140" height="40" fill="#1a1a2e" stroke="#444"/>
+    <text x="140" y="403" text-anchor="end" fill="#fff" font-size="11" font-weight="700">motion</text>
+    <text x="140" y="417" text-anchor="end" fill="#888" font-size="9">SMPL / skeleton</text>
+    <rect x="150" y="385" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="195" y="404" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="195" y="418" text-anchor="middle" fill="#bbb" font-size="9">MotionDiff</text>
+    <rect x="240" y="385" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="285" y="404" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="285" y="418" text-anchor="middle" fill="#bbb" font-size="9">foot-skate</text>
+    <rect x="330" y="385" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="375" y="404" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="375" y="418" text-anchor="middle" fill="#bbb" font-size="9">ragdoll</text>
+    <rect x="420" y="385" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="465" y="404" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="465" y="418" text-anchor="middle" fill="#bbb" font-size="9">PhysDiff</text>
+    <rect x="510" y="385" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="555" y="404" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="555" y="418" text-anchor="middle" fill="#bbb" font-size="9">contact guide</text>
+    <rect x="600" y="385" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="645" y="404" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="645" y="418" text-anchor="middle" fill="#bbb" font-size="9">SE(3)-equiv</text>
+    <rect x="690" y="385" width="90" height="40" fill="#0e2a2a" stroke="#444"/>
+    <text x="735" y="404" text-anchor="middle" fill="#06a0a0" font-size="14" font-weight="700">✓</text>
+    <text x="735" y="418" text-anchor="middle" fill="#bbb" font-size="9">LNN motion</text>
+  </g>
+
+  <!-- Caption + legend -->
+  <rect x="10" y="445" width="540" height="85" rx="6" fill="#0a0a14" stroke="#555" stroke-width="1"/>
+  <text x="22" y="464" fill="#bbb" font-size="11" font-weight="700">Read takeaways:</text>
+  <text x="22" y="481" fill="#fff" font-size="10">
+    <tspan fill="#e94560" font-weight="700">✗ cells require §8 explanation per audit script</tspan>
+  </text>
+  <text x="22" y="497" fill="#fff" font-size="10">• <tspan fill="#e94560">pixel-video × hard-constraint</tspan> too high-dim for symplectic structure</text>
+  <text x="22" y="511" fill="#fff" font-size="10">• <tspan fill="#e94560">field × sim-in-loop-train</tspan> redundant — field is the simulator output</text>
+  <text x="22" y="525" fill="#fff" font-size="10">• <tspan fill="#f9c74f">rare cells</tspan> compatible in principle, no anchor method 2024-26</text>
+
+  <!-- Legend bottom-right -->
+  <rect x="570" y="445" width="320" height="85" rx="6" fill="#0a0a14" stroke="#555" stroke-width="1"/>
+  <text x="582" y="464" fill="#bbb" font-size="11" font-weight="700">Legend</text>
+
+  <rect x="582" y="474" width="20" height="14" fill="#0e2a2a" stroke="#444"/>
+  <text x="608" y="485" fill="#06a0a0" font-size="11" font-weight="700">✓</text>
+  <text x="622" y="485" fill="#fff" font-size="10">compatible — anchor method exists</text>
+
+  <rect x="582" y="492" width="20" height="14" fill="#3a3a1a" stroke="#444"/>
+  <text x="606" y="503" fill="#f9c74f" font-size="10" font-weight="700">rare</text>
+  <text x="622" y="503" fill="#fff" font-size="10">technically possible, no anchor in v2 corpus</text>
+
+  <rect x="582" y="510" width="20" height="14" fill="#3a1a1a" stroke="#444"/>
+  <text x="608" y="521" fill="#e94560" font-size="11" font-weight="700">✗</text>
+  <text x="622" y="521" fill="#fff" font-size="10">incompatible — fundamental obstruction</text>
+</svg>

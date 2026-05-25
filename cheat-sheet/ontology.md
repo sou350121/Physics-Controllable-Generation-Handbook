@@ -21,6 +21,14 @@
 
 ---
 
+## 視覺化：5 軸全景
+
+![5-axis tensor — Physics-Controllable Generation v2.0](./assets/5-axis-tensor.svg)
+
+> **圖 1**：本 handbook 的 5 軸 ontology 全景。中央 hub「Physics-Controllable Generation」連 5 條徑軸：Output / **Injection ★ USP** / Control / Temporal / Domain。Axis 2 (Injection) 加紅框與 USP badge — 其他 handbook（VLA / Spatial）沒此軸。下方範例 strip：PhysDiff 跨 5 軸的具體標籤。
+
+---
+
 ## Axis 1 — Output space
 
 模型直接交付給下游使用的「東西」存在哪個空間。**重點：不看內部 latent，看使用者拿到的最終輸出**（latent diffusion 但 decode pixel video 的應標 `pixel-video`，不是 `latent-tokens`）。
@@ -67,6 +75,14 @@
 > - `energy-based` → 重新評估 → 通常改 `data-only` 或 `hard-constraint`
 
 設計權衡：訊號強度 ↑ → fidelity ↑ → generalization ↓。詳見 [`crossing/controllability-vs-fidelity/`](../crossing/controllability-vs-fidelity/)。
+
+![Injection Pareto frontier — 7 v2 injection mechanisms](./assets/injection-pareto.svg)
+
+> **圖 2**：Axis 2 Pareto 前沿。X = Fidelity（物理嚴格度）↑；Y = Expressivity（表達力）↑。7 個 v2 injection 機制散落在 Fidelity↔Expressivity 平面上 —— `data-only`（Sora 等）落右下「scale-pilled bet」；`hard-constraint`（HNN/LNN）落右上「Hard but narrow」；`architecture-bias-soft`（v2 NEW，NewtonGen/GraphCast/FNO）在中間 sweet spot。每個 anchor dissection 在 Pareto 上有固定位置。
+
+![Physics Conditioning Timeline 2017-2026](./assets/physics-conditioning-timeline.svg)
+
+> **圖 3**：5 代物理 conditioning 演化（按 v2 injection 軸切 lane）。2017 PINN `aux-loss` → 2019 HNN `hard-constraint` → 2020 MeshGraphNet `architecture-bias-soft`（v2 NEW lane）→ 2022 PhysDiff `guidance-gradient` → 2024 PhysGen `sim-in-loop-train` → 2025 Force Prompting / NewtonGen / Cosmos Reason1。**`hard-constraint` lane 2020 後停滯**（紅虛線標註）；2024-25 是 `sim-in-loop` + `architecture-bias-soft` 爆發期。
 
 ---
 
@@ -138,6 +154,10 @@ v1 review 列出 5 條 cross-axis 議題，v2 把其中 3 條變成 audit 強制
 
 ### 9b — Output × Injection 相容矩陣（強制）
 
+![Check 9b Compatibility Matrix](./assets/check-9b-compatibility.svg)
+
+> **圖 4**：56 cell（8 output × 7 injection），47 cell 合法（✓），5 cell `rare`（latent-tokens × sim-in-loop / particle × data-only / field × data-only），4 cell 違規（✗）。違規列入 §8 必解釋條款。
+
 | Output ↓ × Injection → | data-only | aux-loss | sim-in-loop-train | sim-in-loop-infer | guidance-gradient | arch-bias-soft | hard-constraint |
 |---|---|---|---|---|---|---|---|
 | `pixel-video` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ (too high-dim) |
@@ -186,6 +206,10 @@ v1 review 列出 5 條 cross-axis 議題，v2 把其中 3 條變成 audit 強制
 ---
 
 ## v1 → v2 完整 rename 表（dissection header 重簽必讀）
+
+![v1 → v2 Ontology Migration Sankey](./assets/v1-to-v2-migration.svg)
+
+> **圖 5**：5 軸 sankey 視圖。**藍** = rename（5 處）；**橘** = split（1 處，`sim-in-loop` → train/infer + `latent` 拆 2）；**青** = merge（1 處，`3d-scene + mesh` → `3d-explicit`）；**紫 ★** = v2 NEW value（4 個：`3d-implicit` · `motion` · `architecture-bias-soft` · `camera` · `layout` · `astro`）；**紅 ⊘** = demote/delete（2 處，`energy-based` + `multi`）。19 篇 dissection 全部重簽。下方有對應細表。
 
 | Axis | v1 value | v2 value | 影響本倉 dissection 數 (估) |
 |---|---|---|---|

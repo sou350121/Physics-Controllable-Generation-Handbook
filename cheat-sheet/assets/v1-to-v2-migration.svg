@@ -1,0 +1,358 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 700" font-family="-apple-system, system-ui, sans-serif">
+  <title>v1 → v2 ontology migration (2026-05-25 → 2026-05-26) — sankey-style flow per axis</title>
+  <desc>Five stacked axis sections (Output, Injection, Control, Temporal, Domain) each showing v1 → v2 value flow. Colour encodes change type: grey=unchanged, blue=rename, orange=split, teal=merge, red=demote/delete, purple=v2 new. 32 v1 values → 35 v2 values (+5 new, -2 removed, 5 renames, 2 splits, 2 merges).</desc>
+
+  <!-- background -->
+  <rect x="0" y="0" width="1100" height="700" fill="#0a0a14"/>
+
+  <!-- Title -->
+  <text x="550" y="22" text-anchor="middle" fill="#bbb" font-size="18" font-weight="700">v1 → v2 Ontology Migration (2026-05-25 → 2026-05-26)</text>
+  <text x="550" y="40" text-anchor="middle" fill="#888" font-size="11" font-style="italic">19 dissection headers re-signed · 5 sed-safe renames + 2 splits + 2 merges + 4 new values + 2 deletions</text>
+
+  <!-- Summary count box (top-right) -->
+  <rect x="870" y="50" width="220" height="40" rx="4" fill="#0f3460" stroke="#2a9d8f" stroke-width="1"/>
+  <text x="980" y="66" text-anchor="middle" fill="#2a9d8f" font-size="11" font-weight="700">v1: 32 values  →  v2: 35 values</text>
+  <text x="980" y="82" text-anchor="middle" fill="#bbb" font-size="10">+5 new · −2 removed · 5 renames</text>
+
+  <!-- Legend bar -->
+  <g transform="translate(20, 56)">
+    <text x="0" y="12" fill="#888" font-size="10" font-weight="700">LEGEND</text>
+    <line x1="60" y1="9" x2="100" y2="9" stroke="#888" stroke-width="2"/>
+    <text x="106" y="13" fill="#bbb" font-size="10">unchanged</text>
+    <line x1="178" y1="9" x2="218" y2="9" stroke="#4361ee" stroke-width="2"/>
+    <text x="224" y="13" fill="#bbb" font-size="10">rename</text>
+    <line x1="278" y1="9" x2="318" y2="9" stroke="#f77f00" stroke-width="2"/>
+    <text x="324" y="13" fill="#bbb" font-size="10">split</text>
+    <line x1="368" y1="9" x2="408" y2="9" stroke="#06a0a0" stroke-width="2"/>
+    <text x="414" y="13" fill="#bbb" font-size="10">merge</text>
+    <text x="478" y="13" fill="#e94560" font-size="11" font-weight="700">⊘</text>
+    <text x="490" y="13" fill="#bbb" font-size="10">demote / delete</text>
+    <text x="588" y="13" fill="#9d4edd" font-size="11" font-weight="700">★</text>
+    <text x="600" y="13" fill="#bbb" font-size="10">v2 NEW</text>
+    <text x="660" y="13" fill="#888" font-size="10" font-style="italic">left = v1   ·   right = v2</text>
+  </g>
+
+  <!-- Column headers -->
+  <text x="255" y="106" text-anchor="middle" fill="#888" font-size="10" font-weight="700">v1 values</text>
+  <text x="770" y="106" text-anchor="middle" fill="#888" font-size="10" font-weight="700">v2 values</text>
+
+  <!-- ===================== AXIS 1: OUTPUT ===================== -->
+  <!-- Section band: y ~ 112-228 -->
+  <line x1="20" y1="112" x2="1080" y2="112" stroke="#333" stroke-width="1"/>
+  <text x="20" y="128" fill="#06a0a0" font-size="13" font-weight="700">Axis 1</text>
+  <text x="20" y="143" fill="#bbb" font-size="11">Output</text>
+  <text x="20" y="158" fill="#666" font-size="9">7 → 9 values</text>
+
+  <!-- v1 column (Axis 1) -->
+  <g font-size="11">
+    <!-- pixel-video -->
+    <rect x="180" y="118" width="150" height="14" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="129" fill="#ddd">pixel-video</text>
+    <!-- latent -->
+    <rect x="180" y="135" width="150" height="14" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="146" fill="#ddd">latent</text>
+    <!-- 3d-scene -->
+    <rect x="180" y="152" width="150" height="14" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="163" fill="#ddd">3d-scene</text>
+    <!-- mesh -->
+    <rect x="180" y="169" width="150" height="14" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="180" fill="#ddd">mesh</text>
+    <!-- particle -->
+    <rect x="180" y="186" width="150" height="14" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="197" fill="#ddd">particle</text>
+    <!-- field -->
+    <rect x="180" y="203" width="150" height="14" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="214" fill="#ddd">field</text>
+    <!-- action-seq -->
+    <rect x="180" y="220" width="150" height="14" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="231" fill="#ddd">action-seq</text>
+  </g>
+
+  <!-- v2 column (Axis 1) -->
+  <g font-size="11">
+    <!-- pixel-video -->
+    <rect x="700" y="118" width="160" height="14" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="706" y="129" fill="#ddd">pixel-video</text>
+    <!-- latent-tokens -->
+    <rect x="700" y="135" width="160" height="14" rx="2" fill="#1a1a2e" stroke="#f77f00" stroke-width="1"/>
+    <text x="706" y="146" fill="#ddd">latent-tokens</text>
+    <!-- 3d-explicit -->
+    <rect x="700" y="152" width="160" height="14" rx="2" fill="#1a1a2e" stroke="#06a0a0" stroke-width="1"/>
+    <text x="706" y="163" fill="#ddd">3d-explicit</text>
+    <!-- 3d-implicit ★ -->
+    <rect x="700" y="169" width="160" height="14" rx="2" fill="#1a1a2e" stroke="#9d4edd" stroke-width="1"/>
+    <text x="706" y="180" fill="#ddd">3d-implicit</text>
+    <text x="864" y="180" fill="#9d4edd" font-size="11" font-weight="700">★</text>
+    <!-- particle -->
+    <rect x="700" y="186" width="160" height="14" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="706" y="197" fill="#ddd">particle</text>
+    <!-- field -->
+    <rect x="700" y="203" width="160" height="14" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="706" y="214" fill="#ddd">field</text>
+    <!-- action-seq -->
+    <rect x="700" y="220" width="160" height="14" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="706" y="231" fill="#ddd">action-seq</text>
+    <!-- motion ★ -->
+    <rect x="700" y="237" width="160" height="14" rx="2" fill="#1a1a2e" stroke="#9d4edd" stroke-width="1"/>
+    <text x="706" y="248" fill="#ddd">motion</text>
+    <text x="864" y="248" fill="#9d4edd" font-size="11" font-weight="700">★</text>
+    <text x="878" y="248" fill="#888" font-size="9" font-style="italic">for PhysDiff</text>
+  </g>
+
+  <!-- Axis 1 flows (Bézier) -->
+  <g fill="none" stroke-width="1.5">
+    <!-- pixel-video → pixel-video (unchanged) -->
+    <path d="M 330 125 C 500 125, 530 125, 700 125" stroke="#888"/>
+    <!-- latent → pixel-video (split) -->
+    <path d="M 330 142 C 480 142, 540 128, 700 127" stroke="#f77f00"/>
+    <!-- latent → latent-tokens (split) -->
+    <path d="M 330 142 C 500 142, 530 142, 700 142" stroke="#f77f00"/>
+    <!-- 3d-scene → 3d-explicit (merge) -->
+    <path d="M 330 159 C 500 159, 530 159, 700 159" stroke="#06a0a0"/>
+    <!-- mesh → 3d-explicit (merge) -->
+    <path d="M 330 176 C 500 176, 540 161, 700 160" stroke="#06a0a0"/>
+    <!-- particle -->
+    <path d="M 330 193 C 500 193, 530 193, 700 193" stroke="#888"/>
+    <!-- field -->
+    <path d="M 330 210 C 500 210, 530 210, 700 210" stroke="#888"/>
+    <!-- action-seq -->
+    <path d="M 330 227 C 500 227, 530 227, 700 227" stroke="#888"/>
+    <!-- NEW → 3d-implicit -->
+    <path d="M 620 195 C 660 180, 670 176, 700 176" stroke="#9d4edd" stroke-dasharray="3,2"/>
+    <text x="555" y="198" fill="#9d4edd" font-size="10" font-weight="700">★ NEW</text>
+    <!-- NEW → motion -->
+    <path d="M 620 245 C 660 245, 670 244, 700 244" stroke="#9d4edd" stroke-dasharray="3,2"/>
+    <text x="555" y="248" fill="#9d4edd" font-size="10" font-weight="700">★ NEW</text>
+  </g>
+
+  <!-- ===================== AXIS 2: INJECTION ===================== -->
+  <!-- Section band: y ~ 262-400 -->
+  <line x1="20" y1="262" x2="1080" y2="262" stroke="#333" stroke-width="1"/>
+  <text x="20" y="278" fill="#f77f00" font-size="13" font-weight="700">Axis 2 ★ USP</text>
+  <text x="20" y="293" fill="#bbb" font-size="11">Injection</text>
+  <text x="20" y="308" fill="#666" font-size="9">6 → 7 (big reorg)</text>
+
+  <!-- v1 column (Axis 2) -->
+  <g font-size="11">
+    <rect x="180" y="270" width="150" height="14" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="281" fill="#ddd">implicit-from-data</text>
+
+    <rect x="180" y="287" width="150" height="14" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="298" fill="#ddd">constraint-loss</text>
+
+    <rect x="180" y="304" width="150" height="14" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="315" fill="#ddd">sim-in-loop</text>
+
+    <rect x="180" y="321" width="150" height="14" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="332" fill="#ddd">score-conditioned</text>
+
+    <rect x="180" y="338" width="150" height="14" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="349" fill="#ddd">hard-PDE</text>
+
+    <rect x="180" y="355" width="150" height="14" rx="2" fill="#3a1a1a" stroke="#e94560" stroke-width="1"/>
+    <text x="186" y="366" fill="#ddd">energy-based</text>
+  </g>
+
+  <!-- v2 column (Axis 2) -->
+  <g font-size="11">
+    <rect x="700" y="270" width="170" height="14" rx="2" fill="#1a1a2e" stroke="#4361ee" stroke-width="1"/>
+    <text x="706" y="281" fill="#ddd">data-only</text>
+
+    <rect x="700" y="287" width="170" height="14" rx="2" fill="#1a1a2e" stroke="#4361ee" stroke-width="1"/>
+    <text x="706" y="298" fill="#ddd">aux-loss</text>
+
+    <rect x="700" y="304" width="170" height="14" rx="2" fill="#1a1a2e" stroke="#f77f00" stroke-width="1"/>
+    <text x="706" y="315" fill="#ddd">sim-in-loop-train</text>
+
+    <rect x="700" y="321" width="170" height="14" rx="2" fill="#1a1a2e" stroke="#f77f00" stroke-width="1"/>
+    <text x="706" y="332" fill="#ddd">sim-in-loop-infer</text>
+
+    <rect x="700" y="338" width="170" height="14" rx="2" fill="#1a1a2e" stroke="#4361ee" stroke-width="1"/>
+    <text x="706" y="349" fill="#ddd">guidance-gradient</text>
+
+    <rect x="700" y="355" width="170" height="14" rx="2" fill="#1a1a2e" stroke="#4361ee" stroke-width="1"/>
+    <text x="706" y="366" fill="#ddd">hard-constraint</text>
+
+    <rect x="700" y="372" width="170" height="14" rx="2" fill="#1a1a2e" stroke="#9d4edd" stroke-width="1"/>
+    <text x="706" y="383" fill="#ddd">architecture-bias-soft</text>
+    <text x="874" y="383" fill="#9d4edd" font-size="11" font-weight="700">★</text>
+    <text x="888" y="383" fill="#888" font-size="9" font-style="italic">NewtonGen line</text>
+  </g>
+
+  <!-- Axis 2 flows -->
+  <g fill="none" stroke-width="1.5">
+    <!-- implicit-from-data → data-only (rename) -->
+    <path d="M 330 277 C 500 277, 530 277, 700 277" stroke="#4361ee"/>
+    <!-- constraint-loss → aux-loss (rename) -->
+    <path d="M 330 294 C 500 294, 530 294, 700 294" stroke="#4361ee"/>
+    <!-- sim-in-loop → sim-in-loop-train (split) -->
+    <path d="M 330 311 C 480 311, 540 312, 700 311" stroke="#f77f00"/>
+    <!-- sim-in-loop → sim-in-loop-infer (split) -->
+    <path d="M 330 311 C 480 311, 540 328, 700 328" stroke="#f77f00"/>
+    <!-- score-conditioned → guidance-gradient (rename) -->
+    <path d="M 330 328 C 480 328, 540 345, 700 345" stroke="#4361ee"/>
+    <!-- hard-PDE → hard-constraint (rename) -->
+    <path d="M 330 345 C 480 345, 540 362, 700 362" stroke="#4361ee"/>
+    <!-- energy-based → demote (red ⊘) -->
+    <path d="M 330 362 C 400 362, 440 362, 500 362" stroke="#e94560" stroke-dasharray="4,3"/>
+    <text x="510" y="367" fill="#e94560" font-size="14" font-weight="700">⊘</text>
+    <text x="528" y="366" fill="#e94560" font-size="10">demoted (no v2 equivalent)</text>
+    <!-- NEW → architecture-bias-soft -->
+    <path d="M 620 380 C 660 380, 670 380, 700 380" stroke="#9d4edd" stroke-dasharray="3,2"/>
+    <text x="555" y="383" fill="#9d4edd" font-size="10" font-weight="700">★ NEW</text>
+  </g>
+
+  <!-- ===================== AXIS 3: CONTROL ===================== -->
+  <!-- Section band: y ~ 408-548 -->
+  <line x1="20" y1="408" x2="1080" y2="408" stroke="#333" stroke-width="1"/>
+  <text x="20" y="424" fill="#06a0a0" font-size="13" font-weight="700">Axis 3</text>
+  <text x="20" y="439" fill="#bbb" font-size="11">Control</text>
+  <text x="20" y="454" fill="#666" font-size="9">9 → 10 values</text>
+
+  <!-- v1 column (Axis 3) - 9 rows compressed -->
+  <g font-size="10">
+    <rect x="180" y="416" width="150" height="13" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="426" fill="#ddd">text</text>
+    <rect x="180" y="431" width="150" height="13" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="441" fill="#ddd">action</text>
+    <rect x="180" y="446" width="150" height="13" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="456" fill="#ddd">trajectory</text>
+    <rect x="180" y="461" width="150" height="13" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="471" fill="#ddd">force</text>
+    <rect x="180" y="476" width="150" height="13" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="486" fill="#ddd">contact</text>
+    <rect x="180" y="491" width="150" height="13" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="501" fill="#ddd">image-prompt</text>
+    <rect x="180" y="506" width="150" height="13" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="516" fill="#ddd">3d-prompt</text>
+    <rect x="180" y="521" width="150" height="13" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="531" fill="#ddd">physical-param</text>
+    <rect x="180" y="536" width="150" height="13" rx="2" fill="#3a1a1a" stroke="#e94560" stroke-width="1"/>
+    <text x="186" y="546" fill="#ddd">multi</text>
+  </g>
+
+  <!-- v2 column (Axis 3) - 10 rows -->
+  <g font-size="10">
+    <rect x="700" y="416" width="160" height="13" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="706" y="426" fill="#ddd">text</text>
+    <rect x="700" y="431" width="160" height="13" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="706" y="441" fill="#ddd">action</text>
+    <rect x="700" y="446" width="160" height="13" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="706" y="456" fill="#ddd">trajectory</text>
+    <rect x="700" y="461" width="160" height="13" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="706" y="471" fill="#ddd">force</text>
+    <rect x="700" y="476" width="160" height="13" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="706" y="486" fill="#ddd">contact</text>
+    <rect x="700" y="491" width="160" height="13" rx="2" fill="#1a1a2e" stroke="#4361ee" stroke-width="1"/>
+    <text x="706" y="501" fill="#ddd">image-init</text>
+    <rect x="700" y="506" width="160" height="13" rx="2" fill="#1a1a2e" stroke="#4361ee" stroke-width="1"/>
+    <text x="706" y="516" fill="#ddd">3d-init</text>
+    <rect x="700" y="521" width="160" height="13" rx="2" fill="#1a1a2e" stroke="#4361ee" stroke-width="1"/>
+    <text x="706" y="531" fill="#ddd">param</text>
+    <rect x="700" y="536" width="160" height="13" rx="2" fill="#1a1a2e" stroke="#9d4edd" stroke-width="1"/>
+    <text x="706" y="546" fill="#ddd">camera</text>
+    <text x="864" y="546" fill="#9d4edd" font-size="10" font-weight="700">★</text>
+    <rect x="880" y="491" width="80" height="13" rx="2" fill="#1a1a2e" stroke="#9d4edd" stroke-width="1"/>
+    <text x="886" y="501" fill="#ddd">layout</text>
+    <text x="952" y="501" fill="#9d4edd" font-size="10" font-weight="700">★</text>
+  </g>
+
+  <!-- Axis 3 flows -->
+  <g fill="none" stroke-width="1.3">
+    <path d="M 330 422 C 500 422, 530 422, 700 422" stroke="#888"/>
+    <path d="M 330 437 C 500 437, 530 437, 700 437" stroke="#888"/>
+    <path d="M 330 452 C 500 452, 530 452, 700 452" stroke="#888"/>
+    <path d="M 330 467 C 500 467, 530 467, 700 467" stroke="#888"/>
+    <path d="M 330 482 C 500 482, 530 482, 700 482" stroke="#888"/>
+    <path d="M 330 497 C 500 497, 530 497, 700 497" stroke="#4361ee"/>
+    <path d="M 330 512 C 500 512, 530 512, 700 512" stroke="#4361ee"/>
+    <path d="M 330 527 C 500 527, 530 527, 700 527" stroke="#4361ee"/>
+    <!-- multi → DELETED -->
+    <path d="M 330 542 C 400 542, 440 542, 500 542" stroke="#e94560" stroke-dasharray="4,3"/>
+    <text x="510" y="546" fill="#e94560" font-size="13" font-weight="700">⊘</text>
+    <text x="526" y="546" fill="#e94560" font-size="10">deleted — use ` | ` operator instead</text>
+    <!-- NEW → camera -->
+    <path d="M 620 540 C 660 542, 670 542, 700 542" stroke="#9d4edd" stroke-dasharray="3,2"/>
+    <text x="555" y="546" fill="#9d4edd" font-size="10" font-weight="700">★ NEW</text>
+    <!-- NEW → layout -->
+    <path d="M 860 497 C 870 497, 875 497, 880 497" stroke="#9d4edd" stroke-dasharray="3,2"/>
+  </g>
+
+  <!-- ===================== AXIS 4: TEMPORAL ===================== -->
+  <!-- Section band: y ~ 556-650 -->
+  <line x1="20" y1="556" x2="1080" y2="556" stroke="#333" stroke-width="1"/>
+  <text x="20" y="572" fill="#06a0a0" font-size="13" font-weight="700">Axis 4</text>
+  <text x="20" y="587" fill="#bbb" font-size="11">Temporal</text>
+  <text x="20" y="602" fill="#666" font-size="9">7 → 7 values</text>
+
+  <!-- v1 column (Axis 4) -->
+  <g font-size="10">
+    <rect x="180" y="562" width="150" height="11" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="571" fill="#ddd">single-frame</text>
+    <rect x="180" y="575" width="150" height="11" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="584" fill="#ddd">streaming</text>
+    <rect x="180" y="588" width="150" height="11" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="597" fill="#ddd">autoregressive</text>
+    <rect x="180" y="601" width="150" height="11" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="610" fill="#ddd">joint-rollout</text>
+    <rect x="180" y="614" width="150" height="11" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="623" fill="#ddd">latent-rollout</text>
+    <rect x="180" y="627" width="150" height="11" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="636" fill="#ddd">temporal-transformer-rolling</text>
+    <rect x="180" y="640" width="150" height="11" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="186" y="649" fill="#ddd">hierarchical</text>
+  </g>
+
+  <!-- v2 column (Axis 4) -->
+  <g font-size="10">
+    <rect x="700" y="562" width="160" height="11" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="706" y="571" fill="#ddd">single-frame</text>
+    <rect x="700" y="575" width="160" height="11" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="706" y="584" fill="#ddd">streaming</text>
+    <rect x="700" y="588" width="160" height="11" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="706" y="597" fill="#ddd">autoregressive</text>
+    <rect x="700" y="601" width="160" height="11" rx="2" fill="#1a1a2e" stroke="#4361ee" stroke-width="1"/>
+    <text x="706" y="610" fill="#ddd">clip-parallel</text>
+    <rect x="700" y="614" width="160" height="11" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="706" y="623" fill="#ddd">latent-rollout</text>
+    <rect x="700" y="627" width="160" height="11" rx="2" fill="#1a1a2e" stroke="#4361ee" stroke-width="1"/>
+    <text x="706" y="636" fill="#ddd">streaming-cache</text>
+    <rect x="700" y="640" width="160" height="11" rx="2" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+    <text x="706" y="649" fill="#ddd">hierarchical</text>
+  </g>
+
+  <!-- Axis 4 flows -->
+  <g fill="none" stroke-width="1.3">
+    <path d="M 330 568 C 500 568, 530 568, 700 568" stroke="#888"/>
+    <path d="M 330 581 C 500 581, 530 581, 700 581" stroke="#888"/>
+    <path d="M 330 594 C 500 594, 530 594, 700 594" stroke="#888"/>
+    <path d="M 330 607 C 500 607, 530 607, 700 607" stroke="#4361ee"/>
+    <path d="M 330 620 C 500 620, 530 620, 700 620" stroke="#888"/>
+    <path d="M 330 633 C 500 633, 530 633, 700 633" stroke="#4361ee"/>
+    <path d="M 330 646 C 500 646, 530 646, 700 646" stroke="#888"/>
+  </g>
+
+  <!-- ===================== AXIS 5: DOMAIN ===================== -->
+  <!-- Section band: y ~ 658-700 (compressed) — keep within bottom -->
+  <line x1="20" y1="658" x2="1080" y2="658" stroke="#333" stroke-width="1"/>
+  <text x="20" y="672" fill="#06a0a0" font-size="13" font-weight="700">Axis 5</text>
+  <text x="20" y="686" fill="#bbb" font-size="10">Domain  ·  9 → 10</text>
+
+  <!-- compressed pill: v1 -->
+  <rect x="180" y="668" width="150" height="22" rx="3" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+  <text x="186" y="678" fill="#ddd" font-size="9">9 values preserved</text>
+  <text x="186" y="688" fill="#888" font-size="8" font-style="italic">rigid · fluid · cloth · soft · granular · multi-phase · contact-rich · articulated · deformable</text>
+
+  <!-- compressed pill: v2 -->
+  <rect x="700" y="668" width="160" height="22" rx="3" fill="#1a1a2e" stroke="#555" stroke-width="1"/>
+  <text x="706" y="678" fill="#ddd" font-size="9">all 9 + astro ★</text>
+  <text x="706" y="688" fill="#888" font-size="8" font-style="italic">+ astro (planetary / N-body / cosmology)</text>
+
+  <!-- flow -->
+  <g fill="none" stroke-width="1.5">
+    <path d="M 330 679 C 500 679, 530 679, 700 679" stroke="#888"/>
+    <!-- NEW astro -->
+    <path d="M 620 685 C 660 685, 670 685, 700 685" stroke="#9d4edd" stroke-dasharray="3,2"/>
+    <text x="555" y="688" fill="#9d4edd" font-size="10" font-weight="700">★ NEW</text>
+  </g>
+</svg>
