@@ -12,9 +12,9 @@
 
 - `output=3d-explicit`（v1 `3d-scene`/`mesh` 合併；NeRF/SDF 內部用 → `3d-implicit`）
 - `injection=data-only` or `aux-loss`
-- `control=text|image-init|3d-init`
+- `control=text|image-init|3d-init|camera`
 - `temporal=clip-parallel` or `hierarchical`
-- `domain=generalist`
+- `domain=rigid`（v2 Check 9c 不允許 `generalist` 給 World Labs 等非 Sora/Veo/Cosmos 系；靜態 3D scene 預設 rigid，動態場景按物理選 fluid/soft 等）
 
 ## Anchor methods
 
@@ -32,11 +32,12 @@
 - 本倉的 `3d-aware-generation/` 收 3D **生成** 側
 - 跨 ref 用 `bridge-to-spatial/3d-aware-video-gen.md`
 
-## Dissection wishlist (3 篇)
+## Dissection wishlist
 
-- [ ] World Labs 路線
+- [x] **[World Labs / Marble](./world-labs.md)** ✅ (anchor written)
 - [ ] 4D Gaussian / Gaussian-video 動態 3DGS
 - [ ] DreamFusion → Magic3D → 後續 text-to-3D 演化
+- [ ] Generative Gaussian Splatting (2503.13272) — v2 spec 列為 `3d-explicit` canonical anchor
 
 ## §8 共通 pitfall
 
