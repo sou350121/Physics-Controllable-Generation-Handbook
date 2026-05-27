@@ -12,40 +12,196 @@
 
 寫作不需要解釋 diffusion / NeRF / contact dynamics 是什麼 — 直接進入「對比 / 取捨 / 失效模式」。
 
-## Dissection 寫作模板 (8 段)
+## Dissection 寫作模板 — v2（spatial-style，2026-05-26 升級）
 
-每篇 dissection（`foundations/<zone>/<paper-or-method>.md`）：
+對齊 sister Spatial-Intelligence-Handbook 風格。每篇 dissection（`foundations/<zone>/<paper-or-method>.md`）：
 
 ```
 <!-- ontology-5axis output=... injection=... control=... temporal=... domain=... -->
 
-# <Method Name>
+# <Method Name> 解構（<English>）
 
-## 1. One-paragraph TL;DR
-為什麼這個方法存在，解決哪個 prior gap。
+> **發布時間**：YYYY-MM · arXiv [NNNN.NNNNN](url)
+> **論文**：*Full Title*
+> **作者**：A, B, C, ... (affiliation 簡記)
+> **核心定位**：1-2 句說這篇方法在 v2 ontology 上落在哪、解了什麼 prior gap。
 
-## 2. Core mechanism
-數學/架構/loss 的核心 — 不超過半頁，配 1 個 ASCII/markdown 圖。
+**Status:** v0.5 — 解構基於 paper 摘要 + GitHub issues + 二手分析。完整 benchmark 數字 / param 細節 待維護者升 v1。
+**TL;DR:** 用 ≤4 句寫完整故事：① 它做什麼新事 ② 它的核心 trick ③ 為什麼這對我們的 v2 axis ★ ④ 一個關鍵實證數字（提升 % / 違反 metric / GPU 預算）。
 
-## 3. 五軸定位 + 同軸對手
-參照 ontology v1 標出五軸值；列出同軸 2-3 個競爭方法。
+**X-Ray.** 一段分析性論斷（150-300 字）。**不是 summary** ——
+- 把這篇放回 v2 ontology / 5 axis Pareto 上
+- 標出它解了哪些**舊的工程坑**
+- 預測它打不開的 envelope（什麼會超出論文範圍）
+- 對 Physics-Gen handbook 讀者的意義（為什麼這該寫 anchor）
 
-## 4. Where it shines / where it breaks
-- ⚡ 真正領先的 regime
-- ❌ Known failure modes（最好引 GitHub issue / 作者 talk / 二手實測）
+## 📍 研究全景時間線
 
-## 5. Reproduction notes
-最小可跑 setup、GPU 預算、典型踩坑。
-
-## 6. Cross-line synthesis
-與其他 4 條技術路線（pixel-WM / latent-WM / diff-sim / surrogate）怎麼接。
-
-## 7. References
-canonical paper + 3-5 二手實測。
-
-## 8. §8.x Pitfall log
-GitHub-validated 已知問題（issue #、原文摘錄、severity、workaround）。
+```ascii
+   YYYY        YYYY              YYYY              YYYY-MM            YYYY?
+   prior ────► prior2 ──────► closest ────────► YOU ARE HERE ──► future
+   ... position the method in lineage ...
 ```
+
+★ = 主要新點。**仍未解：xxx**（留給下一代）。
+
+---
+
+## §1 · 架構 / Core Mechanism
+
+### 1.1 三大改動 vs 前作（or vs 同軸對手）
+
+| 維度 | 前作 | 本方法 |
+|---|---|---|
+| ... | ... | ... |
+
+### 1.2 ⚡ Eureka Moment
+
+> **核心 trick 一句話** —— 用一句話講明白他們做對了什麼，配 1-2 句直覺。
+
+### 1.3 信息流（架構圖）
+
+```ascii
+side-by-side ASCII diagram showing prior vs this method, OR layered architecture
+```
+
+---
+
+## §2 · 數學層
+
+### 📌 Napkin Formula
+
+```
+   核心公式（1-3 行最重要的 equation）
+
+   Cost: O(...)  vs prior: O(...)
+```
+
+**直覺**：用 2-3 句講為什麼這個 formula 是 trick 所在。
+
+### 2.x Loss / 訓練細節
+
+如果有 multi-task loss / aux loss / guidance gradient 等，在這列出。
+
+---
+
+## §3 · 數據層 / 訓練 scale
+
+訓練資料規模 + 怎麼來的 + scale 增長 vs 同類方法。
+
+---
+
+## §4 · 代碼層
+
+| 項 | 狀態 |
+|---|---|
+| Repo | github.com/... |
+| Checkpoint | HF link / 大小 |
+| License | OpenRAIL++ / Apache-2.0 / community-only |
+| Inference GPU | ... |
+| Streaming | ✅ / ❌ |
+| Metric scale | ✅ / ❌ |
+
+---
+
+## §5 · 評測 / Benchmark
+
+| Benchmark | Metric | 前 SOTA | 本方法 | Δ |
+|---|---|---|---|---|
+| ... | ... | ... | ... | ... |
+
+解讀 1-2 段 — **哪部分 Δ 是真的 capability，哪部分是 data leakage / benchmark Goodhart**。
+
+---
+
+## §6 · Issues & Limitations
+
+### 6.1 論文自述 limitations
+列 paper 自己標的 3-5 條。
+
+### 6.2 Hidden Assumptions
+我們從架構推斷的 4-6 條隱含假設（讀者該知道的）。
+
+### 6.x GitHub-validated 失敗模式（atlas 聯動）
+
+| 失敗 / 問題 | GitHub evidence | 嚴重度 |
+|---|---|---|
+| ... | [issue #N](url): 摘錄 | 🔴 / 🟠 / 🟡 |
+
+**Maintainer 響應度**：N open / M closed (YYYY-MM-DD)。
+
+---
+
+## §7 · 比較 & 面試 Tip
+
+| 同軸對手 | Axis 2 (injection) | Streaming | Metric? | Open? | Status |
+|---|---|---|---|---|---|
+| ... | ... | ... | ... | ... | ... |
+
+> **🎤 Interview Tip.** 「<典型問題>」正確答：「...」錯答：「...」（為什麼錯）
+
+### 7.1 Falsifiable predictions
+
+1. ✅ **VERIFIED <日期>**：... (附鏈)
+2. **YYYY-MM 前**：...
+3. **YYYY-MM 前不會發生**：...
+
+---
+
+## §8 · For the Reader（按 persona 分流）
+
+- **VLA / robot policy 工程師** —— ...
+- **自駕 closed-loop 工程師** —— ...
+- **影片生成工程師** —— ...
+- **神經 PDE / surrogate 研究者** —— ...
+- **物理 conditioning 研究者** —— ...
+- **Research 學生** —— ...
+
+不是每篇都要全部 6 persona，但對應該方法切實的至少 3 條。
+
+---
+
+## References
+
+- **<Method>** — 作者 et al. *Venue Year* · [arXiv:NNNN.NNNNN](url) · [code](url)
+- **前作 / lineage** — ...
+- **第三方分析** — blog / talk / 二手 reproduction ...
+
+---
+
+## Boundary
+
+- 完整 X 解構（YYY 細節）→ [`./other.md`](./other.md)
+- 跨 zone wedge → [`crossing/...md`](../../crossing/.../overview.md)
+- 與 sister handbook 接口 → [`bridge-to-*/...md`](../../bridge-to-vla/...md)
+- 與 5 axis 全景 → [`cheat-sheet/ontology.md`](../../cheat-sheet/ontology.md)
+
+---
+
+## ✍️ 維護者註（v0.5 → v1 升級清單）
+
+本 v0.5 基於 X / Y / Z。下次升 v1 時補：
+
+1. ⏳ <未驗證項目 1>
+2. ⏳ <未驗證項目 2>
+...
+
+---
+
+[← Back to <zone>](./overview.md)
+
+Sources:
+- [<canonical paper>](url)
+- [<github>](url)
+- [<secondary>](url)
+```
+
+### 不寫的東西（拒絕 anti-pattern）
+
+- 不寫「§1. TL;DR」這種雙重編號（用 `# Method 解構` + 開頭 X-Ray 段；正文用 `## §1 · 架構`）
+- 不寫 paper abstract 摘要 —— 我們要 **comparison + failure + composition**
+- 不寫"我覺得很 cool" —— 對比落到 v2 axis / failure mode / cost
+- TBD / UNVERIFIED 是 **設計特性不是恥辱** —— 留給維護者升 v1，比假裝確定強
 
 ## 不寫的東西
 

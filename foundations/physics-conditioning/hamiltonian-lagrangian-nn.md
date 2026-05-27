@@ -1,193 +1,307 @@
-<!-- ontology-5axis output=field|particle|action-seq injection=hard-constraint control=param|3d-init temporal=autoregressive|streaming domain=rigid|fluid -->
+<!-- ontology-5axis
+output: particle (state-trajectory) / latent rollout
+injection: hard-constraint (canonical anchor)
+control: param (mass / length / viscosity) + 3d-init for HGN
+temporal: streaming (ODE integrator) / autoregressive
+domain: rigid (pendulum / N-body); fluid 變體稀薄
+ref: ../../cheat-sheet/ontology.md §Axis2
+-->
 
-# Hamiltonian Neural Networks + Lagrangian Neural Networks + Symplectic NN
+# HNN / LNN / Symplectic NN 解構（Hamiltonian & Lagrangian Neural Networks）
 
-> Canonical: Greydanus, Dzamba, Yosinski, *Hamiltonian Neural Networks*, arxiv [1906.01563](https://arxiv.org/abs/1906.01563)（v1 2019-06-04, NeurIPS 2019）。Cranmer, Greydanus, Hoyer, Battaglia, Spergel, Ho, *Lagrangian Neural Networks*, arxiv [2003.04630](https://arxiv.org/abs/2003.04630)（ICLR 2020 DeepDiffEq Workshop）。Zhong, Dey, Chakraborty, *Symplectic ODE-Net*, arxiv [1909.12077](https://arxiv.org/abs/1909.12077)（ICLR 2020）。Toth et al., *Hamiltonian Generative Networks*, arxiv [1909.13789](https://arxiv.org/abs/1909.13789)（ICLR 2020）。
+> **發布時間**：2019-06 ~ 2020-03 · arXiv [1906.01563](https://arxiv.org/abs/1906.01563) (HNN) · [2003.04630](https://arxiv.org/abs/2003.04630) (LNN) · [1909.12077](https://arxiv.org/abs/1909.12077) (Symplectic ODE-Net) · [1909.13789](https://arxiv.org/abs/1909.13789) (HGN) · [1907.04490](https://arxiv.org/abs/1907.04490) (DeLaN)
+> **論文**：*Hamiltonian Neural Networks* / *Lagrangian Neural Networks* / *Symplectic ODE-Net* / *Hamiltonian Generative Networks* / *Deep Lagrangian Networks*
+> **作者**：Greydanus, Dzamba, Yosinski（Google/Uber AI）· Cranmer, Greydanus, Hoyer, Battaglia, Spergel, Ho（Princeton + DeepMind）· Zhong, Dey, Chakraborty（UVA）· Toth, Rezende, Higgins, et al.（DeepMind）· Lutter, Ritter, Peters（TU Darmstadt）
+> **核心定位**：v2 ontology Axis 2 `hard-constraint` 最乾淨的代表 —— 不是把守恆律當 loss 勸進（PINN 路線），而是把 Hamilton / Lagrange 方程直接焊進 forward pass，讓 architecture by construction 在數學上不可能違反能量守恆。也是 USP zone 的**對比錨點**：解釋為什麼 2024-25 主流選 `aux-loss` + `guidance-gradient` 而**不**選 `hard-constraint`。
 
-## 1. One-paragraph TL;DR
+**Status:** v0.5 — 解構基於原 paper + GitHub issues + 6 年 follow-up community 觀察。完整 SympNet 變體 / MetaSym 細節 / 2025-26 最新嘗試待維護者升 v1。
+**TL;DR:** ① 2019-2020 是 hard-constraint 的**密集探索期**，4 篇 ICLR/NeurIPS canonical paper 集中爆發；② 2020 之後幾乎停滯 —— 不是缺乏關注，是**表達力天花板**：dissipative / contact / 高 DoF / pixel 系統全部失效；③ 在 toy mechanical system 上 rollout 10⁴ step 能量漂移 <1%（vanilla MLP 同條件 >50%），這是 hard-constraint 的「乾淨勝利」；④ 對 Physics-Gen handbook 讀者：HNN/LNN 是**反例錨點**，不是要你抄，而是要你看清「為什麼把物理塞進架構是死路、而塞進 loss / score / guidance 才是 2024-25 主流」。
 
-這條線的核心 claim：**與其用 loss penalty 把守恆律「勸進」模型（PINN 路線），不如把 Hamilton / Lagrange 方程直接焊進 forward pass**，讓 architecture 本身在數學上 by construction 滿足能量守恆 / 辛幾何 / Euler-Lagrange 變分原理。這是 ontology Axis 2 上 `hard-constraint` 最乾淨的代表 — 不是「強烈鼓勵」而是「結構上不可能違反」。Greydanus HNN 2019 是奠基作；Cranmer LNN 2020 解除了「需要 canonical coordinates」的限制（HNN 必須提前知道哪些是 generalized position、哪些是 momentum）；Symplectic ODE-Net 把 control input 加進來讓它可用於機器人；HGN 把 latent Hamiltonian 配上 VAE encoder，能從 pixel 上推；後續 SympNets / Deep Lagrangian Networks 是其工程化變體。**Prior gap**：vanilla MLP 在學動力系統時 energy 線性漂移（10² step 就崩）；HNN/LNN 在 pendulum / 3-body 等 closed-system 上能 rollout 10⁴ step 而 energy drift < 1%。**遺留問題**：(a) 假設 conservative — 對 dissipative / contact-rich / 高 DoF 系統失效；(b) pixel-coord 變體（HNN paper §4.2 用 autoencoder 把 frame embedding 成 (q, p)）社群存在「embedding 真的有 momentum 資訊嗎」的質疑（[HNN issue #8](https://github.com/greydanus/hamiltonian-nn/issues/8)）；(c) 從未在 video / 4D scene generation 規模 scale 起來，留在 small-state 玩具示範區。
+**X-Ray.** Hard-constraint 是 ontology Axis 2 的**最強訊號** —— 它做了一個架構承諾：「能量守恆不是訓練目標，是前向計算的副產物」。HNN 學純量 $H_\theta(q,p)$ → autodiff 拿偏導 → Hamilton 方程直接推 $(\dot q, \dot p)$；LNN 學 $L_\theta(q,\dot q)$ → Euler-Lagrange 推 $\ddot q$。這個承諾在 pendulum / Kepler / 雙擺等 closed-form mechanical system 上完美 —— 但表達力代價也是最大的：(a) 假設 $dH/dt = 0$，dissipative system（摩擦、阻力、塑性）直接出局；(b) contact discontinuity 破壞 smooth flow 假設，robotic manipulation 整類沒法 cover；(c) DoF > 50 後 autodiff 雙偏導 / Hessian inverse 數值崩潰，fluid / 連續介質場 10⁴ DoF 從未 demo；(d) pixel 輸入不可解 —— 單 frame 無法決定 momentum（[HNN issue #8](https://github.com/greydanus/hamiltonian-nn/issues/8) 一針見血）。**2020 之後停滯不是缺乏關注，是架構天花板** —— 社群試過 HGN（latent Hamiltonian + VAE）、Symplectic Recurrent、SympNet、MetaSym，但**沒有任何一條在 video / 4D scene / 機器人 manipulation 上拿到 SOTA**。對 Physics-Gen handbook USP zone 而言，HNN/LNN 是 contrast point —— 它解釋了**為什麼 2024-25 主流是 aux-loss（軟）和 guidance-gradient（採樣時注入），而不是 hard-constraint（架構嵌入）**：表達力與可控性必須留給 backbone 自己學，物理只能在 loss / score / token 上「輕觸」。
 
-## 2. Core mechanism
+## 📍 研究全景時間線
 
-**HNN**：學一個純量函數 $H_\theta(q, p)$，前向時直接套 Hamilton's equations 給出時間導數：
-
-$$ \dot q = \frac{\partial H_\theta}{\partial p}, \qquad \dot p = -\frac{\partial H_\theta}{\partial q} $$
-
-兩個偏導用 autodiff 取，再給 ODE integrator（RK4 / leapfrog / 高階 symplectic）做 rollout。Loss 是預測導數與資料導數的 MSE，**不需要監督 energy 本身** — 守恆律是 architecture 結果不是 loss 目標。
-
-**LNN**：改學 $L_\theta(q, \dot q)$，套 Euler-Lagrange：
-
-$$ \ddot q = \left(\frac{\partial^2 L_\theta}{\partial \dot q \, \partial \dot q^\top}\right)^{-1} \left[\frac{\partial L_\theta}{\partial q} - \frac{\partial^2 L_\theta}{\partial \dot q \, \partial q^\top} \dot q\right] $$
-
-關鍵差異：HNN 假設 $(q, p)$ 是 canonical pair（彈簧 / 軌道天體 OK，雙擺要先做變數變換），LNN 可以吃任意 generalized coordinate（直接拿 joint angle 也行）；代價是 forward 要算 Hessian inverse，數值上敏感（見 [LNN issue #6](https://github.com/MilesCranmer/lagrangian_nns/issues/6)）。
-
-**Symplectic ODE-Net**：把 control input $u$ 拼進 Hamiltonian：$\dot x = (J - R)\nabla H_\theta(x) + g(x) u$，$J$ 是 symplectic、$R$ 是 dissipation、$g$ 是 input coupling — 對 robotics 更實用。
-
-**HGN**：encoder 從一段 video frames 推 latent $(q_0, p_0)$，latent Hamiltonian rollout 後 decoder 還回 pixel — 把 hard-constraint 與生成式 latent rollout 第一次接在一起。
-
-ASCII forward pass：
-
+```ascii
+   1990s          2017             2019-09           2019-10           2020-03         2020+              2024
+   symplectic ──► PINN ─────────► HNN ──────────► Symplectic ──► LNN ──────► [停滯] ────► NewtonGen
+   integrator    (soft, loss)    YOU ARE HERE    ODE-Net + HGN  Cranmer    SympNet,       (architecture-
+   (Hairer,                       Greydanus       Zhong / Toth   ICLR ws    MetaSym etc.   bias-soft, 不
+   Lubich, Wanner                 NeurIPS                                   (toy-only      算 hard-constraint)
+   classical                                                                follow-up)
+   numerics)
+   
+   ── soft ──────────────────────► hard-constraint 嘗試期 ────► 停滯 ──────► 主流轉向 aux-loss / guidance
+   
+   ★ = 主要新點：把守恆律從 loss 移到 architecture 內。
+   仍未解：(a) dissipative / contact / 高 DoF / pixel；(b) video / 4D scene generation；(c) hard-constraint 與大規模 latent-WM 融合（MetaSym 2025 嘗試但未 scale）。
 ```
-                              ┌──────── HNN forward ────────┐
-state (q, p) ──────────► H_θ MLP ──── scalar H ──────► autodiff ─┐
-       │                                                          │
-       │                                                          ▼
-       │                                              ∂H/∂p,  -∂H/∂q
-       │                                                          │
-       │                                                          ▼
-       │                                  ┌──── symplectic integrator (leapfrog) ────┐
-       │                                  │   q_{t+1} = q_t + Δt · ∂H/∂p             │
-       └─────────────────────────────────►│   p_{t+1} = p_t - Δt · ∂H/∂q             │
-                                          └──────────────────────────────────────────┘
-                                                            │
-                                                            ▼
-                                                  next (q, p) ─► loop
-                                                  ↑
-                                  energy H(q,p) ≈ const by construction (drift O(Δt²))
-```
-
-對比 vanilla MLP 學 $f_\theta(q,p)\to(\dot q, \dot p)$：MLP 沒有任何結構保證 $\nabla\times f = 0$（這是 conservative vector field 條件），rollout 中能量是 random walk。HNN 把這個約束做進來。
-
-## 3. 五軸定位 + 同軸對手
-
-| 軸 | HNN / LNN | Symplectic ODE-Net | HGN |
-|---|---|---|---|
-| output | `particle`（state trajectory）/ `action-seq`（含 control 後） | 同 | `pixel-video` via decoder（內部仍 latent particle） |
-| injection | **`hard-constraint`** — Hamilton/Lagrange 方程做進前向 | `hard-constraint` + dissipation channel | `hard-constraint` in latent + reconstruction loss |
-| control | `param`（mass, length, viscosity in $H$）；HGN 多 `3d-init`（image as IC） | `param` + control input $u$ | `image-init`（起始 frame） |
-| temporal | `streaming`（ODE integrator） / `autoregressive` if discretized | `streaming` | `autoregressive` latent rollout |
-| domain | `rigid`（pendulum / 雙擺 / 3-body 為主）；`fluid` 變體存在但稀薄 | `rigid` + robotics | `rigid` |
-
-**同軸對手**（沿 Axis 2 看）：
-
-- **PINN**（soft constraint）：把守恆律放 loss term，靈活但**不保證 hard constraint**，loss 權重要調且容易與 reconstruction 互相壓制。HNN/LNN 是同問題的「**架構解**」，PINN 是「**loss 解**」 — 詳見 `./pinn.md`（TBD 補位）。
-- **Neural surrogate (FNO / GraphCast)**：見 [`../neural-surrogates/fno.md`](../neural-surrogates/fno.md) 與 [`../neural-surrogates/graphcast.md`](../neural-surrogates/graphcast.md)。FNO 用 spectral truncation 拿「準守恆」但不嚴格；GraphCast 是 data-driven message passing，根本不嘗試保 energy。HNN/LNN 是另一個極端：**嚴格保守，但只在 conservative system 適用**。三條路線是 fidelity (HNN) ↔ scalability (FNO) ↔ realism (GraphCast) 三角。
-- **E(3)-equivariant NN**（Cohen-Welling, NequIP, MACE）：另一個 `hard-constraint` flavour — 不是保 energy 而是保 symmetry（旋轉 / 反射 / 平移）。與 HNN 互補：HNN 保時間方向的不變量（energy），equivariant net 保空間方向的不變量。在分子動力學線兩者常組合（如 Allegro + Hamiltonian rollout）。
-- **EBM-physics** / **guidance-gradient diffusion**：把物理當 energy landscape 或 score 修正 — 與 HNN 在 "scalar energy function" 共享形式，但採樣方式不同（MCMC vs ODE integrator）。
-
-## 4. Where it shines / where it breaks
-
-### ⚡ Shines
-
-- **長時 rollout 能量穩定**：pendulum、Kepler 2-body、N-body 軌道、彈簧鏈 — 原 paper Figure 3 顯示 HNN 在 5000 step 後 energy drift < 0.1%，baseline MLP 已經 > 50%。
-- **小 state 機械系統**：DoF ≤ 10 的剛體連桿 / 擺鐘 / 軌道 — 數據需求極低（幾百條軌跡可訓）。LNN 在 double pendulum 上已成 textbook 範例。
-- **Time reversibility**：symplectic 結構天然可逆，HGN 強調這點 — 給定終態能反推初態，對科學模擬有意義。
-- **Symbolic discovery 銜接**：Cranmer 後續用 LNN 學完再用 symbolic regression 抽 closed-form Lagrangian（PySR），是 ML→ 物理公式的少數成功 pipeline。
-- **Robotics 低自由度操作**：Deep Lagrangian Networks（Lutter et al ICLR 2019, arxiv [1907.04490](https://arxiv.org/abs/1907.04490)）在 7-DoF 機械臂 inverse dynamics 上 sample efficiency 勝 vanilla MLP 一個量級。
-
-### ❌ Breaks
-
-- **Dissipative system**：HNN/LNN 數學上假設 $\frac{dH}{dt} = 0$ — 有摩擦、空氣阻力、塑性形變、熱耗散時直接錯。Symplectic ODE-Net 加 $R$ matrix 是補丁但要事先知道 dissipation 結構。
-- **Contact / collision discontinuity**：碰撞瞬間 momentum 不連續，autodiff 過 Hamiltonian 整套機制失效。這是 HNN 在 robotic manipulation 推不上去的根本原因（rigid 接觸是 robotics 主戰場）。
-- **High-dimensional state**：HNN 的 autodiff 兩個偏導 + LNN 的 Hessian inverse，記憶體與數值穩定性在 DoF > ~50 後迅速劣化；fluid / 連續介質場 (~10⁴ DoF) 完全沒被 demo 過。
-- **Pixel input 困難**：HNN paper §4.2 與 HGN 都試了 image → (q, p) latent，但 [HNN issue #8](https://github.com/greydanus/hamiltonian-nn/issues/8) 直指問題：單一 frame 無法決定 momentum（同位置可有不同速度），需要 2+ frame stack；HGN 用 sequence encoder 解決一半但 latent 解釋性差。
-- **未在 video / 4D scene generation 規模 scale**：HGN 之後沒有 follow-up 在 large video 取得 SOTA — 這條路線停留在 toy mechanical system 的 conceptual win，未進入主流生成模型。
-- **OOD initial condition**：訓在小擺角範圍，外推到大擺角 chaotic regime 仍會崩 — symplectic 保 energy 不保 phase-portrait 正確性。
-
-## 5. Reproduction notes
-
-- **Codebase**：[`greydanus/hamiltonian-nn`](https://github.com/greydanus/hamiltonian-nn)（PyTorch + scipy ODE，2019 原作者，仍可跑）。LNN 倉 [`MilesCranmer/lagrangian_nns`](https://github.com/MilesCranmer/lagrangian_nns)（JAX）。DeLaN: [`milutter/deep_lagrangian_networks`](https://github.com/milutter/deep_lagrangian_networks)。
-- **三個 canonical experiments**：
-  1. **Ideal mass-spring**：1-DoF，HNN MLP 兩層各 200 hidden，~5 分鐘 CPU 收斂。注意原 repo 在 noise 場景下對時間做 rescale（[HNN issue #7](https://github.com/greydanus/hamiltonian-nn/issues/7)），這是 paper appendix 提及但容易遺漏。
-  2. **Two-body orbit**：4-DoF（兩個 2D 位置），測 Kepler 守恆。`experiment-2body/train.py` 有 train baseline 不寫死的小坑（[HNN issue #3](https://github.com/greydanus/hamiltonian-nn/issues/3)）。
-  3. **Pixel pendulum**：autoencoder + HNN，整套訓 GPU 約 1-2 小時。最容易踩 momentum embedding 不通的坑。
-- **GPU 預算**：所有 toy 系統都能單張 RTX 3090 一晚跑完。HGN 從 pixel 訓需要 4-8 GPU 量級，社群難復現。
-- **典型踩坑**：
-  1. **積分器選擇**：vanilla RK4 看似方便但**不是 symplectic** — 多步後 energy 還是會 drift。原 paper 給 leapfrog 選項，社群 issue [#2](https://github.com/greydanus/hamiltonian-nn/issues/2) 反覆問 RK4 用意，實際上要長 rollout 一定要切 symplectic integrator。
-  2. **LNN Hessian inverse 數值不穩**：[LNN issue #6](https://github.com/MilesCranmer/lagrangian_nns/issues/6) 報 `gln_loss` 對非 scalar output 出 TypeError；近期 [issue #11](https://github.com/MilesCranmer/lagrangian_nns/issues/11) 是 JAX 升 0.4+ 後 `odeint(mxsteps=...)` 改 `mxstep`，要手動 patch。
-  3. **JAX / PyTorch 版本漂移**：LNN 倉長期沒維護，Python 3.13 + 新 JAX 要修 import path（[LNN issue #13](https://github.com/MilesCranmer/lagrangian_nns/issues/13)）。
-  4. **Generalized coordinate 選法**：LNN 表面上自由但 ill-chosen coordinate 會讓 Lagrangian 表達極複雜 — 工程上仍偏好 joint angle / Cartesian。
-  5. **Dataset 不公開**：[LNN issue #9](https://github.com/MilesCranmer/lagrangian_nns/issues/9) 用戶反映部分實驗資料未隨倉提供，要從 analytical_fn 自己 sample。
-
-## 6. Cross-line synthesis
-
-**HNN vs PINN（同 zone 對比）**：兩者都想注入物理，PINN 把 PDE residual 加 loss（soft），HNN 直接把 ODE 形式做進前向（hard）。**Trade**：PINN 適用任意 PDE 但 loss 權重難調 + 不保證守恆；HNN 守恆嚴格但只 cover Hamilton 形式可表達的系統。實務上 PINN 在 fluid / heat 等連續場用得多，HNN 在 small-DoF mechanical 用得多 — 兩者**幾乎不重疊**，硬比沒意義。詳見 `./pinn.md`（dissection TBD）。
-
-**HNN vs neural surrogate (FNO / GraphCast)**：對手是 expressivity 不是 fidelity。GraphCast 用海量真實天氣資料學出 SOTA 預報但 long-rollout energy 會漂；HNN 守恆完美但只能玩擺鐘。對「真實大規模物理生成」這個 application 來說 surrogate 路線贏 — 見 [`../neural-surrogates/graphcast.md`](../neural-surrogates/graphcast.md)、[`../neural-surrogates/fno.md`](../neural-surrogates/fno.md)。
-
-**HNN vs 大型 data-driven WM（Cosmos / Dreamer V4）**：在生成質量、controllability、scalability 上 HNN 路線完敗 — 見 [`../foundation-physics-models/cosmos-wfm.md`](../foundation-physics-models/cosmos-wfm.md)、[`../latent-world-models/dreamer-v4.md`](../latent-world-models/dreamer-v4.md)。然而 HNN 提供的**結構性保證**是這些大模型缺的：Cosmos / Dreamer 能畫出物理上「看起來像」的 video，但 long rollout 仍有能量/動量/質量漂移。Open question：**能不能把 Hamiltonian / symplectic 做成 latent-WM 內部一個 layer**？把 latent state 切成 (q, p) 兩半，用 symplectic update 而非 transformer block 做 rollout — 概念上類似 MetaSym（arxiv [2502.16667](https://arxiv.org/abs/2502.16667)）但未在大規模 video 上驗證。這是把 hard-constraint 帶進主流生成的最後機會。
-
-**HNN × diff-sim**：Hamiltonian 結構是 diff-sim 的數學 backbone — Brax / MuJoCo MJX 的反向傳播本質上就是在 Hamilton 系統上微分。HNN 是「**從資料學一個 simulator**」，diff-sim 是「**對已知 simulator 微分**」 — 兩者在 ICLR 2020 同年並進。
-
-**HNN × E(3)-equivariant**：見 §3。組合產物如 [NequIP](https://github.com/mir-group/nequip) / [Allegro](https://github.com/mir-group/allegro) — equivariance 保空間對稱、Hamiltonian rollout 保時間能量，分子動力學線兩者疊用是 SOTA 配方。
-
-## 7. References
-
-**Canonical**:
-
-- Greydanus, Dzamba, Yosinski, *Hamiltonian Neural Networks*, NeurIPS 2019, arxiv [1906.01563](https://arxiv.org/abs/1906.01563)（v1 2019-06-04, v3 2019-09-05）。
-- Cranmer, Greydanus, Hoyer, Battaglia, Spergel, Ho, *Lagrangian Neural Networks*, ICLR 2020 Deep Differential Equations Workshop, arxiv [2003.04630](https://arxiv.org/abs/2003.04630)。
-- Zhong, Dey, Chakraborty, *Symplectic ODE-Net: Learning Hamiltonian Dynamics with Control*, ICLR 2020, arxiv [1909.12077](https://arxiv.org/abs/1909.12077)。
-- Toth, Rezende, Jaegle, Racanière, Botev, Higgins, *Hamiltonian Generative Networks*, ICLR 2020, arxiv [1909.13789](https://arxiv.org/abs/1909.13789)。
-
-**Engineered variants & extensions**:
-
-- Lutter, Ritter, Peters, *Deep Lagrangian Networks: Using Physics as Model Prior for Deep Learning*, ICLR 2019, arxiv [1907.04490](https://arxiv.org/abs/1907.04490)。Robotics 對應作。
-- Jin, Zhang, Zhu, Tang, Karniadakis, *SympNets: Intrinsic structure-preserving symplectic networks for identifying Hamiltonian systems*, Neural Networks 2020, arxiv [2001.03750](https://arxiv.org/abs/2001.03750)。
-- Chen, Zhang, Arjovsky, Bottou, *Symplectic Recurrent Neural Networks*, ICLR 2020, arxiv [1909.13334](https://arxiv.org/abs/1909.13334)。
-- Cohen, Welling et al., E(3)-equivariant 線 — 與 hard-constraint injection 共陣營。
-
-**Secondary / community follow-ups**:
-
-- David, Méhats, *Symplectic Learning for Hamiltonian Neural Networks*, arxiv [2106.11753](https://arxiv.org/abs/2106.11753)（指出原 HNN 不一定 symplectic，提出嚴格 symplectic loss）。
-- MetaSym, arxiv [2502.16667](https://arxiv.org/abs/2502.16667)（meta-learning + symplectic 結構）。
-
-## 8. §8 Pitfall log
-
-> 全為 GitHub-validated 或 paper-acknowledged。
-
-### §8.1 Pixel embedding 無法承載 momentum
-- **Source**: [greydanus/hamiltonian-nn issue #8](https://github.com/greydanus/hamiltonian-nn/issues/8)（open）
-- **摘錄**: "given a position (same pixel data), the pendulum can have different velocities ... I think z can't include any information about momentum."
-- **Severity**: High — 直接質疑 HNN 從 pixel 學的可行性。
-- **Workaround**: 用多 frame stack 餵 encoder（HGN 採此法）；單 frame 路線本質上不可解。
-
-### §8.2 RK4 不 symplectic — 長 rollout 能量仍漂
-- **Source**: [hamiltonian-nn issue #2](https://github.com/greydanus/hamiltonian-nn/issues/2) + paper appendix
-- **摘錄**: 用戶詢問 RK4 用意；實情：RK4 數值上不保 symplectic structure，HNN 「architectural」守恆會被 integrator 自身誤差破壞。
-- **Severity**: Medium — 短 rollout 影響小，10³ step 以上必崩。
-- **Workaround**: 換 leapfrog / Verlet / 4 階 symplectic 積分器。
-
-### §8.3 LNN Hessian-inverse 數值病
-- **Source**: [MilesCranmer/lagrangian_nns issue #6](https://github.com/MilesCranmer/lagrangian_nns/issues/6)
-- **摘錄**: `TypeError: Gradient only defined for scalar-output functions. Output had shape: (4,).`
-- **Severity**: High（功能阻塞）— LNN 的 forward 要算 $(\partial^2 L/\partial \dot q^2)^{-1}$，作者倉 default loss 在某些 DoF 維度直接報錯。
-- **Workaround**: per-dimension 拆 gradient；或改用 DeLaN 的 PD-matrix parametrization（保正定）。
-
-### §8.4 Dataset 缺失 / 不可復現
-- **Source**: [lagrangian_nns issue #9](https://github.com/MilesCranmer/lagrangian_nns/issues/9)
-- **摘錄**: 用戶請求公開 dataset 未獲回覆。
-- **Severity**: Medium — 玩具實驗可從 `analytical_fn` 自 sample，但 paper 部分 figure 難重現。
-- **Workaround**: 用提供的 analytical generator 重生資料。
-
-### §8.5 Rescale-time 細節易遺漏
-- **Source**: [hamiltonian-nn issue #7](https://github.com/greydanus/hamiltonian-nn/issues/7)
-- **摘錄**: `analyze-spring.ipynb` 的 `integrate_models` 對 noise 場景 `t_span *= 1 + .9*noise_std`，paper appendix 有講但易漏。
-- **Severity**: Low — 不重現會讓 quantitative 比較對不上。
-- **Workaround**: 對照 appendix；或關 noise scaling 跑 baseline。
-
-### §8.6 框架版本漂移（JAX / Python 3.13）
-- **Source**: [lagrangian_nns issue #11](https://github.com/MilesCranmer/lagrangian_nns/issues/11) + [issue #13](https://github.com/MilesCranmer/lagrangian_nns/issues/13)
-- **摘錄**: `odeint(mxsteps=...)` → `mxstep`；`jax.experimental.ode` 路徑變更。
-- **Severity**: Low — 純工程；倉長期未維護。
-- **Workaround**: fork（如 joelbrownstein/LNN）已修 Python 3.13 兼容；或 pin JAX < 0.4。
-
-### §8.7 Dissipative system 直接失效
-- **Source**: HNN paper §3 假設明示 + 社群多次討論
-- **摘錄**: HNN 顯式要求 $\frac{dH}{dt} = 0$，有摩擦的 pendulum、有空氣阻力的 projectile 直接學不出來。
-- **Severity**: High — 排除幾乎所有真實 robotics 場景。
-- **Workaround**: Symplectic ODE-Net 的 $(J-R)$ 分解人為加 dissipation channel；或 port-Hamiltonian 變體（要事先知 dissipation 結構）。
-
-### §8.8 Contact / collision 不可微
-- **Source**: HNN / LNN paper 皆未處理；diff-sim 社群通識
-- **摘錄**: 剛體碰撞瞬間 momentum 不連續，Hamiltonian 形式假設 smooth flow — 在 contact event 後守恆律「人為斷裂」需要 event detection。
-- **Severity**: High — robotics manipulation 整類無法 cover。
-- **Workaround**: 與 diff-sim（MuJoCo MJX / Brax）混用 — 用 simulator 處理 contact，HNN 處理 contact 之間的 smooth segment。
 
 ---
 
-**TBD（待後續校準）**:
-- [TBD: verify §8.2 — `greydanus/hamiltonian-nn` 預設積分器是否確實非 symplectic，需讀 `hnn.py` 源碼確認，目前憑 issue #2 與一般理論論斷] 
-- [TBD: §6 latent-WM × symplectic 融合是否已有具體 follow-up（MetaSym 2025 之外）— 需 web-search 補 2025-2026 新作]
-- [TBD: `./pinn.md` 待寫 — 同 zone PINN dissection 補上後回填本文交叉連結]
+## §1 · 架構 / Core Mechanism
+
+### 1.1 四個 canonical method vs 同軸前作
+
+| 維度 | Vanilla MLP $f(q,p)$ | PINN | **HNN** | **LNN** | Symplectic ODE-Net | HGN |
+|---|---|---|---|---|---|---|
+| 學什麼 | $(\dot q, \dot p)$ 直接學 | 任意 $u(x,t)$ + PDE residual loss | 純量 $H_\theta(q,p)$ | 純量 $L_\theta(q,\dot q)$ | $H_\theta(x) + (J,R,g)$ | latent $H$ + VAE encoder/decoder |
+| 守恆律 | ❌ 無保證 | 軟（loss penalty） | **硬（架構內）** | **硬（架構內）** | **硬 + dissipation channel** | **硬（latent）** |
+| Canonical coord 需求 | — | — | ✅ 必須 $(q,p)$ pair | ❌ 任意 generalized coord | ✅ + control input $u$ | latent 自動 |
+| Contact / 不連續 | OK | OK | ❌ 破 smooth flow | ❌ | ❌ | ❌ |
+| Pixel input | OK | OK | ❌ momentum 不可恢復 | ❌ | ❌ | ⚠️ multi-frame autoencoder 半成功 |
+| Long rollout energy drift | 隨機漂 | 線性漂 | **O(Δt²) bounded** | bounded | bounded | bounded (latent) |
+| 最大 DoF demo | 任意 | ~10³（fluid） | ~10 | ~7（DeLaN robot arm） | ~10 | ~5 (image latent) |
+
+### 1.2 ⚡ Eureka Moment
+
+> **學 $H_\theta(q,p)$ 而不是學 $\dot q, \dot p$ —— Hamilton 方程自動成立** —— 不是「在 loss 上加守恆 penalty」，是「forward pass 計算 $\dot q = \partial H/\partial p$ 與 $\dot p = -\partial H/\partial q$ 時，autodiff 直接給」。能量守恆是 architecture 的**結果**，不是訓練的**目標**。
+
+這個 trick 借用了 1990s 的 symplectic integrator 思想（Hairer / Lubich / Wanner 的 *Geometric Numerical Integration*），但把「已知 $H$ 數值積分」翻成「**從資料學 $H$ + autodiff 算偏導**」 —— 第一次把 reverse-mode AD 與 Hamilton 力學接在一起。
+
+### 1.3 信息流（架構圖）
+
+```ascii
+                    Vanilla MLP                              HNN
+              ───────────────────────              ───────────────────────
+              
+              (q,p) ──► MLP ──► (q̇,ṗ)              (q,p) ──► H_θ MLP ──► scalar H
+                          │                                          │
+                          ▼                                          ▼ autodiff
+                  ODE integrator                          ∂H/∂p,  -∂H/∂q
+                          │                                          │
+                          ▼                                          ▼
+                  next (q,p) loop                         symplectic integrator (leapfrog)
+                          │                                          │
+                          ▼                                          ▼
+              energy = random walk                      energy ≈ const by construction
+              (rollout 10² step 即崩)                     (rollout 10⁴ step drift < 1%)
+              
+                                                                              
+                    LNN forward                                HGN (image → latent rollout)
+              ───────────────────────              ───────────────────────────────
+              
+              (q,q̇) ──► L_θ MLP ──► scalar L         video frames ──► CNN encoder ──► (q₀,p₀) latent
+                                       │                                                │
+                                       ▼ autodiff (Hessian)                             ▼
+                          (∂²L/∂q̇∂q̇)⁻¹ [∂L/∂q - (∂²L/∂q̇∂q) q̇]            latent H_θ + symplectic rollout
+                                       │                                                │
+                                       ▼                                                ▼
+                                    q̈ → integrator                            (q_t,p_t) ──► decoder ──► pixel
+                                                                                         │
+                                       ★ Hessian inverse 是數值                          ▼
+                                          熱點（DeLaN PD-parametrize 緩解）              reconstruction loss
+```
+
+---
+
+## §2 · 數學層
+
+### 📌 Napkin Formula
+
+```
+   HNN:    dq/dt = ∂H_θ(q,p) / ∂p
+           dp/dt = -∂H_θ(q,p) / ∂q                    ← Hamilton's equations 直接焊進前向
+
+   LNN:    q̈ = (∂²L/∂q̇∂q̇)⁻¹ [∂L/∂q - (∂²L/∂q̇∂q) q̇]   ← Euler-Lagrange，吃任意 generalized coord
+   
+   Cost: O(d²) for HNN per step (autodiff 兩偏導)
+         O(d³) for LNN per step (Hessian inverse) 
+         vs MLP baseline O(d) — hard-constraint 的數值代價是 d² ~ d³
+```
+
+**直覺**：vanilla MLP 直接學 $(\dot q, \dot p)$ 的問題是 —— 它沒有任何結構保證向量場 $\nabla \times f = 0$（這是 conservative vector field 的判別條件），所以 rollout 中 energy 是 random walk。HNN 把這個判別條件做進架構：你只能學一個純量 $H$，再透過 autodiff 算出向量場 —— 這個向量場**數學上必然** conservative。LNN 更激進 —— 不要求知道 momentum，吃 $(q,\dot q)$ 直接做 Euler-Lagrange，代價是 Hessian inverse（[LNN issue #6](https://github.com/MilesCranmer/lagrangian_nns/issues/6) 是這個熱點的典型病灶）。
+
+### §2.1 Loss 細節
+
+```
+   HNN loss:  L = || (q̇_pred, ṗ_pred) - (q̇_data, ṗ_data) ||²
+   
+   ★ 注意：不監督 H 本身（沒有 "energy label"），守恆律是 architecture 結果。
+   
+   LNN loss:  L = || q̈_pred - q̈_data ||²
+   
+   Symplectic ODE-Net:  ẋ = (J - R) ∇H_θ(x) + g(x) u
+                        L = || x_pred - x_data ||² + λ_R · ||R||²（正則 dissipation matrix）
+   
+   HGN:  L = recon_loss(decoder(rollout(encoder(frames)))) + β · KL(latent)
+```
+
+---
+
+## §3 · 數據層 / 訓練 scale
+
+| Method | Toy system | 數據量 | 規模 demo 上限 |
+|---|---|---|---|
+| HNN | mass-spring / Kepler / 雙擺 | 幾百條軌跡（< 10⁴ states） | DoF ~10 |
+| LNN | double pendulum / 3-body | 同 HNN 量級 | DoF ~10 |
+| Symplectic ODE-Net | cartpole + control | 數千 episode | 7-DoF arm |
+| HGN | pixel pendulum / MuJoCo cartpole | video clips 量級 ~10⁴ frames | latent dim ~5 |
+| DeLaN | 7-DoF Franka inverse dynamics | 真實機械臂軌跡 ~10⁵ samples | 7-DoF |
+
+**關鍵觀察**：data scale 從未進入「**百萬 video 級別**」 —— 因為架構不允許。每加一個 DoF，autodiff Hessian 規模 quadratic 上升；每加一個 contact event，smooth flow 假設破。**hard-constraint 路線天生反規模化**，這是它停滯的根因。
+
+對比看：Cosmos 訓 100M+ video clips、Dreamer V4 訓 10⁹ env step、GraphCast 訓 40 年全球天氣 —— 這些方法**都是 aux-loss 或 architecture-bias-soft** 路線。hard-constraint 不在這張 scale 表上。
+
+---
+
+## §4 · 代碼層
+
+| 項 | 狀態 |
+|---|---|
+| HNN repo | [greydanus/hamiltonian-nn](https://github.com/greydanus/hamiltonian-nn) (PyTorch + scipy ODE) |
+| LNN repo | [MilesCranmer/lagrangian_nns](https://github.com/MilesCranmer/lagrangian_nns) (JAX) |
+| DeLaN repo | [milutter/deep_lagrangian_networks](https://github.com/milutter/deep_lagrangian_networks) |
+| HGN | 無官方 release（DeepMind 內部代碼），社群復現困難 |
+| Symplectic ODE-Net | [d-biswa/Symplectic-ODENet](https://github.com/d-biswa/Symplectic-ODENet) |
+| License | Apache-2.0（HNN/LNN）|
+| Inference GPU | toy 系統 CPU 可跑；HGN pixel 4-8 GPU 量級 |
+| Streaming | ✅（ODE integrator 天然 streaming）|
+| Metric scale | N/A（toy mechanical 用 SI 單位）|
+| Python 3.13 / JAX 0.4+ 兼容 | ⚠️ LNN 倉漂移（[issue #11](https://github.com/MilesCranmer/lagrangian_nns/issues/11), [#13](https://github.com/MilesCranmer/lagrangian_nns/issues/13)）|
+
+**Maintainer 響應度（2026-05-26）**：
+- HNN repo：13 open / few closed issues（Greydanus 2020 後零維護）
+- LNN repo：14 open / 0 closed（Cranmer 已轉 PySR / 符號回歸路線）
+- DeLaN：低活躍
+
+---
+
+## §5 · 評測 / Benchmark
+
+| Benchmark | Metric | Vanilla MLP | HNN/LNN | Δ |
+|---|---|---|---|---|
+| Mass-spring 5000 step | energy drift | ~50% | **< 0.1%** | -50pp |
+| Kepler 2-body 10⁴ step | energy drift | random walk | **< 1%** | -bounded |
+| Double pendulum chaotic | trajectory MSE | 短期 OK 長期崩 | 長期 bounded but phase 仍漂 | 部分勝 |
+| Pixel pendulum (HGN) | reconstruction PSNR | TBD | 接近 baseline | ~持平 |
+| 7-DoF inverse dynamics (DeLaN) | torque RMSE | baseline | ~10× sample-efficient | 1 個量級勝 |
+| **Video / 4D scene** | — | Cosmos / Dreamer 主導 | **未進入** | **N/A** |
+
+**解讀**：在原 paper 設定的 toy mechanical system 上 hard-constraint 是**乾淨勝利** —— 能量守恆 bounded，rollout 穩定。但 metric 是 paper 自己定的（能量漂移 / sample efficiency），不是 video 生成 metric（FVD / 物理一致性 / 控制精度）。**hard-constraint 路線從未在主流生成 benchmark 上對打過** —— 這是 §6 表達力天花板的實證。
+
+---
+
+## §6 · Issues & Limitations
+
+### 6.1 論文自述 / 結構性 limitations
+
+- **Dissipative system 直接失效** —— HNN 假設 $dH/dt = 0$，摩擦、阻力、塑性、熱耗散全出局。Symplectic ODE-Net 加 $(J-R)$ 是補丁但 dissipation 結構要事先知。
+- **Contact / collision 不可微** —— 剛體碰撞瞬間 momentum 不連續，autodiff 過 Hamiltonian 整套機制失效，**robotic manipulation 整類無法 cover**。
+- **High-DoF 數值崩潰** —— autodiff 雙偏導 + LNN Hessian inverse，DoF > 50 後 memory + 數值穩定性快速劣化。
+- **Pixel input 困難** —— 單 frame 無法恢復 momentum（[HNN issue #8](https://github.com/greydanus/hamiltonian-nn/issues/8)），需 multi-frame stack；HGN 用 sequence encoder 解一半但 latent 解釋性差。
+- **未進入 video / 4D scene generation 規模** —— HGN 之後沒有 follow-up 在 large video 拿到 SOTA。
+
+### 6.2 Hidden Assumptions（隱含假設）
+
+- **Smooth flow 假設** —— 在 contact event 後守恆律「人為斷裂」，需要 event detection（diff-sim 領地）。
+- **Canonical coordinate 已知（HNN）** —— 雙擺要先做變數變換才能進 HNN；LNN 解了這個但代價是 Hessian inverse。
+- **積分器選擇是隱性協議** —— vanilla RK4 不 symplectic，長 rollout 仍會漂（[HNN issue #2](https://github.com/greydanus/hamiltonian-nn/issues/2)），實際要切 leapfrog / Verlet。
+- **訓練 distribution = chaotic regime 外推不可保** —— 訓在小擺角，外推到大擺角 chaotic regime 仍會崩，symplectic 保 energy 不保 phase-portrait 正確性。
+- **OOD initial condition 失效快** —— 與一般 NN 同病但因為 architecture 嚴格反而沒有 "fallback to interpolation" 的軟著陸路徑。
+
+### 6.x GitHub-validated 失敗模式（atlas 聯動）
+
+| 失敗 / 問題 | GitHub evidence | 嚴重度 |
+|---|---|---|
+| **Pixel embedding 無法承載 momentum** | [HNN issue #8](https://github.com/greydanus/hamiltonian-nn/issues/8): "given a position (same pixel data), the pendulum can have different velocities ... z can't include momentum" | 🔴 直接質疑從 pixel 學的可行性 |
+| **RK4 不 symplectic — 長 rollout 仍漂** | [HNN issue #2](https://github.com/greydanus/hamiltonian-nn/issues/2): 用戶詢問 RK4 用意；實情 RK4 不保 symplectic structure | 🔴 短 rollout 小，10³ step 以上必崩 |
+| **LNN Hessian-inverse 數值病** | [LNN issue #6](https://github.com/MilesCranmer/lagrangian_nns/issues/6): `TypeError: Gradient only defined for scalar-output functions. Output had shape: (4,).` | 🔴 功能阻塞，default loss 在某些 DoF 直接報錯 |
+| **Dataset 缺失 / 不可復現** | [LNN issue #9](https://github.com/MilesCranmer/lagrangian_nns/issues/9): 用戶請求公開 dataset 未獲回覆 | 🟠 玩具實驗可 self-sample，但部分 figure 難重現 |
+| **Rescale-time 細節易遺漏** | [HNN issue #7](https://github.com/greydanus/hamiltonian-nn/issues/7): `t_span *= 1 + .9*noise_std` paper appendix 有但易漏 | 🟡 不重現會讓 quantitative 比較對不上 |
+| **JAX / Python 3.13 漂移** | [LNN issue #11](https://github.com/MilesCranmer/lagrangian_nns/issues/11) + [#13](https://github.com/MilesCranmer/lagrangian_nns/issues/13): `odeint(mxsteps=...)` → `mxstep`；`jax.experimental.ode` 路徑變更 | 🟡 純工程；倉長期未維護 |
+| **Train baseline 寫死問題** | [HNN issue #3](https://github.com/greydanus/hamiltonian-nn/issues/3): `experiment-2body/train.py` baseline 不寫死小坑 | 🟡 復現 corner case |
+| **Dissipative system 直接失效** | HNN paper §3 顯式假設 + 社群多次討論 | 🔴 排除絕大部分真實 robotics 場景 |
+| **Contact / collision 不可微** | HNN / LNN paper 皆未處理；diff-sim 社群通識 | 🔴 manipulation 整類無法 cover |
+
+**Maintainer 響應度**：HNN ~13 open / few closed；LNN 14 open / **0 closed**（2026-05-26）。Greydanus 2020 後轉 reservoir computing / 教學；Cranmer 轉 PySR 符號回歸 —— 整條 hard-constraint 線**社群動能耗盡**。
+
+---
+
+## §7 · 比較 & 面試 Tip
+
+| 同軸對手 | Axis 2 (injection) | Streaming | Pixel? | Scale 上限 | Status |
+|---|---|---|---|---|---|
+| **HNN / LNN** | **hard-constraint（架構）** | ✅ ODE integrator | ❌ | DoF ~10 | 停滯 |
+| Symplectic ODE-Net | hard-constraint + dissipation | ✅ | ❌ | 7-DoF | 停滯 |
+| HGN | hard-constraint (latent) | autoregressive | ⚠️ multi-frame | latent ~5 | 停滯 |
+| PINN | **aux-loss（軟）** | ✅ | OK | ~10³ DoF fluid | 仍活躍（→ `./pinn.md`） |
+| NewtonGen 2024 | architecture-bias-soft | autoregressive | ✅ | video scale | 新興 |
+| PhysDiff / 物理 guidance diffusion | **guidance-gradient（採樣時）** | ❌ batch | ✅ | video scale | 主流（→ `./physdiff.md`） |
+| Force-Prompting | **token-conditioning** | ✅ | ✅ | video scale | 新興（→ `./force-prompting.md`） |
+| FNO neural surrogate | architecture-bias (spectral) | ✅ | N/A | fluid 10⁴ DoF | 主流（→ `../neural-surrogates/fno.md`） |
+
+> **🎤 Interview Tip.** 「video world model 為什麼不用 Hamiltonian NN 保證能量守恆？我們要不要在 Cosmos / Dreamer 裡塞一層 symplectic update？」**正確答：「**hard-constraint 在 ontology Axis 2 上是最強訊號，但**它的表達力代價也是最大的**。HNN 在 pendulum 完美，但 (a) 假設 closed conservative system —— 真實 video 處處 dissipation；(b) contact 不可微 —— manipulation 整類沒法塞；(c) DoF > 50 數值崩 —— video / 4D scene 是 10⁶ DoF 量級。**所以 2024-25 主流選 aux-loss（PINN / NewtonGen）和 guidance-gradient（PhysDiff）—— 軟注入保留 backbone 表達力**。」**錯答**：「Hamiltonian 數學上更嚴謹，所以加進來」—— hard-constraint 不是「更嚴謹」，是「**架構承諾與表達力代價的取捨**」，video 規模上代價過大。
+
+### 7.1 Falsifiable predictions
+
+1. **2027-12 前**：hard-constraint 路線**不會**進入任何 1B+ 參數的 video world model 作為核心架構（可能作為 ablation 的 sanity check，但不是 backbone）。
+2. **2027-12 前**：如果有第二代 hard-constraint 復興，會以 **latent-WM 內部一層 symplectic block** 形式出現（MetaSym arxiv [2502.16667](https://arxiv.org/abs/2502.16667) 的後續），不是整體架構 —— 即「混合 hard-soft」而非「純 hard」。
+3. **2027-06 前不會發生**：HNN/LNN 直接 scale 到 video 規模並打贏 Cosmos / Dreamer V4 / V-JEPA —— 結構性表達力天花板尚未被突破，需要至少一個 architectural breakthrough（contact differentiable + 高 DoF 數值穩定 + pixel→canonical-coord 映射）才有機會。
+
+---
+
+## §8 · For the Reader（按 persona 分流）
+
+- **VLA / robot policy 工程師** —— DeLaN 對 inverse dynamics 有 10× sample efficiency 的甜頭，**值得用在 model-based RL 的 dynamics model**。但 contact-rich manipulation 別碰，配 diff-sim（MuJoCo MJX / Brax）混用 —— diff-sim 處理 contact event，HNN/DeLaN 處理 contact 之間的 smooth segment。
+- **自駕 closed-loop 工程師** —— 直接 skip。車輛動力學是 dissipative + contact-rich + 高 DoF，hard-constraint 不適用。aux-loss 路線（如 NewtonGen 的物理引導）才是你的候選。
+- **影片生成工程師** —— 這是給你看的**反例**。**不要**把 Hamiltonian / Lagrangian 當 video WM 的核心架構 —— 表達力天花板會把你卡死。看 `./physdiff.md` 的 guidance-gradient 與 `./force-prompting.md` 的 token-conditioning，這些才是 2024-25 video 主流。
+- **神經 PDE / surrogate 研究者** —— HNN 是你的 contrast point。看 `../neural-surrogates/fno.md` —— FNO 用 spectral truncation 拿「準守恆」是 architecture-bias-soft，scale 到 fluid 10⁴ DoF；HNN 嚴格守恆但只能玩擺鐘。三條路線是 fidelity (HNN) ↔ scalability (FNO) ↔ realism (GraphCast) 三角。
+- **物理 conditioning 研究者（USP zone 讀者）** —— 這篇是 anchor。HNN/LNN 占據 Axis 2 `hard-constraint` 最乾淨的點，但**它的失效模式定義了 USP zone 的 design space** —— 為什麼 aux-loss / guidance-gradient / token-conditioning 三條軟路線在 2024-25 各擅勝場，因為 hard-constraint 把表達力代價墊太高。
+- **Research 學生** —— 注意 §7.1 三條 falsifiable。如果你想做 hard-constraint 復興，正確的攻擊角度是 **「latent-WM 內部一層 symplectic block」** 而不是整體架構 —— MetaSym 的後續、或者 symplectic transformer block 是 wedge。直接 scale HNN 到 video 是 dead end。
+
+---
+
+## References
+
+**Canonical**:
+- **HNN** — Greydanus, Dzamba, Yosinski. *NeurIPS 2019* · [arXiv:1906.01563](https://arxiv.org/abs/1906.01563) · [code](https://github.com/greydanus/hamiltonian-nn)
+- **LNN** — Cranmer, Greydanus, Hoyer, Battaglia, Spergel, Ho. *ICLR 2020 DeepDiffEq Workshop* · [arXiv:2003.04630](https://arxiv.org/abs/2003.04630) · [code](https://github.com/MilesCranmer/lagrangian_nns)
+- **Symplectic ODE-Net** — Zhong, Dey, Chakraborty. *ICLR 2020* · [arXiv:1909.12077](https://arxiv.org/abs/1909.12077)
+- **HGN** — Toth, Rezende, Jaegle, Racanière, Botev, Higgins. *ICLR 2020* · [arXiv:1909.13789](https://arxiv.org/abs/1909.13789)
+
+**Engineered variants**:
+- **DeLaN** — Lutter, Ritter, Peters. *ICLR 2019* · [arXiv:1907.04490](https://arxiv.org/abs/1907.04490)
+- **SympNet** — Jin et al. *Neural Networks 2020* · [arXiv:2001.03750](https://arxiv.org/abs/2001.03750)
+- **Symplectic RNN** — Chen, Zhang, Arjovsky, Bottou. *ICLR 2020* · [arXiv:1909.13334](https://arxiv.org/abs/1909.13334)
+
+**Follow-ups & critiques**:
+- David, Méhats. *Symplectic Learning for HNN* · [arXiv:2106.11753](https://arxiv.org/abs/2106.11753)（指出原 HNN 不一定 symplectic）
+- **MetaSym** · [arXiv:2502.16667](https://arxiv.org/abs/2502.16667)（meta-learning + symplectic 結構，最後一條活躍 branch）
+
+---
+
+## Boundary
+
+- 同 zone soft-constraint 對手 PINN → [`./pinn.md`](./pinn.md)
+- 同 zone guidance-gradient 路線 → [`./physdiff.md`](./physdiff.md)
+- 同 zone token-conditioning 路線 → [`./force-prompting.md`](./force-prompting.md)
+- 對手 neural surrogate（FNO 譜系）→ [`../neural-surrogates/fno.md`](../neural-surrogates/fno.md)
+- 與 5 axis 全景 → [`../../cheat-sheet/ontology.md`](../../cheat-sheet/ontology.md)
+
+---
+
+## ✍️ 維護者註（v0.5 → v1 升級清單）
+
+本 v0.5 基於 4 篇 canonical paper + GitHub issues + 6 年 community follow-up 觀察。下次升 v1 時補：
+
+1. ⏳ MetaSym 2025 的具體結果（是否 demo 到 latent-WM scale）
+2. ⏳ Symplectic transformer block 是否已有具體 implementation（2025-2026 web search）
+3. ⏳ DeLaN 在 2024-2026 機器人 manipulation pipeline 的最新採用率
+4. ⏳ HNN 與 E(3)-equivariant（NequIP / Allegro / MACE）組合在分子動力學的 SOTA confirmation
+5. ⏳ `./pinn.md` 補完後回填本文交叉連結（hard vs soft 對照）
+6. ⏳ 驗證 HNN repo 預設積分器是否確實非 symplectic（讀 `hnn.py` 源碼確認）
+7. ⏳ Status v0.5 → v1，刪本節
+
+---
+
+[← Back to Physics Conditioning](./overview.md)
+
+Sources:
+- [HNN arXiv 1906.01563](https://arxiv.org/abs/1906.01563)
+- [LNN arXiv 2003.04630](https://arxiv.org/abs/2003.04630)
+- [Symplectic ODE-Net arXiv 1909.12077](https://arxiv.org/abs/1909.12077)
+- [HGN arXiv 1909.13789](https://arxiv.org/abs/1909.13789)
+- [DeLaN arXiv 1907.04490](https://arxiv.org/abs/1907.04490)
+- [greydanus/hamiltonian-nn GitHub](https://github.com/greydanus/hamiltonian-nn)
+- [MilesCranmer/lagrangian_nns GitHub](https://github.com/MilesCranmer/lagrangian_nns)
+- [MetaSym arXiv 2502.16667](https://arxiv.org/abs/2502.16667)

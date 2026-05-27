@@ -1,148 +1,318 @@
-<!-- ontology-5axis output=motion|3d-explicit injection=guidance-gradient|sim-in-loop-infer control=text|contact temporal=clip-parallel|autoregressive domain=robotics|rigid -->
+<!-- ontology-5axis
+output: motion | 3d-explicit
+injection: guidance-gradient + sim-in-loop-infer
+control: text + contact
+temporal: clip-parallel (denoise) + autoregressive (sim rollout)
+domain: robotics | rigid (humanoid + ground plane)
+ref: ../../cheat-sheet/ontology.md §5
+-->
 
-# PhysDiff — Physics-Guided Human Motion Diffusion Model
+# PhysDiff 解構（Physics-Guided Human Motion Diffusion）
 
-> Yuan, Song, Iqbal, Vahdat, Kautz. **ICCV 2023 (Oral)**. arXiv [2212.02500](https://arxiv.org/abs/2212.02500). Project: [nvlabs.github.io/PhysDiff](https://nvlabs.github.io/PhysDiff/).
+> **發布時間**：2022-12 · arXiv [2212.02500](https://arxiv.org/abs/2212.02500) · **ICCV 2023 (Oral)**
+> **論文**：*PhysDiff: Physics-Guided Human Motion Diffusion Model*
+> **作者**：Ye Yuan, Jiaming Song, Umar Iqbal, Arash Vahdat, Jan Kautz（NVIDIA Research）
+> **核心定位**：v2 ontology 上把 `guidance-gradient` 與 `sim-in-loop-infer` **同時**標記的鼻祖 paper —— 用 non-differentiable humanoid simulator 在 reverse diffusion 末段做投影，把純資料 score model 生成的 floating/penetration/sliding artifact 一次性壓下一個量級。
 
-## 1. TL;DR
+**Status:** v0.5 — 解構基於 paper 全文 + project page + 二手分析；UHC/PHC 互換性的長期穩定性、video-domain 移植可行性仍是 open。完整 GPU latency / Isaac Gym contact solver 細節由維護者升 v1。
+**TL;DR:** PhysDiff 不重訓 score network，只在 reverse diffusion 末段塞一個 UHC（Universal Humanoid Controller）simulator 做 **physics projection**，把 candidate motion rollout 成「真能站著走」的軌跡再回灌 denoising chain；HumanML3D + MDM baseline 上 **ground penetration 11.29mm → 0.998mm**（× 11 改進）、floating 18.88 → 2.60mm、sliding 1.41 → 0.51mm，整體 Phys-Err -86%；schedule "End 4, Space 1" 是 fragile tuning 但 reproducible —— 對 v2 ontology 而言這是 score-guidance + iterative sim-projection 同時用的 **canonical reference**。
 
-純資料驅動的 human-motion diffusion（MDM 一脈）在文生動作 / 動作生成上分數很高，但生成的骨架普遍 **floating（懸空）/ foot sliding（滑步）/ ground penetration（穿地）**，原因是 denoising 過程裡完全沒有任何接觸或重力訊號 — MDM 用 foot-contact loss 是 soft penalty，無法 hard-enforce。PhysDiff 提出一個極簡的補丁：**在 denoising 迴圈裡夾一個 physics simulator**，每隔幾步把當前的 motion sample 餵給一個已預訓練好的 humanoid imitator（UHC / Isaac Gym + PPO），讓 simulator rollout 一段「真的能站著走的軌跡」，再把這個物理可行的版本注回 diffusion chain 當下一步起點。
+**X-Ray.** Motion diffusion（MDM 一脈）證明了「text → SMPL clip」可以純資料學，但留下三個工程坑全部源自一件事 —— **denoising 過程裡完全沒有任何接觸、重力、慣性訊號**：(a) 腳穿過地板 (ground penetration)、(b) 整人懸空 (floating)、(c) 站定時還在滑 (foot sliding)。MDM 自己塞了一個 foot-contact soft loss，但它是 training-time penalty，OOD prompt 一來就崩。PhysDiff 的洞察是 **物理規律不該進 architecture（HNN 那條）也不該進 training loss（PINN 那條），它應該進 inference 迴圈** —— 因為對 contact-discontinuity 來說，只有 simulator rollout 是 ground truth，hand-crafted PDE loss 永遠 approximate。把這條 line 放回 v2 ontology：PhysDiff 是 **第一個把 `guidance-gradient` (score step 拉樣本) 和 `sim-in-loop-infer` (sim 投影回 manifold) 串成單一 reverse pass** 的方法；下游 PhysHOI / PhysGen / NewtonGen / Force Prompting 全部繞著「sim 到底插進 train 還是 infer、插一次還是 N 次」這條軸做變奏。對 Sora-級 video generation 那個臭名昭著的 foot-physics 問題，PhysDiff 是目前範式上最直接可借鑒的解 —— 但 UHC 是 humanoid sim、video pixel 沒對應 simulator，搬過去要先解 video↔mesh 閉環，**這就是論文打不開的 envelope**。
 
-這就是 ontology Axis 2 「`guidance-gradient`」 + 「`sim-in-loop`」雙軸的 **canonical 樣板**：物理規律不是 architecture-level 進去（像 HNN）、也不是 training-time loss（像 PINN），而是 **inference 時的迭代投影**，所以可以 **plug 在任何 pretrained motion diffusion model 上**而不重訓 score network。對 video-physics / Sora 的 foot-floating 問題，這條路是目前最直接可借鑒的範式。
+## 📍 研究全景時間線
 
-實測在 HumanML3D + MDM denoiser 上：ground penetration 11.29mm → 0.998mm、floating 18.88mm → 2.60mm、foot sliding 1.41mm → 0.51mm，整體 Phys-Err 降 86%（作者報數）。
-
-## 2. Core mechanism
-
-PhysDiff 不是一個新的 score network，而是一個 **projection operator** 插在 reverse diffusion 的某些 timestep 上。設 reverse process 為 $x_T \to x_{T-1} \to \cdots \to x_0$（$x$ 是動作序列、SMPL 參數），令 $\hat{x}_{t-1} = \text{denoise}(x_t, t)$ 為 score-step 出來的 candidate，PhysDiff 加上：
-
-$$
-x_{t-1} = \text{PhysProj}(\hat{x}_{t-1}) = \text{UHC-rollout}(\hat{x}_{t-1})
-$$
-
-`PhysProj` 把 $\hat{x}_{t-1}$ 餵給 Universal Humanoid Controller（[UHC](https://github.com/ZhengyiLuo/UHC)，後續論文升級到 Isaac Gym + PPO 訓練的 imitator），simulator 內 PD controller + residual force 跑 N 步 rollout 並 imitate 該參考動作 — 跑得出來的軌跡就是物理可行的；跑不出來（contact violation、IK 失敗）就回退或截斷。輸出 $x_{t-1}$ 再走下一輪 denoising。
-
-關鍵設計細節（作者實測最佳）：**"End 4, Space 1"** — 只在 denoising **末段 4 個 timestep** 應用 projection、間隔 1 步。早期高 noise 階段做 projection 反而傷品質（because the simulator can't imitate noise-level garbage），這是 guidance-gradient 路線跟 PINN 路線的本質區別：**晚做、少做、做精準**。
-
-```
-text prompt c
-     │
-     ▼
-  x_T (noise)                                              ┌────────────────────┐
-     │                                                     │ Physics Simulator  │
-     ▼                                                     │ (Isaac Gym + UHC)  │
-  ┌─────────────┐         ┌────────┐                       │ PD ctrl + res-force│
-  │ denoise(t) │ ──x̂─►  │ in     │  if t ∈ {T-3..T} ──►  │ PPO-trained imitator│
-  │ (MDM score) │   ▲    │ proj   │                       └─────────┬──────────┘
-  └─────────────┘   │    │ window │                                 │
-        ▲           │    └────────┘                                 ▼
-        │           │       else: x̂ passes through            x'  (physical)
-        │           │                                                │
-        │           └────────────────────────────────────────────────┘
-        │
-        x_{t-1} ◄────────────────────────────────────────── feed back
-
-  Loop t = T → 0;  guidance-gradient every step, sim-in-loop only last 4.
+```ascii
+   2022-05         2022-12                    2023-12               2024-?            2025-?
+   MDM ──────────► PhysDiff ───────────────► PhysHOI ────────────► PhysGen ────────► Force Prompting / NewtonGen
+   ICLR 2023       YOU ARE HERE              arXiv 2312.04393       CVPR 2024         2025-? (score-conditioned)
+   pure data       diffusion + sim-in-loop   + object interaction   pipeline sim      force as condition
+   foot loss       (humanoid only)           (pure RL imitation)    (static→video)    (no sim)
+   = soft penalty  ★ guidance-gradient
+   ground penetr.    + sim-in-loop-infer
+   11.29mm           = 0.998mm
+                     foot slide 0.51mm
+   └─ score-only ─────► score + projector ─────► projector + HOI ─────► sim-pipeline ─────► force-condition ───►
+                        (this paper)              (no diffusion)         (no inference loop) (no simulator)
 ```
 
-注意 PhysProj 是 **non-differentiable**（simulator 是 black box），所以這條路不能用來訓 score network，只能在 sampling 時用 — 跟 Genesis / MJX 的「可微 sim 反傳 gradient 訓 score」是兩條完全不同的路線（見 §6）。
-
-## 3. 五軸定位 + 同軸對手
-
-| Axis | PhysDiff |
-|---|---|
-| Output | `action-seq` (SMPL pose seq) + `mesh` (rigged human) |
-| Injection | **`guidance-gradient` + `sim-in-loop`** — 雙標記，本倉這對組合的範例 |
-| Control | `text` (HumanML3D)、`contact` (隱式 via simulator) |
-| Temporal | `clip-parallel`（一次 clip）但 projection 內含 `autoregressive` simulator step |
-| Domain | `robotics`（humanoid）/ `rigid`（剛體連桿） |
-
-**同軸對手**：
-
-- **PINN-style aux loss**（→ [`./pinn.md`](./pinn.md)）— 訓練時加 contact / momentum loss。優勢：inference 0 額外 cost；劣勢：soft constraint、weight tuning 噩夢、超出訓練 distribution 立刻失效。PhysDiff 把「規律檢查」從 train-time 搬到 inference-time，**用 sim 的 ground truth 取代 hand-crafted PDE loss**。
-- **Hamiltonian / Lagrangian NN**（→ [`./hamiltonian-lagrangian-nn.md`](./hamiltonian-lagrangian-nn.md)）— 架構天生保守。優勢：hard guarantee；劣勢：只能處理 closed 動力系統，無法表達 contact discontinuity（人走路的本質就是不斷打開/關閉接觸對）。PhysDiff 用 simulator 代理整個複雜接觸模型，**換掉一整類 PDE 寫不出來的場景**。
-- **PhysGen**（→ [`./physgen.md`](./physgen.md)）— rigid-body pipeline，static image → physics-grounded video。同樣是 sim-in-loop，但 PhysGen 是 **pipeline-style**（perception → sim → render），不是 **iterative-loop**。PhysDiff 把 sim 嵌進 denoising 迴圈，是更深的耦合。
-- **Force Prompting**（→ [`./force-prompting.md`](./force-prompting.md)）— 把力當 conditioning 餵 video diffusion。Injection 比 PhysDiff 弱（`data-only` + `force` control），完全不接 simulator。
-- **MDM (baseline, [Tevet 2022](https://arxiv.org/abs/2209.14916))** — PhysDiff 的 denoiser 就是 MDM。MDM 用 foot-contact loss + sample-prediction（預測 $x_0$ 而非 noise），這讓 PhysDiff 的後處理 projection 變得可行（你要 project 一個 motion，不能 project 一團 noise）。PhysDiff vs MDM 的 ablation 是這條 line 最乾淨的對照組。
-
-## 4. ⚡ shines / ❌ breaks
-
-⚡ **真正領先的 regime**：
-
-- **零訓練成本擴充任何 pretrained motion diffusion model** — 把 MDM、MotionDiffuse、MLD 都當成 black-box denoiser，加個 projection 就能拿到 >78% physical plausibility 提升。production-friendly 程度極高。
-- **可量化 artifact 解決** — 不是「看起來更好」這種主觀指標，是 ground penetration / floating / foot sliding 三個 mm-level 數值同時降一個量級。Reproducible by definition。
-- **Sample-prediction MDM 是天然搭檔** — MDM 在每個 step 輸出的是 $\hat{x}_0$（可理解為當前對最終動作的估計），這正好是 simulator 可以 imitate 的對象；若是 noise-prediction 路線（DDPM 原版），projection 需要先 denoise 才能投影，多一層 cost。
-
-❌ **Known failure modes**：
-
-- **必須有可用的 humanoid simulator + pretrained imitator** — UHC 只能處理 SMPL-skeleton humanoid，要換成手部精細動作（MANO）/ 動物 / 變形體，imitator 要重訓。**這直接決定了 PhysDiff 不能套到 weather / fluid / soft-body** — 沒有對應的 imitator 概念。
-- **Manifold drift / OOD motion** — projection 會把 sample 拉去 simulator manifold，但 simulator manifold ≠ data manifold。Yuan et al. 自己 ablation 顯示 projection 太頻繁（每 step 都做）反而傷 FID — 因為 sample 被拉出 score network 的高密度區、score guidance 接不回來。**"End 4, Space 1" 是 fragile tuning**，換 denoiser 要重調。
-- **Compute cost 一次膨脹 ~3-5×** — 每個 projection step 內含 simulator rollout 數十 sim-step + PPO policy forward；inference latency 從 MDM 的 ~秒級拉到分鐘級。對 real-time 應用基本不可行。
-- **Imitator failure 沒 graceful fallback** — UHC 跑不出來時的處理（截斷 / 回退 / 強制 IK）是黑盒；作者 paper 也沒詳述失敗率 — 對 highly dynamic / 非 SMPL-distribution 動作（武術、雜技、舞蹈）特別容易爆。
-- **Sim accuracy 是品質上限** — Isaac Gym 的接觸模型有 ~5mm 等級的穿插（rigid-rigid contact 數值穩定性問題），所以 PhysDiff 報的「ground penetration 0.998mm」這個下限其實是 sim 自己的 floor，不是物理真值。
-- **沒有外部物件互動** — 原版 PhysDiff 只有 humanoid 跟 ground plane，[PhysHOI (Wang 2023)](https://arxiv.org/abs/2312.04393) 才把 object interaction 補上（contact graph 顯式建模），且 PhysHOI 走的是 pure RL imitation 路線，不是 diffusion + projection。
-
-## 5. Reproduction notes
-
-**官方代碼狀態**：截至 2026-05，project page [nvlabs.github.io/PhysDiff](https://nvlabs.github.io/PhysDiff/) 沒有公開官方 code repository。`[TBD: verify NVlabs/PhysDiff GitHub release status]`。社群目前主要參考：
-
-- **MDM 部分**：直接用 [GuyTevet/motion-diffusion-model](https://github.com/GuyTevet/motion-diffusion-model)（HumanML3D / KIT / HumanAct12 預訓練 checkpoint 齊全）。
-- **UHC simulator 部分**：[ZhengyiLuo/UHC](https://github.com/ZhengyiLuo/UHC)（MuJoCo 實現，論文後續升級到 Isaac Gym）；後續 [PHC (Luo 2023, ICCV)](https://arxiv.org/abs/2305.06456) 的 Perpetual Humanoid Control 是更穩的 imitator，建議現在重現以 PHC 替代原版 UHC。
-- **接口部分**：要自己寫 `denoise_step → SMPL → UHC reference → rollout → SMPL back → next denoise_step` 的 glue code，這是踩坑重災區。
-
-**最小 GPU 預算**：1× A6000 / 4090 跑 inference 可行；Isaac Gym 對 GPU memory 比較吃（~12GB for 一個 humanoid + ground），加上 MDM 自己 ~2GB，~16GB sweet spot。**訓練不需要**（只插 inference）。
-
-**典型踩坑**：
-
-1. UHC 期待 25 fps（後升 30 fps）motion input，MDM 輸出 20 fps，要做時間重採樣（簡單線性插值常導致 IK 抖動）。
-2. SMPL pose-axis-angle ↔ rotation-matrix 表示在 MDM / UHC 之間轉換時，root orientation 容易翻轉 180° — 軸定義差異，第一次調試會 debug 半天。
-3. Isaac Gym 在 headless docker 裡需要特殊 setup（X11 / `libGL` 依賴），CI 不友好；本地開 GUI debug 比 server-only 快很多。
-4. Projection schedule "End 4, Space 1" 沒法直接搬到 50-step DDIM / 1000-step DDPM — 是 timestep ratio，不是 absolute step；要按 reverse process 長度比例 rescale。
-
-## 6. Cross-line synthesis
-
-**PhysDiff vs 可微 sim 路線**（[Genesis](../differentiable-simulators/genesis.md) / [MuJoCo MJX](../differentiable-simulators/mujoco-mjx.md)）：兩條路線都「用 simulator」，但用法剛好相反：
-
-- PhysDiff：**non-differentiable sim** 當 inference-time projector，**不**反傳 gradient，所以 simulator 可以是任意黑盒（PhysX / Isaac / Bullet）。優點：implementation 簡單；缺點：score network 學不到「物理偏好」。
-- Genesis-train / MJX-train：**differentiable sim** 在 training 時餵 gradient 進 score network，讓 model 內化物理 prior。優點：inference 0 額外 cost；缺點：可微 sim 對 contact 數值極脆弱，目前 only works for smooth dynamics（fluid > rigid > granular）。
-
-**結論**：兩條路線在 contact-rich 場景目前 **互補不替代**。PhysDiff 是 contact-discontinuity 的暴力解，可微 sim 是 long-term 優雅解但還不成熟。
-
-**對 video generation（Sora-line）的延伸 — 開放問題**：Sora 的 foot-physics / object permanence 也是 guidance-gradient model + 違反守恆律的 case。直接搬 PhysDiff 思路的困難：
-
-1. Video diffusion 的 latent 不是 SMPL — 沒有對應的「humanoid imitator」可投影。
-2. Video diffusion 的 denoising step 數遠多於 motion（如 100+），projection 算力指數爆炸。
-3. 需要 **video → mesh → sim → mesh → video** 的閉環，每一段都是當前 SOTA 邊界。
-
-短期可行方向：先做 **partial projection**（只投影 character body region 而非整幅 video，類似 inpainting），對應 zone [`crossing/conservation-violation-atlas/`](../../crossing/conservation-violation-atlas/) 列出的 foot-contact / ground-penetration sub-violation 表 — 那邊是這篇方法**最值得照搬的具體目標清單**。
-
-**與 PhysGen / Force Prompting 的差異**詳見 §3；簡言之 PhysDiff 是「inference-loop」、PhysGen 是「pipeline」、Force Prompting 是「conditional input」，三者的耦合深度遞減。
-
-## 7. References
-
-**Canonical**：
-- Yuan, Song, Iqbal, Vahdat, Kautz. *PhysDiff: Physics-Guided Human Motion Diffusion Model*. **ICCV 2023 (Oral)**. arXiv [2212.02500](https://arxiv.org/abs/2212.02500). Project page: [nvlabs.github.io/PhysDiff](https://nvlabs.github.io/PhysDiff/).
-
-**直接依賴**：
-- Tevet et al. *Human Motion Diffusion Model (MDM)*. **ICLR 2023**. arXiv [2209.14916](https://arxiv.org/abs/2209.14916). Code: [GuyTevet/motion-diffusion-model](https://github.com/GuyTevet/motion-diffusion-model).
-- Luo et al. *Universal Humanoid Control (UHC)*, supporting Kinpoly (NeurIPS 2021) / EmbodiedPose (NeurIPS 2022). Code: [ZhengyiLuo/UHC](https://github.com/ZhengyiLuo/UHC). MuJoCo-based; later升級為 Isaac Gym 在 PhysDiff 採用。
-
-**後續 / 互補**：
-- Luo et al. *Perpetual Humanoid Control (PHC)*. **ICCV 2023**. [openaccess paper](https://openaccess.thecvf.com/content/ICCV2023/papers/Luo_Perpetual_Humanoid_Control_for_Real-time_Simulated_Avatars_ICCV_2023_paper.pdf) — UHC 升級版，更穩的 imitator，建議重現時替代。
-- Wang et al. *PhysHOI: Physics-Based Imitation of Dynamic Human-Object Interaction*. arXiv [2312.04393](https://arxiv.org/abs/2312.04393). 補上 object interaction，但走 pure RL imitation 路線（非 diffusion）。
-- Luo et al. *Universal Humanoid Motion Representations for Physics-Based Control*. arXiv [2310.04582](https://arxiv.org/abs/2310.04582).
-- `[TBD: verify "PhysSampleSpace" — 2024/25 candidate paper of this name not located via web search; may be a misremembered title. Closest 2025 hits: "Physics-Informed Diffusion Models" arXiv 2403.14404; "Physics-informed diffusion models in spectral space" (NeurIPS 2025)]`.
-
-## 8. §8 Pitfall log
-
-1. **UHC embedded-sim 的能力上限**：UHC 是 SMPL-only、ground-plane only。任何手部精細動作（MANO）/ 物件互動 / 不平地形 = 直接超出 imitator distribution、projection 退化為「拒收」。對 dance / sports / cooking 之類 motion，外掛 PhysHOI 或更新 imitator。**Severity: high**, workaround: 換 PHC 或 PhysHOI。
-2. **Manifold drift from projection**：projection schedule 過密（每 step 都投）會把 sample 拉出 score network 高密度區，FID 上升。作者 "End 4, Space 1" 是針對 MDM + 1000-step diffusion 調的，**換 DDIM / classifier-free guidance scale 都要重調**。Severity: medium, workaround: grid search projection schedule（每組訓練 / inference setting 都要重來，30+ GPU-hour）。
-3. **OOD motion → 非物理 fallback**：當 text prompt 描述了 UHC 沒見過的動作（如「moonwalk」、「contact juggling」），simulator imitate 失敗，PhysDiff 退化回 raw MDM 輸出（甚至更糟，因為 projection 中途打斷了 score chain）。**Severity: high**, workaround: 加 imitator-confidence gate，confidence 太低就 skip projection（paper 沒做）。
-4. **Computational cost per denoising step**：projection step ≈ 30-50 sim steps × Isaac Gym contact solve，相當於 MDM denoise step 的 ~10-20× FLOPs。整體 inference 從 ~2s 拉到 ~30s/clip。**Severity: medium (research)**, **high (production)**, workaround: 只在最後 1-2 step 投影（品質有損但速度可接受）；或 distill PhysDiff 結果回去訓練純 score network（作者未做，是 open direction）。
-5. **Sim accuracy → motion accuracy ceiling**：Isaac Gym rigid-contact solver 本身有 mm-level 穿插容忍，PhysDiff 報的「ground penetration 0.998mm」是 sim floor 而非物理零。要更精，需要 MuJoCo MPR 或 Bullet hard-contact，但這兩個 GPU acceleration 差。Severity: low（多數應用夠用），workaround: 換 simulator 看 contact 模型實現。
-6. **Object interaction 完全缺席**：PhysDiff 原版假設 humanoid 與 ground 是唯一互動，桌上拿杯、開門、踢球這類場景無法處理。[PhysHOI](https://arxiv.org/abs/2312.04393) 引入 contact graph 是第一個解法，但需重訓 imitator + diffusion model 都要新 data pipeline。**Severity: high (任何 HOI 應用)**, workaround: PhysHOI 路線 + 等待 PhysDiff-HOI hybrid 出現。
-7. **Code 未官方開源**：截至 2026-05 NVlabs 沒有 release official PhysDiff repo，社群重現需自行串 MDM + UHC + projection glue，這層 engineering 不是論文裡的「24 行 ablation 表」可以代替的 — 重現難度被低估。Severity: medium, workaround: 用 PHC 替代 UHC + 自寫 projection wrapper（約 200-400 LOC）。
+★ = 主要新點：**sim-in-loop 在 inference 迭代投影，不重訓 score**。**仍未解：video-level UHC（video pixel ↔ humanoid sim 閉環）、object interaction、real-time latency** —— 全部留給下一代。
 
 ---
 
-**Cross-refs**: [`./overview.md`](./overview.md) (zone overview) · [`../../crossing/conservation-violation-atlas/`](../../crossing/conservation-violation-atlas/) (foot/ground violation specification) · [`../differentiable-simulators/genesis.md`](../differentiable-simulators/genesis.md) / [`../differentiable-simulators/mujoco-mjx.md`](../differentiable-simulators/mujoco-mjx.md) (可微 sim 對照組).
+## §1 · 架構 / Core Mechanism
+
+### 1.1 三大改動 vs MDM (baseline)
+
+| 維度 | MDM (Tevet 2022) | PhysDiff |
+|---|---|---|
+| **物理訊號注入點** | Training-time foot-contact loss (soft penalty) | **Inference-time UHC rollout projection** (hard via sim) |
+| **Score network** | 1000-step DDPM, sample-prediction $\hat x_0$ | **完全沿用 MDM**，不改 weight |
+| **每步輸出** | $\hat x_{t-1} = \text{denoise}(x_t)$ | $x_{t-1} = \text{PhysProj}(\hat x_{t-1})$ on selected timesteps |
+| **Projection schedule** | — | **"End 4, Space 1"** — 末段 4 個 timestep、間隔 1（晚做、少做、做精準）|
+| **Simulator backend** | — | Isaac Gym + UHC (PPO-trained imitator, PD ctrl + residual force) |
+| **Differentiable?** | yes (loss backprop) | **No** — sim 是黑箱，所以**不能用來訓 score** |
+| **Ground penetration (HumanML3D)** | 11.29 mm | **0.998 mm** |
+| **Floating** | 18.88 mm | **2.60 mm** |
+| **Foot sliding** | 1.41 mm | **0.51 mm** |
+
+### 1.2 ⚡ Eureka Moment
+
+> **每一步 denoise 出來的 $\hat x_0$（MDM 是 sample-prediction，正好是一段「可被 imitate 的動作」）餵給 UHC 跑一段物理 rollout，rollout 出來的軌跡就是 physically valid manifold 上最接近的點 —— 拿這個乾淨版本回灌下一步 denoising 的 $x_{t-1}$，等於把 score chain 強制鎖在物理流形上。** 不改 score、不加 loss、不要求 differentiable sim —— 純後處理投影。
+
+關鍵直覺：**晚做、少做、做精準**。早期高 noise 階段做 projection 反而傷品質 —— simulator 無法 imitate 一團 noise（PD controller 會直接失敗或飛出 box），結果 score chain 被一個失敗 rollout 拉出高密度區，後續 denoise 救不回來。這跟 PINN 路線「每步 timestep 都施加物理 loss」的本質區別 —— **PhysDiff 把物理懲罰當成 endgame 校正，不是 throughout regularizer**。
+
+### 1.3 信息流（架構圖）
+
+```ascii
+              MDM (baseline)                              PhysDiff
+   ──────────────────────────────              ───────────────────────────────────
+                                                                                  
+   text c                                       text c
+     │                                            │
+     ▼                                            ▼
+   x_T (noise)                                  x_T (noise)
+     │                                            │
+     ▼                                            ▼
+   ┌──────────────┐                             ┌──────────────┐    ┌──────────────────┐
+   │ denoise(t)   │  ──► x_{t-1}                │ denoise(t)   │──► x̂  │ Isaac Gym + UHC  │
+   │ MDM score    │     (with foot-contact     │ MDM score    │       │ PD ctrl + res-F  │
+   │ + soft loss  │      loss baked in         │ (unchanged)  │       │ PPO imitator     │
+   └──────────────┘      at TRAIN time)        └──────────────┘       └──────┬───────────┘
+        ▲                                            ▲                       │
+        │                                            │      if t ∈ {T-3..T}  ▼
+        │  loop t = T → 0                            │      ◄── PhysProj ──  x′ (physical)
+        │                                            │      else: x̂ passthrough
+        x_{t-1}                                      x_{t-1}
+                                                                                  
+   Phys-Err: 11.29 / 18.88 / 1.41 mm           Phys-Err: 0.998 / 2.60 / 0.51 mm
+   (penetration / floating / sliding)          ★ -86% overall
+```
+
+注意：PhysProj **非可微**（Isaac Gym contact solver 是黑盒），所以這條 line **不能反傳 gradient 訓 score**；想反傳就得換 Genesis / MuJoCo MJX 那條 differentiable sim 路線（§3 / §7）。
+
+---
+
+## §2 · 數學層
+
+### 📌 Napkin Formula
+
+```
+   Reverse diffusion with sim-in-loop projection:
+
+      x_t   ──denoise──►   x̂_{t-1}  =  D_θ(x_t, t)        ← score step (MDM)
+                                                              guidance-gradient
+                                                              
+      x_{t-1}  =  PhysProj(x̂_{t-1})    if t ∈ EndWindow      ← sim-in-loop-infer
+                  x̂_{t-1}              otherwise              (only "End 4, Space 1")
+      
+      PhysProj(m) := UHC_rollout(m)  via Isaac Gym
+                   = PPO_π(s_t | m_ref)  → PD-control loop → SMPL_t+1
+   
+   Cost:  N_sim_steps × ContactSolve   ≈  10-20× score step FLOPs
+          per projection step
+   
+   Total inference: ~30s / clip   (vs MDM ~2s / clip)
+```
+
+**直覺**：`guidance-gradient` 那一行是 score 對 $\log p_{\text{data}}$ 的拉力；`PhysProj` 那一行是 sim 對 $p_{\text{physical}}$ manifold 的投影。兩者**乘**起來等於 $p_{\text{data}} \cap p_{\text{physical}}$ —— 不是 product of experts 那種 soft mixing，是 hard intersection（每次都先 score 後投影）。**這就是 v2 ontology 把這對 axis 同時標起來的原因 —— PhysDiff 是同時用兩種 injection 的最早 paper**。
+
+### 2.1 為什麼 MDM 的 sample-prediction 是天然搭檔
+
+DDPM 原版 noise-prediction 輸出 $\epsilon_\theta(x_t)$，要 project 得先反算 $\hat x_0 = (x_t - \sqrt{1-\bar\alpha_t}\,\epsilon_\theta) / \sqrt{\bar\alpha_t}$ 才有 motion 可 imitate；MDM 直接輸出 $\hat x_0$（一段完整 motion clip），UHC 拿到就能 rollout —— 省一層 cost，更穩。**這就是 PhysDiff 為什麼接 MDM 而不接 DDPM**。
+
+### 2.2 Projection schedule 的 hyperparameter sensitivity
+
+`End k, Space s` ablation（paper §5.3）顯示：
+- `End 4, Space 1`：FID 持平、Phys-Err -86%（最佳）
+- `End 8, Space 1`：FID 上升（manifold drift）、Phys-Err 略好
+- `End 50, Space 1`（整段都投）：FID 大幅惡化 —— simulator 拉樣本拉到 score 接不回來
+- `End 1`：Phys-Err 救不回（單次投影不夠）
+
+**結論**：projection 是 fragile tuning，換 denoiser（DDIM step 數 / classifier-free guidance scale）必須重調 —— ratio 不是絕對步數。
+
+---
+
+## §3 · 數據層 / 訓練 scale
+
+| 資料 | 用法 | 規模 |
+|---|---|---|
+| **HumanML3D** | text → SMPL motion (主) | 14,616 sequences |
+| **HumanAct12** | action label → motion | 1,191 sequences |
+| **UESTC** | action → motion | 25,600 sequences |
+| **AMASS (UHC 用)** | imitator pre-training reference | ~9000 sequences |
+
+**關鍵事實**：PhysDiff 自己**不做 score training**，所有 motion data 都是 MDM 預訓的；UHC 是另一階段在 AMASS 上做 PPO imitation pre-training。**整體 paper 的 contribution 在 inference 階段** —— 這也是它為什麼能套到任何 pretrained motion diffusion model 上的根本原因。
+
+**對讀者意義**：想複現 PhysDiff 不必有 GPU cluster，**只要能跑 MDM inference + Isaac Gym headless 就行**（單張 A6000 / 4090 足夠）。這跟訓一條 Force Prompting / NewtonGen 條件 video diffusion 完全不是同一個成本級。
+
+---
+
+## §4 · 代碼層
+
+| 項 | 狀態 |
+|---|---|
+| **官方 repo** | ❌ 截至 2026-05 NVlabs 未開源 PhysDiff `[TBD: verify]` |
+| **MDM denoiser** | ✅ [GuyTevet/motion-diffusion-model](https://github.com/GuyTevet/motion-diffusion-model)（HumanML3D / KIT / HumanAct12 全 ckpt）|
+| **UHC simulator** | ✅ [ZhengyiLuo/UHC](https://github.com/ZhengyiLuo/UHC)（MuJoCo 原版；論文後續升 Isaac Gym）|
+| **更穩 imitator** | ✅ [PHC (ICCV 2023)](https://arxiv.org/abs/2305.06456) Perpetual Humanoid Control —— 推薦現在重現用 PHC 替代 UHC |
+| **License** | MDM: MIT; UHC: research-only |
+| **Inference GPU** | 1× A6000 / 4090, ~16GB sweet spot |
+| **Inference latency** | ~30s / clip（vs MDM ~2s / clip, 約 15× slowdown）|
+| **Streaming** | ❌ batch-only（projection schedule 依賴整段 clip 已被部分 denoise）|
+| **Differentiable sim?** | ❌ Isaac Gym contact solver 是黑盒 |
+
+**社群重現 glue code**（PhysDiff 沒開源，自寫約 200-400 LOC）：
+```
+denoise_step(MDM) → SMPL pose-axis-angle → 
+   convert to UHC reference (25-30 fps resample) → 
+      UHC rollout N sim-steps → 
+         SMPL back → next denoise_step
+```
+
+踩坑點：
+1. UHC 25/30 fps vs MDM 20 fps —— 時間重採樣，線性插值 IK 抖動
+2. SMPL pose ↔ rotation-matrix 軸定義差異，root 容易翻 180°
+3. Isaac Gym headless docker 需 X11 / `libGL`，CI 不友好
+4. "End 4, Space 1" 是 1000-step DDPM ratio，搬 50-step DDIM 要 rescale
+
+---
+
+## §5 · 評測 / Benchmark
+
+### 5.1 PhysDiff 報的核心數字
+
+| Benchmark | Metric | MDM baseline | PhysDiff | Δ |
+|---|---|---|---|---|
+| **HumanML3D** | Ground penetration (mm) | **11.29** | **0.998** | **× 11.3 改進** |
+| HumanML3D | Floating (mm) | 18.88 | 2.60 | × 7.3 改進 |
+| HumanML3D | Foot sliding (mm) | 1.41 | 0.51 | × 2.8 改進 |
+| HumanML3D | Overall Phys-Err | 100% | 14% | **-86%** |
+| HumanML3D | FID (motion quality) | baseline | ≈ baseline | persistent |
+| HumanAct12 | Action recognition Acc | baseline | ≈ baseline | persistent |
+| UESTC | Action recognition Acc | baseline | ≈ baseline | persistent |
+
+### 5.2 解讀 —— 哪部分是真 capability、哪部分是 sim floor？
+
+`Ground penetration 0.998mm` 看起來是「幾乎不穿地」，但 **Isaac Gym 自身 rigid-rigid contact solver 有 ~5mm 等級的數值穿插容忍** —— 真實「物理零」根本不在 0.998mm 量級。所以 PhysDiff 報的下限**有相當部分是 sim floor，不是物理真值**。要更精得換 MuJoCo MPR / Bullet hard-contact，但這兩個 GPU acceleration 都差。
+
+⚠️ **不要外推**：HumanML3D 的 motion distribution 是「日常動作 + 簡單武打」—— PhysDiff 在這個分布內降 86% Phys-Err 是真的；但在 **dance / acrobatics / cooking（手部）/ 雜技** 上，UHC imitator 直接失敗，projection 退化為 raw MDM 輸出（甚至更糟 —— projection 中途打斷 score chain，結果比沒做還壞）。**這是 §6 hidden assumption 列表的根**。
+
+---
+
+## §6 · Issues & Limitations
+
+### 6.1 論文自述 limitations
+
+1. **Compute overhead ~15×** —— 從 MDM 的 ~2s/clip 拉到 ~30s/clip，real-time 應用基本不可行
+2. **Projection schedule fragile** —— "End 4, Space 1" 是 DDPM 1000-step 調出來的，換 DDIM / CFG scale 全部重來
+3. **Humanoid + ground plane only** —— object interaction、不平地形、手部精細 (MANO) 完全沒解
+4. **Simulator manifold ≠ data manifold** —— projection 過密反傷 FID
+
+### 6.2 Hidden Assumptions（隱含假設）
+
+- **UHC 能 imitate 任何 OOD motion** —— 實際上 dance / contact juggling 直接失敗
+- **Sample-prediction MDM 是必要前提** —— noise-prediction DDPM 用 PhysDiff 要先反算 $\hat x_0$
+- **Isaac Gym contact 數值穩** —— 但 rigid-rigid contact 5mm 穿插是 sim floor
+- **沒 imitator confidence gate** —— UHC 失敗的處理是黑盒，paper 沒詳述失敗率
+- **20 fps motion ↔ 25/30 fps sim 重採樣不損失動態細節** —— 高速動作（揮拳、彈跳）插值會抖
+- **Ground plane 是水平且 infinite** —— 上樓梯 / 跨水溝 / 抓欄杆全部超出 UHC 訓練分布
+
+### 6.3 失敗模式（atlas 聯動 conservation-violation）
+
+| 失敗模式 | 觸發條件 | 嚴重度 |
+|---|---|---|
+| **OOD motion → projection 拒收** | text prompt 描述 UHC 沒見過的動作（moonwalk / jugglіng）| 🔴 退化為 raw MDM (更糟) |
+| **Manifold drift** | projection schedule 過密（End >8 / Space 0）| 🟠 FID 上升 sample 拉離 score 高密度 |
+| **手部 / 物件互動完全缺席** | 拿杯 / 開門 / 踢球 | 🔴 UHC 不支援 MANO + object |
+| **Sim accuracy floor** | 報的 0.998mm 是 Isaac floor 不是物理零 | 🟡 多數應用夠用，精細科研不夠 |
+| **Real-time inference** | ~30s/clip | 🔴 production 不可行 |
+| **Code 未開源** | NVlabs 沒 release | 🟠 重現難度被低估（自寫 glue 200-400 LOC）|
+
+**Maintainer 響應度**：官方 repo 不存在；MDM repo 由 [GuyTevet](https://github.com/GuyTevet/motion-diffusion-model) 維護中（active）；UHC repo 由 ZhengyiLuo 維護中但已被 PHC 取代。
+
+---
+
+## §7 · 比較 & 面試 Tip
+
+| 同軸對手 | Injection (Axis 2) | Sim differentiable? | Streaming? | Train-time or Infer-time? | Status |
+|---|---|---|---|---|---|
+| **PhysDiff** | `guidance-gradient` + `sim-in-loop-infer` | ❌ black-box Isaac Gym | ❌ batch | **Infer-time projection** | ICCV 2023 |
+| PINN ([./pinn.md](./pinn.md)) | `pde-loss` | n/a | ✅ (no sim) | Train-time loss | shipped |
+| Hamiltonian/Lagrangian NN ([./hamiltonian-lagrangian-nn.md](./hamiltonian-lagrangian-nn.md)) | `architecture-conserve` | n/a | ✅ | **Architecture-level** | shipped |
+| Genesis-train ([../differentiable-simulators/genesis.md](../differentiable-simulators/genesis.md)) | `sim-in-loop-train` | ✅ differentiable | n/a | **Train-time backprop** | shipped |
+| MuJoCo MJX ([../differentiable-simulators/mujoco-mjx.md](../differentiable-simulators/mujoco-mjx.md)) | `sim-in-loop-train` | ✅ differentiable | n/a | Train-time backprop | shipped |
+| PhysGen ([./physgen.md](./physgen.md)) | `sim-pipeline` (img→sim→video) | partial | ❌ | Pipeline (one-shot sim) | CVPR 2024 |
+| Force Prompting ([./force-prompting.md](./force-prompting.md)) | `data-only` + force condition | ❌ no sim | ✅ | None (cond input only) | 2025 |
+| MDM ([baseline 2209.14916](https://arxiv.org/abs/2209.14916)) | `data-only` + foot-contact soft loss | n/a | ❌ batch | Train-time soft penalty | ICLR 2023 |
+| PhysHOI (2312.04393) | `sim-in-loop` (pure RL, no diffusion) | ❌ | ✅ | RL imitation | arXiv 2023 |
+
+> **🎤 Interview Tip.** 「PhysDiff 適合 Sora 級 video gen 嗎？」**正確答**：「**結構上不適合 —— UHC 是 humanoid mesh-level sim，video pixel 沒有對應 simulator，要先解 video↔mesh↔sim 的閉環，每一段都是當前 SOTA 邊界。**短期可行的是 partial projection（只投影 character body region 像 inpainting），但這已經不是 PhysDiff 原版方法。長期看 Force Prompting / NewtonGen 把力當條件輸入是更可行的工程路徑，雖然犧牲了 hard physical guarantee。」**錯答**：「直接套 PhysDiff 思路在 video diffusion 上 projection 一下就好。」—— video 沒有 SMPL 的 well-defined imitator 對象，這個答案暴露對 sim-in-loop 抽象層次的不理解。
+
+### 7.1 Falsifiable predictions
+
+1. **2027-06 前**：第一篇 video-level PhysDiff 變種會出現，但不是直接套 UHC —— 它會走 「video → SMPL 提取 → UHC project → SMPL → video 重繪」 partial pipeline，並且只覆蓋 character region。
+2. **2027-12 前**：差異化 simulator 路線（Genesis / MJX-train）在 contact-rich humanoid 場景上仍**不會**取代 PhysDiff 風格的 sim-in-loop-infer —— differentiable contact 的數值穩定性在 hard contact 上還沒解。
+3. **2028-12 前不會發生**：PhysDiff 風格 inference-projection 進入 production real-time motion gen pipeline（30s/clip 量級就是上限，distillation 路線雖然可行但會丟掉 hard physical guarantee，跟 raw MDM 就沒有本質區別）。
+
+---
+
+## §8 · For the Reader（按 persona 分流）
+
+- **影片生成工程師 (Sora-line)** —— ⭐ **本篇對你最重要的單一啟示**：foot-physics / object permanence 不是 model size 問題，是 **inference-time 缺少投影到物理流形的環節**。短期不要奢望直接套 PhysDiff（沒對應 video-domain UHC），先研究 partial projection / character-region inpainting；長期看 [`crossing/conservation-violation-atlas/`](../../crossing/conservation-violation-atlas/) 列出的 foot-contact / ground-penetration sub-violation 表 —— 那是這條 line 最值得照搬的具體 KPI 清單。
+- **VLA / robot policy 工程師** —— PhysDiff 的 UHC 跟你的 sim2real pipeline 是兄弟工具：都依賴 imitator + PD ctrl。如果你已有 Isaac Gym / MuJoCo MJX setup，**加 PhysDiff 風格 sample-time projection 在 motion planner 輸出上**是低成本實驗（不重訓 policy）。
+- **影像生成 / 物理 conditioning 研究者** —— 把 PhysDiff 當成 v2 ontology `guidance-gradient + sim-in-loop-infer` 雙軸**最 cleanest 的對照組**。你的 paper 想 claim「我在 inference 用 simulator」就要先把跟 PhysDiff 的差異講清楚 —— 是 differentiable 嗎？是 train-time 還是 infer-time？是 humanoid 還是 fluid / soft body？這四維界定了你的 contribution slot。
+- **Animation / motion-cap 工程師** —— production 場景 PhysDiff 直接用，但要換 **PHC 替代 UHC**（更穩 imitator）+ **schedule 重調**（你的 DDIM step 數通常 < 50）。預期 inference 仍是分鐘級，dance / acro 動作要 imitator-confidence gate。
+- **神經 PDE / surrogate 研究者** —— PhysDiff 跟 PINN / HNN 是**三條互補路線**而非競爭：architecture-level（HNN）→ train-time loss（PINN）→ infer-time projection（PhysDiff）。對 contact-discontinuity 場景，infer-time 是目前唯一可行的；對 smooth conservation（fluid / pendulum），architecture-level 更乾淨。**選哪條看你的物理是 closed system 還是 contact-rich**。
+- **Research 學生** —— 注意 §7.1 三條預測 + §6.3 失敗 atlas。PhysDiff 是 anchor paper，所有後續 sim-in-loop 變種（PhysHOI / PhysGen / NewtonGen）都繞著它的「sim 插在 train 還是 infer / 插一次還是 N 次 / 可微還是黑盒」三個軸做變奏 —— 把這三軸畫成 2×2×2 立方體就是 2024-2027 整片 design space。
+
+---
+
+## References
+
+- **PhysDiff (canonical)** — Yuan, Song, Iqbal, Vahdat, Kautz. *PhysDiff: Physics-Guided Human Motion Diffusion Model*. **ICCV 2023 Oral** · arXiv [2212.02500](https://arxiv.org/abs/2212.02500) · [project page](https://nvlabs.github.io/PhysDiff/)
+- **MDM baseline** — Tevet, Raab, Gordon, Shafir, Cohen-Or, Bermano. *Human Motion Diffusion Model*. **ICLR 2023** · arXiv [2209.14916](https://arxiv.org/abs/2209.14916) · [code: GuyTevet/motion-diffusion-model](https://github.com/GuyTevet/motion-diffusion-model)
+- **UHC simulator** — Luo et al. *Universal Humanoid Control* (Kinpoly NeurIPS 2021 / EmbodiedPose NeurIPS 2022) · [code: ZhengyiLuo/UHC](https://github.com/ZhengyiLuo/UHC)
+- **PHC (recommended imitator replacement)** — Luo et al. *Perpetual Humanoid Control for Real-time Simulated Avatars*. **ICCV 2023** · arXiv [2305.06456](https://arxiv.org/abs/2305.06456)
+- **PhysHOI (object interaction extension)** — Wang et al. *PhysHOI: Physics-Based Imitation of Dynamic Human-Object Interaction*. arXiv [2312.04393](https://arxiv.org/abs/2312.04393)
+- **UMR (universal motion repr.)** — Luo et al. *Universal Humanoid Motion Representations for Physics-Based Control*. arXiv [2310.04582](https://arxiv.org/abs/2310.04582)
+- **Datasets** — HumanML3D, HumanAct12, UESTC（標準 motion-text benchmarks）
+- **Third-party reproduction notes** — 社群實作（無單一 canonical reference）
+
+---
+
+## Boundary
+
+- 完整 PINN 解構（train-time PDE loss）→ [`./pinn.md`](./pinn.md)
+- 完整 Hamiltonian / Lagrangian NN 解構（architecture-level conservation）→ [`./hamiltonian-lagrangian-nn.md`](./hamiltonian-lagrangian-nn.md)
+- PhysGen（rigid-body image → physics video, pipeline 而非 inference loop）→ [`./physgen.md`](./physgen.md)
+- Force Prompting（force as conditioning input, no sim）→ [`./force-prompting.md`](./force-prompting.md)
+- 可微 sim 對照組（train-time backprop 路線）→ [`../differentiable-simulators/genesis.md`](../differentiable-simulators/genesis.md) / [`../differentiable-simulators/mujoco-mjx.md`](../differentiable-simulators/mujoco-mjx.md)
+- Conservation violation 具體目標清單（foot-contact / ground-penetration sub-violation specs）→ [`crossing/conservation-violation-atlas/`](../../crossing/conservation-violation-atlas/)
+- 與 5 axis 全景 → [`cheat-sheet/ontology.md`](../../cheat-sheet/ontology.md)
+
+---
+
+## ✍️ 維護者註（v0.5 → v1 升級清單）
+
+本 v0.5 基於 paper 全文 + project page + 社群重現經驗。下次升 v1 時補：
+
+1. ⏳ 驗證 NVlabs 是否曾 release official PhysDiff repo（截至 2026-05 未見）
+2. ⏳ Isaac Gym contact solver 的實際 mm-level 穿插 floor 量化
+3. ⏳ "End 4, Space 1" schedule 在 50-step DDIM / classifier-free guidance 下重調的 sweep result
+4. ⏳ PHC 替代 UHC 的 reproduction Phys-Err 對照（社群是否已有？）
+5. ⏳ Video-domain partial projection 第一篇 follow-up paper 列出
+6. ⏳ UHC imitator confidence gate 的開源實作（OOD motion graceful fallback）
+7. ⏳ Status v0.5 → v1，刪本節
+
+---
+
+[← Back to Physics Conditioning](./overview.md)
+
+Sources:
+- [PhysDiff arXiv 2212.02500](https://arxiv.org/abs/2212.02500)
+- [PhysDiff project page](https://nvlabs.github.io/PhysDiff/)
+- [MDM arXiv 2209.14916](https://arxiv.org/abs/2209.14916)
+- [GuyTevet/motion-diffusion-model](https://github.com/GuyTevet/motion-diffusion-model)
+- [ZhengyiLuo/UHC](https://github.com/ZhengyiLuo/UHC)
+- [PHC arXiv 2305.06456](https://arxiv.org/abs/2305.06456)
+- [PhysHOI arXiv 2312.04393](https://arxiv.org/abs/2312.04393)

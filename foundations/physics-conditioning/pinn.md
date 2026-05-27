@@ -1,132 +1,313 @@
 <!-- ontology-5axis output=field|particle injection=aux-loss control=param|3d-init temporal=autoregressive domain=fluid|rigid|soft -->
 
-# Physics-Informed Neural Networks (PINN)
+# PINN 解構（Physics-Informed Neural Networks）
 
-> Canonical: Raissi, Perdikaris, Karniadakis, *Physics-informed neural networks: A deep learning framework for solving forward and inverse problems involving nonlinear partial differential equations*, J. Comput. Phys. 378 (2019) 686-707. Preprints: arxiv [1711.10561](https://arxiv.org/abs/1711.10561)（Part I — Data-driven Solutions, 2017-11-28）+ [1711.10566](https://arxiv.org/abs/1711.10566)（Part II — Data-driven Discovery, 2017-11-28）。Library: Lu et al, *DeepXDE*, SIAM Review 63(1) 2021, arxiv [1907.04502](https://arxiv.org/abs/1907.04502)。
+> **發布時間**：2017-11 arXiv（[1711.10561](https://arxiv.org/abs/1711.10561) Part I + [1711.10566](https://arxiv.org/abs/1711.10566) Part II）· 2019 J. Comput. Phys. 378 686-707（合併正式版）
+> **論文**：*Physics-Informed Neural Networks: A Deep Learning Framework for Solving Forward and Inverse Problems Involving Nonlinear Partial Differential Equations*
+> **作者**：Maziar Raissi, Paris Perdikaris, George Em Karniadakis（Brown University，Karniadakis 是 spectral/hp element 與 scientific ML 元老）
+> **核心定位**：本 handbook **`aux-loss` injection 線的鼻祖 + canonical anchor**。整個 physics-conditioning USP zone 對它都有 strong dependence —— PhysGen / PhysDiff / Force Prompting 的 aux-loss 改良版全是 PINN 思想再包裝。但是要從 v0.5 升 v1 必須讀 Krishnapriyan 2021 + Wang NTK 2022 揭露的 failure modes，不是讀原 paper 的 Burgers demo。
 
-## 1. One-paragraph TL;DR
+**Status:** v0.5 — 解構基於 Raissi 2017-2019 三篇原文 + Krishnapriyan NeurIPS 2021 + Wang NTK JCP 2022 + DeepXDE 8 條 GitHub issue 採樣。完整 SOTA 變體 benchmark 表（SA-PINN / Causal PINN / XPINN / hash-encoded PINN）待維護者升 v1。
+**TL;DR:** PINN 做的事可以一句話講完 —— **用 autograd 對 NN 輸出取偏導數，把 PDE residual `‖N[u_θ]‖²` 當 auxiliary loss 加進總 loss**，於是 forward / inverse PDE 都變成同一套 optimization。這個 trick 從 2017 流傳到今天仍是 aux-loss baseline；但**真正該記得的事實**：原 paper 在 Burgers / Schrödinger demo 漂亮，Krishnapriyan 2021 把 convection coefficient 從 small 調大，vanilla PINN error 直接從 10⁻³ 跳到 O(1) —— **NTK 失效分析（Wang 2022）證明 loss term 之間 gradient 量級差 2-4 個數量級，這個理論根因 2022 才補上**，前面 5 年所有人都在瞎調 λ。
 
-純資料驅動的 NN（Sobel-only / pixel L2）對 PDE 系統的兩個致命傷：(a) **資料稀疏**就學不動 — 真實實驗只有 boundary / sensor 幾個點；(b) **OOD extrapolation 失效** — 沒看過的 viscosity / boundary 一外推就崩。PINN 把 PDE residual 本身寫成 auxiliary loss，用 autograd 對網路輸出取 ∂/∂x、∂²/∂x²，硬塞進 total loss。**Prior gap**：把 PDE 從「solver 端硬解」搬到「optimization 端 soft penalty」，於是 inverse problem（從觀測反推未知 PDE 係數）變成跟 forward problem 同一套機制。**為什麼這篇 handbook 把 PINN 當 `aux-loss` 的標準參考**：所有後續 video / scene / NeRF + physics loss 的論文，基本都是 PINN 把 PDE 換成自家領域守恆律的再包裝；理解 PINN 的 failure mode（多尺度、stiff、loss-weight Pareto）就是理解這條 injection 線的下限。**遺留問題**：原 paper 在 Burgers / Schrödinger / Navier-Stokes（low-Re）漂亮 demo，但 Krishnapriyan et al NeurIPS 2021 證明 convection / reaction / diffusion 稍微把參數調出 trivial regime，vanilla PINN 就直接失效。這個「demo 跑得動但 production 撐不住」的鴻溝，是接下來五年所有 PINN 變體（causal / self-adaptive / hard-constraint）想填的。
+**X-Ray.** PINN 是這本 handbook 整個 `physics-conditioning` zone 的**祖父節點**：v2 ontology axis 2 的 `aux-loss` 就是它定義出來的 idiom。所有後續 video / scene / NeRF + physics loss（PhysGen 的 rigid-body ODE loss、PhysDiff 的 score guidance、Force Prompting 的 attention conditioning）都是把「**PDE 寫成可微 residual + 加進 total loss**」這個模式換 domain 包裝再用一次。**但讀者更該知道的是 failure mode 而非 demo**：Krishnapriyan NeurIPS 2021（[2109.01050](https://arxiv.org/abs/2109.01050)）系統性證明 vanilla PINN 在 convection / reaction / diffusion 三類 operator 上稍微偏離 trivial regime 就崩；Wang Yu Perdikaris JCP 2022（[2007.14527](https://arxiv.org/abs/2007.14527)）用 Neural Tangent Kernel 解釋了**為什麼 loss-weight 怎麼調都不對** —— `L_pde` 與 `L_bc` 的 gradient eigenvalue 跨 10²-10⁴ 量級，主導項把 NN 訓往單一方向、另一項根本沒在學。對 **video / 大 scale generation** 而言，直接把 PDE residual 套到 video diffusion 完全不 work（score gradient 與 PDE residual gradient 方向不相容），但 **PhysGen 走的「physics loss 只在中介 latent 加、pixel 端用 generative diffusion 渲染」是 PINN 思想的活路**。這就是為什麼這篇要寫成 anchor：理解 PINN failure → 理解整個 zone 的 lower bound。
 
-## 2. Core mechanism
+## 📍 研究全景時間線
 
-給 PDE $\mathcal{N}[u](x,t) = 0$，邊界算子 $\mathcal{B}[u] = g$，初始條件 $u(x,0) = u_0$，PINN 用 MLP $u_\theta(x,t)$ 同時拟合所有條件：
+```ascii
+   1990s         2017-11           2019            2021-09           2022                YOU ARE HERE 2024-25
+   autodiff ──► PINN arxiv ────► PINN JCP ────► Krishnapriyan ───► Wang NTK ─────► PhysGen / PhysDiff /
+   (Griewank)   (Raissi)         (canonical)    NeurIPS failure   JCP theory       Force Prompting
+                                                modes              of why          aux-loss 後代
+                                                                                    ↘
+                                                                  ★ injection idiom 從 PDE-MLP 擴張到 diffusion-video
+   ☆ enabling   ★ paradigm        ★ headline    ★ "demo OK,        ★ ill-conditioned
+     tech       shift             demos         production fails"  optimization
 
-```
-        x, t ──┐
-               ├──► MLP u_θ(x,t) ──► û
-        (時空)  │           │
-               │           ├──autograd──► ∂û/∂t, ∂û/∂x, ∂²û/∂x², ...
-               │           │                       │
-               │           │                       ▼
-               │           │             residual r = N[û] (e.g. u_t + u·u_x - ν·u_xx)
-               │           │                       │
-               │           │                       ▼
-               │           │             L_pde = ‖r‖²  (collocation 點)
-               │           ├──► L_bc  = ‖B[û] - g‖²  (boundary 點)
-               │           ├──► L_ic  = ‖û(x,0) - u_0‖²  (initial 點)
-               │           └──► L_data= ‖û - u_obs‖²  (sparse sensor，可選)
-               │                       │
-               ▼                       ▼
-       total: L = λ_pde·L_pde + λ_bc·L_bc + λ_ic·L_ic + λ_data·L_data
-              └─► ∇_θ L → Adam (~10⁴-10⁵ iter) → LBFGS finetune (~10³ iter)
+   └─ autograd 可算高階偏導 ─► PDE as soft loss ─► failure exposed ─► theory closes ─► generative descendants ─►
 ```
 
-關鍵在三點：(1) PDE residual 是 **網路本身對 input 的 autograd 算出來**，不需要任何 mesh 或 finite-difference stencil；(2) 整個 loss 在隨機取樣的 collocation 點上計算，可以 mesh-free；(3) inverse problem 只要把 PDE 係數 ν 也設成 `trainable variable`，就能跟 θ 一起學 — 這是 PINN 在 scientific ML 最大的賣點。
-
-實作上 Adam warm-up 之後幾乎都要接 LBFGS：Adam 把 loss 從 O(1) 拉到 O(10⁻²)，LBFGS 才能再壓到 O(10⁻⁵)；少了 LBFGS 這步，幾乎所有 paper 的 headline 數字都復現不出來。
-
-## 3. 五軸定位 + 同軸對手
-
-| 軸 | PINN | Hamiltonian/Lagrangian NN | FNO/MeshGraphNet | PhysDiff |
-|---|---|---|---|---|
-| output | `field`（u(x,t) 連續場） | `field`（particle q,p over t） | `field` | `pixel-video` |
-| injection | **`aux-loss`**（PDE residual as soft penalty） | **`hard-constraint`**（symplectic 架構 by-construction） | `hard-constraint`（spectral inductive bias） | `guidance-gradient`（physics gradient 加在 score） |
-| control | `param`（PDE coeff, BC, IC） | `param`（initial state） | `param` | `text` + `param` |
-| temporal | `autoregressive`（在 (x,t) 空間 query 任意 t） | `streaming`（ODE 解算） | `autoregressive` | `clip-parallel` |
-| domain | `fluid` / `rigid` / `soft`（generalist PDE） | `rigid`（conservative system） | `fluid` 為主 | `rigid` |
-
-**同軸對手**：
-
-- **Hamiltonian NN / Lagrangian NN**（[link](./hamiltonian-lagrangian-nn.md)）— 把守恆律寫到**架構**裡而非 loss 裡。優勢 = 能量嚴格守恆、long rollout 不漂；劣勢 = 只適用 conservative system，dissipation / contact / forcing 一律不行。**取捨**：PINN = 通用但 soft，Hamiltonian = 嚴格但窄。
-- **FNO / MeshGraphNet**（[FNO](../neural-surrogates/fno.md)、[GraphCast](../neural-surrogates/graphcast.md)）— supervised operator learning。優勢 = 一旦訓好 inference 是 millisecond；劣勢 = 需要 simulator 預先產 trajectory 資料集（PINN 只要 PDE 數學式）。**取捨**：PINN 在 inverse / 稀疏資料 / 新 PDE 第一次嘗試最強；FNO 在 production rollout 最強。
-- **PhysDiff**（[link](./physdiff.md)）— diffusion score 加 physics gradient guidance。同樣是 soft constraint 但載體是 diffusion 而非 MLP；對「生成可控 video」是更直接的路。**取捨**：PINN 學的是「解 u(x,t)」；PhysDiff 學的是「採樣符合物理的 pixel」— output space 根本不同，是兩條互不取代的線。
-
-簡言之：PINN 在「injection 強度／generalization 寬度」這軸上是中等偏弱的 baseline — 是所有比較的原點，不是冠軍。
-
-## 4. ⚡ Shines / ❌ Breaks
-
-### ⚡ Shines
-
-- **Inverse problem with sparse sensor data**：給定幾個點的 u 觀測，反推 PDE 係數（如未知 viscosity、reaction rate）。原 paper Part II 在 Burgers / KdV / NS 的 viscosity discovery 是教科書級 demo。
-- **新 PDE 第一次 prototyping**：不需要寫 solver、不需要 mesh、不需要 boundary discretization；改個 lambda function 就能換 PDE。
-- **不規則 / 高維 domain**：6D Fokker-Planck、複雜幾何邊界，傳統 solver 要重寫 mesh，PINN 重新取樣 collocation 點即可。
-- **Soft constraint + data fusion**：可以同時拟合 PDE + 雜訊感測器資料，自然處理 ill-posed inverse problem。
-
-### ❌ Breaks
-
-- **Krishnapriyan et al NeurIPS 2021（arxiv [2109.01050](https://arxiv.org/abs/2109.01050)）系統性 failure mode**：作者在 convection / reaction / diffusion 三類 operator 上，**只把 convection coefficient β 從 small 調大**，vanilla PINN error 就從 ~10⁻³ 跳到 O(1)。根本原因 = soft regularization 讓 optimization landscape **ill-conditioned**，Adam/LBFGS 都卡在 local minimum。論文提出 curriculum + sequence-to-sequence 兩種修法但都治標。
-- **Wang, Yu, Perdikaris JCP 2022（NTK 視角，arxiv [2007.14527](https://arxiv.org/abs/2007.14527)）**：用 Neural Tangent Kernel 解釋為什麼 — `L_pde` 與 `L_bc` 的 gradient 量級可差 2-4 個數量級，dominant 的那一項把 NN 訓往單一方向，另一項根本沒在學。**這是「loss weight tuning instability」的理論根因**。
-- **Multi-scale / stiff PDE**：頻率成份跨好幾個量級時，MLP 偏好低頻、高頻被壓制（spectral bias），導致 sharp gradient / boundary layer 學不到。
-- **Long-horizon propagation**：PDE 在大時間域上 PINN 容易 fit「全 t 平均」而違反 causality — Wang et al 2022（arxiv [2203.07404](https://arxiv.org/abs/2203.07404)）證明 vanilla PINN 在 Lorenz / Kuramoto-Sivashinsky / 高 Re NS 完全失效。
-- **Curse of dimensionality**：當 PDE 維度 > 6-8 時 collocation 取樣成本爆炸；雖然比傳統 mesh-based solver 緩，但仍然輸給有結構利用的方法（如 Fokker-Planck 的 tensor train）。
-- **Hard boundary 不嚴**：soft penalty 是「儘量滿足」不是「強制滿足」— DeepXDE issues [#90](https://github.com/lululxvi/deepxde/issues/90)、[#192](https://github.com/lululxvi/deepxde/issues/192) 反復出現 BC 違反 1-5% 的回報。
-
-## 5. Reproduction notes
-
-- **Libraries（按成熟度排序）**：
-  1. **DeepXDE**（[lululxvi/deepxde](https://github.com/lululxvi/deepxde)）— Lu et al, SIAM Review 2021；TF / PyTorch / JAX / PaddlePaddle 多 backend；社群事實標準。
-  2. **NVIDIA Modulus / PhysicsNeMo**（[NVIDIA/modulus](https://github.com/nvidia/modulus)，已改名 PhysicsNeMo）— 工業級、multi-GPU、整合 FNO + PINN + DeepONet。適合大規模 / 真實工程 PDE。
-  3. **SciANN** — Keras 包裝，教學友好但社群活躍度遜於前兩者。
-- **典型 setup**：MLP 4-8 層 / 寬度 50-100 / tanh 啟用；Adam lr=1e-3, ~20k iter；接 LBFGS-B finetune ~1-5k iter。1D Burgers 在 V100 約 5-15 分鐘到 paper 級 error。
-- **常見踩坑**：
-  1. **Adam 跑完忘了接 LBFGS** — paper 的 headline error 幾乎都靠 LBFGS finetune；只跑 Adam 的人會以為 PINN 是騙子。
-  2. **`loss_weights` 設成 [1,1,1,1]** — 不同 term 的 gradient 量級差幾個數量級（NTK 已證），需要 grid search 或用 adaptive scheme（如 SA-PINN、NTK-weighted、GradNorm）。
-  3. **Collocation 點數太少** — 1D 至少 ~10k，2D ~50k，3D 容易爆 GPU memory。
-  4. **PDE 形式沒 normalize** — 把 PDE 寫成 $u_t + u u_x = \nu u_{xx}$ 時，如果 ν=1e-6（真實低粘性）會讓 residual 數量級失衡，先 non-dimensionalize 再丟給 PINN。
-  5. **LBFGS 在 TF backend 卡在 30 iter** — DeepXDE issue [#1819](https://github.com/lululxvi/deepxde/issues/1819) 報過；換 PyTorch backend 或升 tf-probability 版本。
-  6. **Hard constraint 不會自動處理 Neumann** — Dirichlet 可以用 ansatz `u = g(x) + N(x)·NN(x)`，但 Neumann 需要更巧的 output transform（DeepXDE issue [#1837](https://github.com/lululxvi/deepxde/issues/1837)）。
-
-## 6. Cross-line synthesis
-
-- **PINN 餘味在 video diffusion**：PhysGen（Liu et al, ECCV 2024，[link](./physgen.md)）並非把 PINN 整個搬到 video，而是把 PINN 的「rigid body / contact ODE 寫進 loss」的精神拆出來 — image 端用 generative diffusion 渲染，simulation 端用真 solver，**physics loss 只在中介 latent 上加**。直接把 PDE residual 丟到 video diffusion 的天真做法（PI-Loss for video diffusion）目前沒有成功案例 — score function 是 denoising 方向梯度，PDE residual 是物理約束梯度，**兩者方向不一定相容**，疊加會產生 distribution shift。這條路在 `crossing/controllability-vs-fidelity/` 是 open Pareto。
-- **PINN-meets-NeRF**：NeRF 本質也是「空間座標 → 場值」的 coord-based MLP，跟 PINN 形式上同構。社群已有把 PDE residual 當 aux loss 加在 NeRF 上的嘗試（physics-informed NeRF for fluid reconstruction、PI-MLP for hash-encoded fields），核心難題仍是 spectral bias — NeRF 的 hash encoding 對高頻友好，但 PINN 的 autograd 高階導數在 hash encoding 上數值不穩。[TBD: verify exact arxiv ID for physics-informed NeRF 流體重建 canonical work]。
-- **vs sim-in-loop**：當你有可微 simulator（Genesis、PhysX-diff），sim-in-loop 直接給 ground-truth trajectory 訊號，比 PINN 的 soft PDE penalty 強得多。PINN 主場仍是「**沒 simulator、只有 PDE 數學式 + 稀疏觀測**」這個 niche。
-- **vs `guidance-gradient` 線**：PhysDiff / classifier-physics-guided diffusion 是把物理梯度加在 score function 上，本質仍是 soft constraint，但載體是 diffusion 採樣而非 MLP 拟合。可以視為 PINN 在 generative 範式下的近親；但兩者的 generalization 來源不同（PINN 來自 PDE 數學式，PhysDiff 來自大規模 video 預訓 + guidance）。
-
-## 7. References
-
-**Canonical**
-
-1. Raissi, M., Perdikaris, P., Karniadakis, G. E. *Physics-informed neural networks: A deep learning framework for solving forward and inverse problems involving nonlinear partial differential equations.* J. Comput. Phys. 378 (2019) 686-707. [arxiv 1711.10561](https://arxiv.org/abs/1711.10561) (Part I) + [arxiv 1711.10566](https://arxiv.org/abs/1711.10566) (Part II).
-2. Lu, L., Meng, X., Mao, Z., Karniadakis, G. E. *DeepXDE: A deep learning library for solving differential equations.* SIAM Review 63(1) (2021) 208-228. [arxiv 1907.04502](https://arxiv.org/abs/1907.04502).
-
-**Failure-mode 文獻**
-
-3. Krishnapriyan, A., Gholami, A., Zhe, S., Kirby, R., Mahoney, M. *Characterizing possible failure modes in physics-informed neural networks.* NeurIPS 2021. [arxiv 2109.01050](https://arxiv.org/abs/2109.01050).
-4. Wang, S., Yu, X., Perdikaris, P. *When and why PINNs fail to train: A neural tangent kernel perspective.* J. Comput. Phys. 449 (2022). [arxiv 2007.14527](https://arxiv.org/abs/2007.14527).
-
-**Modern extensions**
-
-5. McClenny, L., Braga-Neto, U. *Self-Adaptive Physics-Informed Neural Networks using a Soft Attention Mechanism.* JCP 2022. [arxiv 2009.04544](https://arxiv.org/abs/2009.04544).
-6. Wang, S., Sankaran, S., Perdikaris, P. *Respecting causality is all you need for training physics-informed neural networks.* [arxiv 2203.07404](https://arxiv.org/abs/2203.07404) (2022).
-
-**Generative / cross-line**
-
-7. Liu, S., Ren, Z., Gupta, S., Wang, S. *PhysGen: Rigid-Body Physics-Grounded Image-to-Video Generation.* ECCV 2024. [project page](https://stevenlsw.github.io/physgen/).
-8. NVIDIA Modulus / PhysicsNeMo: [github.com/NVIDIA/modulus](https://github.com/nvidia/modulus)（已改名 [PhysicsNeMo](https://github.com/NVIDIA/physicsnemo)，遷移過渡中）。
-
-## 8. §8.x Pitfall log
-
-- **§8.1 Loss-weight imbalance（NTK pathology）**（severity: high）。DeepXDE issue [#215](https://github.com/lululxvi/deepxde/issues/215)（closed, 2021-02）+ [#982](https://github.com/lululxvi/deepxde/issues/982)（opened 2022-10）。原文：「Is there a way to make these weights dynamic such that they counteract the issue of gradient imbalance between different magnitudes of gradients of different loss terms?」理論根因見 Wang et al 2022 NTK 論文：不同 loss term 的 gradient eigenvalue 跨數量級，dominant term 把訓練拖向自己方向，其他 term 形同沒在學。Workaround：(a) GradNorm；(b) NTK-weighted（Wang 2022 §4 直接給公式）；(c) Self-Adaptive PINN（McClenny 2020）；(d) Sobol-sampled collocation + λ grid search。
-- **§8.2 Weight initialization sensitivity / 訓練 run-to-run variance**（severity: high）。DeepXDE issue [#305](https://github.com/lululxvi/deepxde/issues/305)（closed）。原文：「the order of magnitude of the pdes losses when they are started to be trained varies a lot from run to run」— 同 seed 不同 init 下，初始 PDE loss 可以差 10⁵ 量級，有時直接 NaN。Workaround：(a) 固定 Xavier/Glorot scale；(b) 跑 N=5+ seed 取 median；(c) PDE non-dimensionalize 把 residual 量級先正規化。
-- **§8.3 Navier-Stokes 不收斂**（severity: high for fluids）。DeepXDE issue [#80](https://github.com/lululxvi/deepxde/issues/80)。原文：「continuity and x-momentum residuals are at best ~1e-1 regardless of the number of epochs, network size, network architecture」— 標準 incompressible NS 不論怎麼調都壓不下殘差。對應 Krishnapriyan 2021 的 convection failure mode。Workaround：(a) 從低 Re 退到 trivial regime；(b) 換 vorticity-streamfunction 形式（自動滿足 continuity）；(c) curriculum on Re。
-- **§8.4 Inverse problem parameter 不收斂**（severity: high for scientific ML）。DeepXDE issue [#251](https://github.com/lululxvi/deepxde/issues/251)。Forward 跑得起來但 inverse 估 unknown velocity 一路發散到 5.24（真值 2.0）。Workaround：(a) 預訓 forward 再開 trainable parameter；(b) parameter 加先驗 / log-domain reparametrize；(c) 增加 sensor data 點密度。
-- **§8.5 Hard boundary 不嚴 / Neumann 難實作**（severity: medium-high for engineering）。DeepXDE issues [#90](https://github.com/lululxvi/deepxde/issues/90)、[#192](https://github.com/lululxvi/deepxde/issues/192)、[#1837](https://github.com/lululxvi/deepxde/issues/1837)。Dirichlet 可以用 ansatz `u(x) = g(x) + d(x)·NN(x)`（d(x) 在邊界為 0）達 hard constraint；但 Neumann（∂u/∂n=0）需要更精巧的 output transform，社群長期沒有 clean solution。Workaround：(a) 用 ghost-point penalty；(b) DeepXDE 1.10+ 的 `output_transform` 自訂；(c) 直接放棄 hard、加大 BC loss weight 50-100×。
-- **§8.6 LBFGS 在 TF backend 卡 30 iter**（severity: medium）。DeepXDE issue [#1819](https://github.com/lululxvi/deepxde/issues/1819)。Adam 跑得動，切到 LBFGS-B 後恰好 30 iter 停。Workaround：(a) 換 PyTorch backend；(b) 升 tensorflow-probability ≥0.20；(c) 改用 SciPy LBFGS-B 包外接（DeepXDE 提供 `model.train(optimizer="L-BFGS")` 但底層仍是 tfp）。
-- **§8.7 Multi-scale spectral bias**（severity: high for stiff PDE）。MLP 對低頻友好、高頻被壓 — 經典 spectral bias 在 PINN 上加倍嚴重，因為 PDE residual 高階導數放大高頻誤差。Krishnapriyan 2021 + Wang 2022 都實證 sharp gradient / boundary layer / shock front 無法被 vanilla PINN 學到。Workaround：(a) Fourier feature embedding（Tancik 2020）；(b) multi-scale PINN（Liu 2020 分 frequency band）；(c) domain decomposition（XPINN, Jagtap 2020）；(d) hash encoding（要小心高階 autograd 數值穩定性）。
-- **§8.8 Causality violation in long-horizon rollout**（severity: high for chaotic / turbulent）。Wang, Sankaran, Perdikaris 2022（arxiv [2203.07404](https://arxiv.org/abs/2203.07404)）證明 vanilla PINN 對 t 全域同等 loss → 模型可能先 fit t=T 把全域平均拉低，違反「t=0 解錯則 t=T 不該對」的因果。在 Lorenz / Kuramoto-Sivashinsky chaotic regime / 高 Re NS 直接失效。Workaround：(a) Causal PINN — 殘差加 temporal weight，前面點沒收斂前下游 weight 自動為零；(b) time-marching / sequential training；(c) Causality-Respecting Adaptive Refinement（[arxiv 2410.20212](https://arxiv.org/abs/2410.20212), 2024）。
+★ = 主要新點。**仍未解（留給下一代）**：(a) hard-constraint 嚴格滿足 Neumann / 守恆律的 clean 形式；(b) chaotic / turbulent regime 的 long-horizon rollout；(c) PDE residual 與 diffusion score 兩種 gradient 方向相容的統一框架。
 
 ---
 
-**衍生 dissection 候選**：Hamiltonian/Lagrangian NN（同 zone hard-constraint 對比）、PhysGen（cross-line 到 video generation）、Self-Adaptive PINN deep-dive（PINN 變體獨立一篇）、PhysDiff（同 zone guidance-gradient 對比）。
+## §1 · 架構 / Core Mechanism
+
+### 1.1 三大改動 vs 前作
+
+| 維度 | 純資料驅動 NN（pre-2017） | Mesh-based FEM / FD solver | **PINN（Raissi 2017）** |
+|---|---|---|---|
+| **PDE 知識的注入點** | 完全不用 PDE，靠 supervised pair `(x, u_gt)` | PDE 寫成離散 stencil，**solver 端硬解** | **autograd 算 `N[u_θ]`，PDE 寫成 loss term** |
+| **Mesh / discretization** | 不需要 mesh | 必須生成 mesh + 邊界離散 | **mesh-free**，隨機取 collocation 點 |
+| **Inverse problem（反推係數）** | 需要單獨設計 | 需要 adjoint method 寫一遍 | **PDE 係數設成 trainable variable 就能跟 θ 一起學** |
+| **OOD 外推** | 完全失效 | solver 在新邊界仍可解 | 在 PDE 形式不變的前提下優於純資料驅動 |
+| **稀疏 sensor data 融合** | 需要 imputation | 不自然 | **L_data + L_pde 同一個 loss，soft 融合天然** |
+| **高維 PDE (>6D)** | scalable | mesh 爆炸 | collocation 點數仍可行 |
+| **新 PDE prototyping 時間** | 不適用 | 寫 solver + mesh = 數週 | **改個 lambda function 即可**，數小時 |
+
+### 1.2 ⚡ Eureka Moment
+
+> **「autograd 算 PDE residual → 加進 loss → 不需要 mesh、不需要 FEM solver」** —— 神經網路本來就用 autograd 算 `∂L/∂θ`；既然能對參數取偏導，那當然也能對 **input** 取偏導。`∂u_θ/∂x`、`∂²u_θ/∂x²` 都是 autograd graph 上自然能拿到的東西。把它們組合成 PDE 算子（如 `u_t + u·u_x - ν·u_xx`），residual 就是這個算子作用在 NN 輸出上的值；residual 的 L2 norm 就是 loss。
+
+這個 trick 在 1990s automatic differentiation（Griewank）就有理論基礎，但要等到 2017 framework（TF/PyTorch）把高階 autograd 變成一行 API，PINN 才能成為可重複的 baseline。**整個 idiom 的價值在「把 PDE 從 solver 搬到 optimization」這個 paradigm shift，而不在某個具體 demo**。
+
+### 1.3 信息流（架構圖）
+
+```ascii
+           Pre-PINN: data-driven NN                        PINN (Raissi 2017)
+   ─────────────────────────────────────         ─────────────────────────────────────
+
+   (x, t) ──► MLP ──► û                           (x, t) ──► MLP u_θ ──► û
+              │                                              │
+              ▼                                              ├──autograd──► ∂û/∂t, ∂û/∂x, ∂²û/∂x², ...
+   L = ‖û - u_gt‖²                                          │                       │
+   (需要密集標註)                                            │                       ▼
+                                                            │             r = N[û]  ← PDE residual
+                                                            │             (e.g. u_t + u·u_x - ν·u_xx)
+                                                            │                       │
+                                                            ▼                       ▼
+                                                  L_data  L_bc  L_ic       L_pde = ‖r‖²
+                                                    │       │     │              │
+                                                    └───────┴─────┴──────────────┘
+                                                                ▼
+                                                  L_total = λ_data·L_data + λ_pde·L_pde
+                                                          + λ_bc·L_bc + λ_ic·L_ic
+                                                                ▼
+                                                  Adam (~10⁴-10⁵ iter) → LBFGS (~10³ iter)
+                                                  ★ LBFGS 不接，paper headline 數字復現不出
+```
+
+---
+
+## §2 · 數學層
+
+### 📌 Napkin Formula
+
+```
+   給 PDE   N[u](x,t) = 0  on Ω×[0,T]
+       BC   B[u](x,t) = g  on ∂Ω
+       IC   u(x,0)    = u_0
+
+   PINN 訓練：u_θ(x,t) := MLP，autograd 對 (x,t) 取偏導
+
+   L_total(θ) = λ_pde · 𝔼_{(x,t)∈Ω_c} ‖N[u_θ](x,t)‖²        ← collocation residual
+              + λ_bc  · 𝔼_{(x,t)∈∂Ω_c} ‖B[u_θ] - g‖²         ← soft boundary
+              + λ_ic  · 𝔼_x ‖u_θ(x,0) - u_0(x)‖²            ← soft initial
+              + λ_data· 𝔼_obs ‖u_θ - u_obs‖²                ← (optional) sparse sensor
+
+   Cost: O(N_collocation · D_high_order_grad)  per iteration
+         vs FEM:  O(N_mesh · solver_iter)      per time step
+```
+
+**直覺**：PDE 從「solver 端 hard solve」搬到「optimization 端 soft penalty」。三件事被一鍋打包：(1) **forward** — 給 PDE + BC/IC，解 u；(2) **inverse** — 把 ν 也設成 `trainable variable`，給稀疏 u_obs 反推 ν；(3) **assimilation** — L_data 與 L_pde 同層 soft 融合。代價 = 在 collocation 點計算高階偏導，**而且不同 loss term 的 gradient 量級沒人保證匹配**（這就是 §6 + §8 整個 failure 主軸的入口）。
+
+### 2.1 Loss / 訓練細節
+
+實作上 Adam warm-up 之後幾乎都要接 **LBFGS**：Adam 把 loss 從 O(1) 拉到 O(10⁻²)，LBFGS 才能再壓到 O(10⁻⁵)；少了 LBFGS 這步，幾乎所有 paper 的 headline 數字都復現不出來。`λ` 權重組合 = grid search / NTK-weighted（Wang 2022 §4 給公式）/ SA-PINN（self-adaptive，McClenny 2020）/ GradNorm 四選一，沒人能 free lunch。
+
+### 2.2 自監督 / curriculum 變體
+
+Krishnapriyan 2021 提出 curriculum learning（從小 β 漸增）+ sequence-to-sequence（時間切片逐步 unroll）兩種修法，但都是治標：本質仍是 soft penalty 的 ill-conditioning。Hard-constraint 路線（HNN / LNN）走的是另一條 ontology axis 的解法（見 §7）。
+
+---
+
+## §3 · 數據層 / 訓練 scale
+
+PINN 跟所有後續 aux-loss 後代最大的賣點之一：**訓練資料規模可以很小**。
+
+| 條件 | PINN 需要的資料 | mesh-based FEM 需要的資料 | 純資料驅動 NN 需要的資料 |
+|---|---|---|---|
+| Forward problem | **只要 PDE 數學式 + BC/IC** | PDE + mesh | 密集 supervised pair |
+| Inverse problem | PDE form + 幾個 sensor 點 | adjoint solver + sensor | 大量 paired observations |
+| 新 PDE 第一次嘗試 | 1 個午後 | 數週寫 solver | 需要先生成 dataset |
+
+**Collocation 點數實務值**：1D 約 10k、2D 約 50k、3D 容易爆 GPU memory；這個尺度跟「video diffusion 訓練要看 100M+ frames」是不同數量級。**這也是為什麼 PINN 主場仍是 scientific ML niche，而不是大 scale generation**。
+
+---
+
+## §4 · 代碼層
+
+| 項 | 狀態 |
+|---|---|
+| Canonical repo | [Raissi 原作 maziarraissi/PINNs](https://github.com/maziarraissi/PINNs)（TF 1.x，今天已不維護） |
+| 事實標準 lib | **DeepXDE**（[lululxvi/deepxde](https://github.com/lululxvi/deepxde)）— Lu et al SIAM Review 2021；TF / PyTorch / JAX / PaddlePaddle 多 backend |
+| 工業級 lib | NVIDIA **Modulus / PhysicsNeMo**（[github.com/NVIDIA/physicsnemo](https://github.com/NVIDIA/physicsnemo)，改名遷移中）— multi-GPU、整合 FNO + PINN + DeepONet |
+| 教學級 lib | SciANN — Keras 包裝，社群活躍度遜於前兩者 |
+| License | DeepXDE LGPL-2.1；Modulus Apache-2.0 |
+| Inference GPU | 1D Burgers V100 5-15 分鐘到 paper-level error |
+| Streaming | ❌（必須 batch optimize；inference 是「query 任意 (x,t) 拿 u_θ」） |
+| Metric scale | ✅（PDE 用真實單位寫，但要 non-dimensionalize 才訓得動） |
+| 典型 setup | MLP 4-8 層 / 寬度 50-100 / tanh；Adam lr=1e-3, ~20k iter + LBFGS-B ~1-5k iter |
+
+---
+
+## §5 · 評測 / Benchmark
+
+| Benchmark | Metric | 純資料 NN | **vanilla PINN** | Krishnapriyan β-stress test |
+|---|---|---|---|---|
+| 1D Burgers (ν=0.01/π) | L2 rel error | 不收斂 | **6.7e-4** ★ | n/a |
+| Schrödinger 1D | L2 rel error | 不收斂 | **1.97e-3** ★ | n/a |
+| 2D NS (low-Re) cylinder | viscosity ν 反推 | 不適用 | **1.5% 誤差** ★ | n/a |
+| Convection (β=1) | L2 rel error | n/a | ~10⁻³ | OK |
+| Convection (β=30) | L2 rel error | n/a | n/a | **O(1) 完全崩** 🔴 |
+| Reaction (ρ=5) | L2 rel error | n/a | n/a | **O(1) 完全崩** 🔴 |
+| Lorenz / KS chaotic | long-horizon | n/a | 失效 | （Wang 2022 causal-PINN 才解） |
+
+★ = 原 paper headline 數字（Raissi 2019）。
+
+**解讀**：原 paper 的 headline 數字是真的，**但只在 trivial regime**。Krishnapriyan 2021 的 β-stress test 是這個方法落地最重要的 reality check —— **demo 跑得動 ≠ production 撐得住**，這個鴻溝是接下來五年所有 PINN 變體（causal / self-adaptive / hard-constraint / XPINN / Fourier feature）想填的。Benchmark Goodhart 在 PINN community 也存在：很多 paper 只報 Burgers/Schrödinger 不報 convection-large-β，這是 reader 該警覺的 selection。
+
+---
+
+## §6 · Issues & Limitations
+
+### 6.1 論文自述 limitations
+
+- 原 paper 對「Adam 卡 local min → 必須接 LBFGS」描述偏輕；後續社群實證 LBFGS 不接 headline 不可復現
+- 對 multi-scale / stiff PDE 的處理只給 anecdotal evidence，沒系統性 benchmark
+- inverse problem 章節只展示 low-Re NS 與 KdV，sharp gradient / 高 Re / 不連續係數沒測
+
+### 6.2 Hidden Assumptions
+
+- **MLP 對低頻友好（spectral bias）** —— 高頻 / sharp gradient / boundary layer 結構性學不到；對 stiff PDE 是致命
+- **Loss term 同尺度** —— 預設 `[1,1,1,1]` 隱含「λ 不重要」這個錯誤先驗
+- **Collocation 取樣均勻** —— 對含 shock / boundary layer 的 PDE，均勻取樣對 sharp region 訊號不夠
+- **PDE 形式已 normalize** —— ν=1e-6 物理量丟進去 residual 數量級就崩，必須先 non-dimensionalize
+- **Initial / boundary 條件夠準** —— soft penalty 對誤差敏感，noisy BC 直接 propagate 到 interior
+
+### 6.3 NTK-validated 失敗模式（Wang Yu Perdikaris JCP 2022）
+
+> **核心理論結果**：在 NTK regime，PINN 的訓練動力學 = `du/dt = -K·(u - u*)`，其中 K 是 stack 所有 loss term 的 NTK matrix。**不同 loss term（L_pde / L_bc / L_ic）的 K 特徵值跨 10²-10⁴ 量級** —— dominant 那一項把 NN 訓往單一方向，其他 term 在訓練早期幾乎不變化。
+
+對應實證症狀：
+
+| 失敗類型 | 根因（NTK 視角） | 對應 Krishnapriyan 實證 |
+|---|---|---|
+| L_bc 違反 1-5% | `K_bc` eigenvalue ≪ `K_pde` | convection β=30 |
+| 訓練 stuck plateau | `K` ill-conditioned | reaction ρ=5 |
+| run-to-run variance 大 | NTK 對 init scale 敏感 | DeepXDE #305 |
+| Adam→LBFGS 跳變大 | landscape ill-conditioned | 所有 paper headline 需要 LBFGS |
+
+### 6.4 GitHub-validated 失敗模式（DeepXDE atlas 聯動）
+
+| 失敗 / 問題 | GitHub evidence | 嚴重度 |
+|---|---|---|
+| **Loss-weight imbalance (NTK pathology)** | [#215](https://github.com/lululxvi/deepxde/issues/215)（closed 2021-02）+ [#982](https://github.com/lululxvi/deepxde/issues/982)（open 2022-10）：「Is there a way to make these weights dynamic such that they counteract the issue of gradient imbalance」 | 🔴 universal |
+| **Weight init sensitivity / run-to-run variance** | [#305](https://github.com/lululxvi/deepxde/issues/305)：「the order of magnitude of the pdes losses ... varies a lot from run to run」— 同 seed 不同 init 初始 PDE loss 可差 10⁵ 量級，有時 NaN | 🔴 reproducibility |
+| **Navier-Stokes 不收斂** | [#80](https://github.com/lululxvi/deepxde/issues/80)：「continuity and x-momentum residuals are at best ~1e-1 regardless of the number of epochs, network size, network architecture」 | 🔴 fluids 主場 |
+| **Inverse problem parameter 不收斂** | [#251](https://github.com/lululxvi/deepxde/issues/251)：forward 跑得起來但 inverse 估 unknown velocity 一路發散到 5.24（真值 2.0） | 🔴 scientific ML |
+| **Hard boundary 不嚴 / Neumann 難實作** | [#90](https://github.com/lululxvi/deepxde/issues/90) + [#192](https://github.com/lululxvi/deepxde/issues/192) + [#1837](https://github.com/lululxvi/deepxde/issues/1837)：Dirichlet 可用 ansatz `u=g(x)+d(x)·NN(x)`，Neumann 沒乾淨 solution | 🟠 engineering |
+| **LBFGS 卡 30 iter (TF backend)** | [#1819](https://github.com/lululxvi/deepxde/issues/1819)：Adam 跑得動，LBFGS-B 恰好 30 iter 停 | 🟠 toolchain |
+
+**Maintainer 響應度**：DeepXDE 仍活躍維護（Lu Lu 個人 repo，2026-05 仍在 commit）；issue 多被回覆但「loss-weight」「NS 不收斂」這類**理論性問題沒人能 close** —— 需要 SA-PINN / Causal PINN / NTK-weighted 等 method-level 變體，不是 lib bugfix 能搞定的。
+
+### 6.5 對 video / 大 scale 的 envelope 限制
+
+- **Score function 與 PDE residual 方向不相容** —— diffusion score 是 denoising 方向，PDE residual 是物理約束方向；天真疊加產生 distribution shift（這就是為什麼**沒有「PI-Loss for video diffusion」成功案例**）
+- **Collocation 取樣 → video pixel 不可行** —— video 是 dense field，collocation 點 sparse 取樣的 idiom 不對胃口
+- **PhysGen 的活路**：physics loss 只加在中介 latent（rigid-body pose / 接觸 ODE），image 端用 generative diffusion 渲染；**PINN 思想被「腰斬」使用**
+- **Force Prompting 的活路**：把 force / wind / 物理 prompt 用 attention conditioning 注入，不算嚴格 aux-loss 但精神同源
+
+---
+
+## §7 · 比較 & 面試 Tip
+
+| 同軸對手 | injection | 守恆? | OOD 寬度 | 訓練資料需求 | 主場 |
+|---|---|---|---|---|---|
+| **PINN** | `aux-loss` (soft) | ❌（penalty 違反 1-5%） | 中等 | PDE form + 稀疏 sensor | sci-ML / inverse / 新 PDE prototyping |
+| HNN / LNN | `hard-constraint`（架構） | ✅ 嚴格 | 窄（only conservative） | trajectories | 剛體 / 經典力學 |
+| FNO / MeshGraphNet | `hard-constraint`（spectral bias） | partial | 受訓練分佈限制 | simulator-generated 大量 trajectory | production rollout |
+| PhysGen | `aux-loss` on latent（PINN 思想） | rigid-body ODE | 圖→片段 video | image + 物理 prompt | I2V 物理可控 |
+| PhysDiff | `guidance-gradient` | classifier-physics-guided | text-conditional | 大規模 video + diffusion | text→video 軟物理 |
+| Force Prompting | `aux-loss` + attention conditioning | force-as-prompt | 受 base diffusion 限制 | force-labeled video | 含力場 video gen |
+
+> **🎤 Interview Tip.** 「我們要不要在 video diffusion 加 PINN aux loss？」**正確答**：「**不要直接套**。三個原因：(1) Krishnapriyan 2021 證明 vanilla PINN 在 non-trivial regime 直接崩，video 的 motion field 遠比 1D Burgers 複雜，更不可能 trivial；(2) Wang NTK 2022 證明不同 loss term gradient 量級跨 10²-10⁴，diffusion 的 score 跟 PDE residual 量級沒人保證匹配，會出現 score 主導 → PDE 沒在學 / 或反之 distribution shift；(3) **看 PhysGen 的活路**：他們**沒**把 PDE 整個搬到 video，是把 rigid-body / 接觸 ODE 放在中介 latent 層，image 端走純 diffusion。要在 video 加 physics 結構，**腰斬 PINN 思想用、不是直接套**。」**錯答**：「PINN 是 baseline，加上去總比沒加好」—— 沒讀 NTK paper 的訊號。
+
+### 7.1 Falsifiable predictions
+
+1. **2027-12 前**：會出現一篇 "Score-PDE Compatibility Theorem"（或類似），系統性給出 diffusion score gradient 與 PDE residual gradient 共存的充分條件 —— 主因 NTK 理論已成熟，缺的只是 generative-side 對應公式。
+2. **2027-12 前**：第一篇 hash-encoding + PINN 的 stable 工作出來（解掉高階 autograd 對 hash table 的數值不穩定）；當前 [physics-informed NeRF / PI-MLP 流體重建] 仍 unstable。
+3. **2027-12 前不會發生**：vanilla PINN（unmodified Raissi 2019 formulation）成為 video diffusion 的 production aux-loss —— 即便有人嘗試，會被 PhysGen-style 中介 latent loss 或 Force Prompting 風格 attention conditioning 取代；**因為 NTK 失效在 video scale 上只會放大不會收斂**。
+
+---
+
+## §8 · For the Reader（按 persona 分流）
+
+- **VLA / robot policy 工程師** —— PINN 直接接 policy 不對胃口；但若你在做 **dynamics learning**（從稀疏軌跡反推 mass / friction），PINN inverse problem 章節仍是 baseline。記得 §6.4 [#251] inverse 不收斂的問題：先 forward 預訓再開 trainable parameter。
+- **自駕 closed-loop 工程師** —— 你不直接用 PINN，但你**會吃 PINN 後代的虧**：如果某 vendor 把 vehicle dynamics 寫成 aux-loss 塞進 prediction model，記得問他們調 λ 用哪個 scheme（NTK-weighted? SA-PINN? GradNorm?）—— 預設 `[1,1,1,1]` 是地雷。
+- **影片生成工程師** —— **不要把 PINN 直接套到 video diffusion**（§7 interview tip 三條原因）。要加物理結構：走 PhysGen-style（physics loss on intermediate latent）或 Force Prompting-style（force as attention conditioning），這是 PINN 思想的腰斬使用。
+- **神經 PDE / surrogate 研究者** —— 你的主場。PINN 是 baseline，但實際 production 八成走 SA-PINN / Causal PINN / XPINN / NTK-weighted。讀 paper 順序：Raissi 2019 → Krishnapriyan 2021 → Wang NTK 2022 → Wang causal 2022（[2203.07404](https://arxiv.org/abs/2203.07404)）。
+- **★ 物理 conditioning 研究者** —— 你的世界裡 PINN 是**思想祖父**，但**現代後代**是：(a) **PhysGen** ECCV 2024（rigid-body ODE as latent loss）；(b) **PhysDiff**（physics gradient as score guidance）；(c) **Force Prompting**（force as attention conditioning）。三條路徑都是 PINN 思想在 generative 範式下的折射；**讀本篇 §6 NTK 失效 + §7 interview tip 是 USP zone 的下限知識**。當你設計新 aux-loss 變體，要做的第一件事是檢查它在 NTK regime 下是否會 ill-conditioned —— 這比 demo 跑得動重要。
+- **Research 學生** —— 寫 PINN 變體論文時，**至少跑 Krishnapriyan β-stress test**（convection β=1, 10, 30）。只報 Burgers / Schrödinger 是 selection；reviewer 會問。
+
+---
+
+## References
+
+**Canonical**
+
+- **PINN** — Raissi, Perdikaris, Karniadakis · *J. Comput. Phys.* 378 (2019) 686-707 · arXiv [1711.10561](https://arxiv.org/abs/1711.10561) (Part I) + [1711.10566](https://arxiv.org/abs/1711.10566) (Part II)
+- **DeepXDE** — Lu, Meng, Mao, Karniadakis · *SIAM Review* 63(1) (2021) 208-228 · arXiv [1907.04502](https://arxiv.org/abs/1907.04502) · [code](https://github.com/lululxvi/deepxde)
+
+**Failure-mode 文獻（USP zone 必讀）**
+
+- **Krishnapriyan failure modes** — Krishnapriyan, Gholami, Zhe, Kirby, Mahoney · *NeurIPS 2021* · arXiv [2109.01050](https://arxiv.org/abs/2109.01050)
+- **Wang NTK theory** — Wang, Yu, Perdikaris · *J. Comput. Phys.* 449 (2022) · arXiv [2007.14527](https://arxiv.org/abs/2007.14527)
+- **Causal PINN** — Wang, Sankaran, Perdikaris · arXiv [2203.07404](https://arxiv.org/abs/2203.07404) (2022)
+
+**Modern extensions**
+
+- **SA-PINN** — McClenny, Braga-Neto · *JCP 2022* · arXiv [2009.04544](https://arxiv.org/abs/2009.04544)
+- **Causality-Respecting Adaptive Refinement** — arXiv [2410.20212](https://arxiv.org/abs/2410.20212) (2024)
+- **NVIDIA PhysicsNeMo** — [github.com/NVIDIA/physicsnemo](https://github.com/NVIDIA/physicsnemo)（Modulus 改名遷移）
+
+**Generative descendants（aux-loss 後代）**
+
+- **PhysGen** — Liu, Ren, Gupta, Wang · *ECCV 2024* · [project page](https://stevenlsw.github.io/physgen/)
+- **PhysDiff** — see [`./physdiff.md`](./physdiff.md)
+- **Force Prompting** — see [`./force-prompting.md`](./force-prompting.md)
+
+**Third-party reproductions**
+
+- DeepXDE issue cluster: [#80](https://github.com/lululxvi/deepxde/issues/80), [#90](https://github.com/lululxvi/deepxde/issues/90), [#192](https://github.com/lululxvi/deepxde/issues/192), [#215](https://github.com/lululxvi/deepxde/issues/215), [#251](https://github.com/lululxvi/deepxde/issues/251), [#305](https://github.com/lululxvi/deepxde/issues/305), [#982](https://github.com/lululxvi/deepxde/issues/982), [#1819](https://github.com/lululxvi/deepxde/issues/1819), [#1837](https://github.com/lululxvi/deepxde/issues/1837)
+
+---
+
+## Boundary
+
+- **同 zone hard-constraint 對比**（守恆律寫進架構而非 loss）→ [`./hamiltonian-lagrangian-nn.md`](./hamiltonian-lagrangian-nn.md)
+- **同 zone aux-loss 後代（rigid-body → video）** → [`./physgen.md`](./physgen.md)
+- **同 zone guidance-gradient 對比** → [`./physdiff.md`](./physdiff.md)
+- **同 zone force as conditioning prompt** → [`./force-prompting.md`](./force-prompting.md)
+- **Neural surrogate（supervised operator learning）對比** → [`../neural-surrogates/fno.md`](../neural-surrogates/fno.md)
+- **跨 zone wedge：sim-in-loop vs PINN soft constraint** → [`../../crossing/sim-vs-aux-loss/overview.md`](../../crossing/sim-vs-aux-loss/overview.md)
+- **與 sister handbook 接口（Spatial: physics-informed NeRF）** → [`../../bridge-to-spatial/pi-nerf.md`](../../bridge-to-spatial/pi-nerf.md)
+- **與 5 axis 全景** → [`../../cheat-sheet/ontology.md`](../../cheat-sheet/ontology.md)
+
+---
+
+## ✍️ 維護者註（v0.5 → v1 升級清單）
+
+本 v0.5 基於 Raissi 2017-2019 三篇 + Krishnapriyan 2021 + Wang NTK 2022 + DeepXDE 8 條 issue 採樣。下次升 v1 時補：
+
+1. ⏳ SA-PINN（McClenny 2022）的完整 mechanism + 跟 NTK-weighted 的 head-to-head
+2. ⏳ Causal PINN（Wang 2022 [2203.07404](https://arxiv.org/abs/2203.07404)）的 temporal weight 完整公式 + Lorenz / KS 實驗數字
+3. ⏳ XPINN domain decomposition（Jagtap 2020）vs vanilla PINN benchmark
+4. ⏳ Hash-encoding + PINN 的高階 autograd 數值穩定性 status（physics-informed NeRF 流體重建 canonical work arXiv ID）
+5. ⏳ PhysGen / PhysDiff / Force Prompting 對 PINN 思想腰斬使用的 architecture 細節對比表
+6. ⏳ NVIDIA PhysicsNeMo 在大型工業 PDE（航太、半導體蝕刻）的 production case study
+7. ⏳ Score-PDE 共存的充分條件理論 paper（§7.1 falsifiable 1 一旦兌現）
+8. ⏳ Status v0.5 → v1，刪本節
+
+---
+
+[← Back to Physics-Conditioning](./overview.md)
+
+Sources:
+- [Raissi 2019 PINN JCP](https://www.sciencedirect.com/science/article/pii/S0021999118307125)
+- [arXiv 1711.10561 Part I](https://arxiv.org/abs/1711.10561)
+- [arXiv 1711.10566 Part II](https://arxiv.org/abs/1711.10566)
+- [Krishnapriyan NeurIPS 2021](https://arxiv.org/abs/2109.01050)
+- [Wang NTK JCP 2022](https://arxiv.org/abs/2007.14527)
+- [DeepXDE GitHub](https://github.com/lululxvi/deepxde)
+- [NVIDIA PhysicsNeMo](https://github.com/NVIDIA/physicsnemo)
