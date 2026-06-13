@@ -273,6 +273,36 @@
             "pages": [
               "deployment/overview.md"
             ]
+          },
+          {
+            "group": "Calibration",
+            "pages": [
+              "deployment/calibration/overview.md"
+            ]
+          },
+          {
+            "group": "Compute Budget",
+            "pages": [
+              "deployment/compute-budget/overview.md"
+            ]
+          },
+          {
+            "group": "Failure Modes",
+            "pages": [
+              "deployment/failure-modes/overview.md"
+            ]
+          },
+          {
+            "group": "Inference Cost",
+            "pages": [
+              "deployment/inference-cost/overview.md"
+            ]
+          },
+          {
+            "group": "Safety Guardrails",
+            "pages": [
+              "deployment/safety-guardrails/overview.md"
+            ]
           }
         ]
       },
@@ -284,6 +314,36 @@
             "group": "Overview",
             "pages": [
               "benchmarks/overview.md"
+            ]
+          },
+          {
+            "group": "Controllability",
+            "pages": [
+              "benchmarks/controllability/overview.md"
+            ]
+          },
+          {
+            "group": "Robot Data",
+            "pages": [
+              "benchmarks/robot-data/overview.md"
+            ]
+          },
+          {
+            "group": "Scientific",
+            "pages": [
+              "benchmarks/scientific/overview.md"
+            ]
+          },
+          {
+            "group": "Video Physics",
+            "pages": [
+              "benchmarks/video-physics/overview.md"
+            ]
+          },
+          {
+            "group": "World Model",
+            "pages": [
+              "benchmarks/world-model/overview.md"
             ]
           }
         ]

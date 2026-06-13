@@ -97,6 +97,27 @@ def find_any(patterns: list[str], text: str) -> bool:
     return any(re.search(p, text) for p in patterns)
 
 
+def exists_case_sensitive(target: Path, repo_root: Path) -> bool:
+    """Path.exists() is case-INSENSITIVE on some filesystems (macOS, and this dev box).
+    GitHub Actions' ext4 is case-SENSITIVE, so a link whose case is wrong — or that
+    points to an empty/untracked dir — passes here but 404s in CI / Mintlify. Verify
+    each path component against the on-disk listing with exact case to match CI."""
+    try:
+        rel = target.resolve().relative_to(repo_root.resolve())
+    except (ValueError, OSError):
+        return False
+    cur = repo_root.resolve()
+    for part in rel.parts:
+        try:
+            names = {p.name for p in cur.iterdir()}
+        except OSError:
+            return False
+        if part not in names:
+            return False
+        cur = cur / part
+    return True
+
+
 def strip_fenced_code_blocks(text: str) -> str:
     """剥掉 ``` 包裹的 fenced code block，避免把模板里的示例链接当真链接。"""
     out: list[str] = []
@@ -145,7 +166,7 @@ def check_1_broken_links(repo_root: Path) -> CheckResult:
             except (ValueError, OSError):
                 broken.append(f"{md.relative_to(repo_root)} → {rel_path}（解析失败）")
                 continue
-            if not target.exists():
+            if not exists_case_sensitive(target, repo_root):
                 broken.append(f"{md.relative_to(repo_root)} → {rel_path}")
     ok = total - len(broken)
     if broken:
