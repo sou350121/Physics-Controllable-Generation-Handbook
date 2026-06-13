@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Pulsar dedup state is regenerable (the state/ dir itself is tracked via
+# its own .gitignore + .gitkeep so the path exists in the repo).
+scripts/pulsar/state/seen_arxiv_ids.json

@@ -280,8 +280,8 @@ PINN 跟所有後續 aux-loss 後代最大的賣點之一：**訓練資料規模
 - **同 zone guidance-gradient 對比** → [`./physdiff.md`](./physdiff.md)
 - **同 zone force as conditioning prompt** → [`./force-prompting.md`](./force-prompting.md)
 - **Neural surrogate（supervised operator learning）對比** → [`../neural-surrogates/fno.md`](../neural-surrogates/fno.md)
-- **跨 zone wedge：sim-in-loop vs PINN soft constraint** → [`../../crossing/sim-vs-aux-loss/overview.md`](../../crossing/sim-vs-aux-loss/overview.md)
-- **與 sister handbook 接口（Spatial: physics-informed NeRF）** → [`../../bridge-to-spatial/pi-nerf.md`](../../bridge-to-spatial/pi-nerf.md)
+- **跨 zone wedge：soft-constraint vs hard sim-in-loop 的守恆違反譜** → [`../../crossing/conservation-violation-atlas/overview.md`](../../crossing/conservation-violation-atlas/overview.md)
+- **與 sister handbook 接口（Spatial: NeRF/3DGS 遇上 world model）** → [`../../bridge-to-spatial/nerf-3dgs-meet-world-model.md`](../../bridge-to-spatial/nerf-3dgs-meet-world-model.md)
 - **與 5 axis 全景** → [`../../cheat-sheet/ontology.md`](../../cheat-sheet/ontology.md)
 
 ---

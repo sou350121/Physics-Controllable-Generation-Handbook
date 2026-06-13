@@ -1,10 +1,10 @@
 <!-- ontology-5axis
-output: latent-tokens
-injection: data-only
-control: action | image-init
-temporal: latent-rollout (block-causal AR)
-domain: generalist → robotics
-ref: ../../cheat-sheet/ontology.md §3 (latent-world-models)
+output=latent-tokens
+injection=data-only
+control=action | image-init
+temporal=latent-rollout (block-causal AR)
+domain=generalist → robotics
+ref=../../cheat-sheet/ontology.md §3 (latent-world-models)
 -->
 
 # V-JEPA 2 解構（V-JEPA 2 / V-JEPA 2-AC Dissection）

@@ -1,10 +1,10 @@
 <!-- ontology-5axis
-output: motion | 3d-explicit
-injection: guidance-gradient + sim-in-loop-infer
-control: text + contact
-temporal: clip-parallel (denoise) + autoregressive (sim rollout)
-domain: robotics | rigid (humanoid + ground plane)
-ref: ../../cheat-sheet/ontology.md §5
+output=motion | 3d-explicit
+injection=guidance-gradient + sim-in-loop-infer
+control=text + contact
+temporal=clip-parallel (denoise) + autoregressive (sim rollout)
+domain=robotics | rigid (humanoid + ground plane)
+ref=../../cheat-sheet/ontology.md §5
 -->
 
 # PhysDiff 解構（Physics-Guided Human Motion Diffusion）

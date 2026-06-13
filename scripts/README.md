@@ -4,13 +4,15 @@ Tooling for handbook maintenance + Pulsar Phase 2 daily pipeline.
 
 | Script | 角色 | Status |
 |---|---|---|
-| **[`ontology_kmeans_audit.py`](./ontology_kmeans_audit.py)** | **Hybrid data-driven + LLM-driven ontology sanity check** — embed dissection headers + TL;DR via DashScope text-embedding-v3 → per-axis k-means + intra/inter cluster cosine sim → flag potential mislabels | ✅ **ready (user-triggered)** |
-| `handbook_audit.py` | 14 audit checks（ontology header, internal links, etc.） | 🟡 待移植自 spatial |
-| `gen_mintlify_nav.py` | 從目錄結構生成 docs.json navigation | 🟡 待移植 |
-| `sync_readme_from_overview.py` | 子目錄 overview.md → README.md mirror | 🟡 待移植 |
-| `inject_ontology_headers.py` | 在新 dissection 自動補 5-axis HTML comment header | 🟡 待移植 |
-| `query_ontology.py` | 查 ontology 五軸的全文索引 | 🟡 待移植 |
-| `pulsar/` | Daily arxiv pipeline | 🟡 待從 spatial clone |
+| **[`ontology_kmeans_audit.py`](./ontology_kmeans_audit.py)** | **Hybrid data-driven + LLM-driven ontology sanity check** — embed dissection headers + TL;DR via DashScope text-embedding-v3 → per-axis k-means + intra/inter cluster cosine sim → flag potential mislabels | ✅ ready (user-triggered) |
+| `handbook_audit.py` | 8 audit checks（broken links / ontology 5-axis header / Mintlify nav / empty groups / README sync / UNVERIFIED / stale TODO / dissection anchors）；CI gate via `.github/workflows/audit.yml` | ✅ live |
+| `gen_mintlify_nav.py` | 從目錄結構生成 `docs.json`（v3 tabs, .md page ids, mdx-aware, reports archive 豁免） | ✅ live |
+| `sync_readme_from_overview.py` | 子目錄 overview.md → README.md mirror（audit Check 5 enforce） | ✅ live |
+| `pulsar/` | Daily arxiv pipeline（collect → rate → post）；deploy via `.github/workflows/pulsar-physics-gen-daily.yml` | ✅ live |
+
+> 註：`inject_ontology_headers.py`（spatial 的一次性 header 注入工具）不移植 —
+> physics-gen 35 篇 dissection 已全部手寫 5-axis header（audit Check 2 enforce）。
+> `query_ontology.py`（五軸全文查詢）視需要再補。
 
 ## `ontology_kmeans_audit.py` — Quick start
 

@@ -1,10 +1,10 @@
 <!-- ontology-5axis
-output: particle (state-trajectory) / latent rollout
-injection: hard-constraint (canonical anchor)
-control: param (mass / length / viscosity) + 3d-init for HGN
-temporal: streaming (ODE integrator) / autoregressive
-domain: rigid (pendulum / N-body); fluid 變體稀薄
-ref: ../../cheat-sheet/ontology.md §Axis2
+output=particle (state-trajectory) / latent rollout
+injection=hard-constraint (canonical anchor)
+control=param (mass / length / viscosity) + 3d-init for HGN
+temporal=streaming (ODE integrator) / autoregressive
+domain=rigid (pendulum / N-body); fluid 變體稀薄
+ref=../../cheat-sheet/ontology.md §Axis2
 -->
 
 # HNN / LNN / Symplectic NN 解構（Hamiltonian & Lagrangian Neural Networks）

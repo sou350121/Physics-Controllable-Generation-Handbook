@@ -1,10 +1,10 @@
 <!-- ontology-5axis
-output: field (3D atmospheric state, 0.25° × 37 levels)
-injection: architecture-bias-soft | aux-loss
-control: param (initial-condition only)
-temporal: autoregressive (6h step, rollout 40)
-domain: weather
-ref: ../../cheat-sheet/ontology.md §7
+output=field (3D atmospheric state, 0.25° × 37 levels)
+injection=architecture-bias-soft | aux-loss
+control=param (initial-condition only)
+temporal=autoregressive (6h step, rollout 40)
+domain=weather
+ref=../../cheat-sheet/ontology.md §7
 -->
 
 # GraphCast 解構（GraphCast Dissection）

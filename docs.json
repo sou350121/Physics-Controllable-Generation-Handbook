@@ -1,88 +1,382 @@
 {
-  "$schema": "https://mintlify.com/schema.json",
-  "name": "Physics-Controllable Generation Handbook",
-  "description": "Physics-as-conditioning world models — sister to VLA-Handbook & Spatial-Intelligence-Handbook",
+  "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
+  "name": "Physics-Controllable Generation Handbook",
+  "description": "Physics-as-conditioning world models — video / latent / 3D / simulator / surrogate · 5-axis ontology v2 (Injection ★ USP) · 照見三冊之三 (Generation side)",
   "colors": {
     "primary": "#7C3AED",
     "light": "#A78BFA",
     "dark": "#5B21B6"
   },
-  "navigation": [
-    {
-      "group": "Start",
-      "pages": ["README", "ONBOARDING", "AGENTS", "CONTRIBUTING", "MAINTAINER"]
-    },
-    {
-      "group": "Cheat Sheet",
-      "pages": [
-        "cheat-sheet/overview",
-        "cheat-sheet/ontology",
-        "cheat-sheet/functional_map",
-        "cheat-sheet/timeline",
-        "cheat-sheet/controllability_input_matrix"
-      ]
-    },
-    {
-      "group": "Foundations",
-      "pages": [
-        "foundations/overview",
-        "foundations/video-world-models/overview",
-        "foundations/latent-world-models/overview",
-        "foundations/physics-conditioning/overview",
-        "foundations/diffusion-physics/overview",
-        "foundations/differentiable-simulators/overview",
-        "foundations/neural-surrogates/overview",
-        "foundations/controllability-mechanisms/overview",
-        "foundations/evaluation-physics/overview",
-        "foundations/3d-aware-generation/overview",
-        "foundations/long-horizon-rollout/overview",
-        "foundations/material-and-dynamics/overview",
-        "foundations/data-engine/overview",
-        "foundations/foundation-physics-models/overview"
-      ]
-    },
-    {
-      "group": "Use Cases",
-      "pages": [
-        "use-cases/overview",
-        "use-cases/robotics-data-gen/overview",
-        "use-cases/autonomous-driving-sim/overview",
-        "use-cases/embodied-policy-rollout/overview",
-        "use-cases/scientific-discovery/overview",
-        "use-cases/media-and-content/overview",
-        "use-cases/digital-twin/overview"
-      ]
-    },
-    {
-      "group": "Crossing (USP wedges)",
-      "pages": [
-        "crossing/overview",
-        "crossing/pixel-vs-latent-physics/overview",
-        "crossing/sim-vs-gen-data/overview",
-        "crossing/controllability-vs-fidelity/overview",
-        "crossing/conservation-violation-atlas/overview",
-        "crossing/text-action-trajectory-spectrum/overview"
-      ]
-    },
-    {
-      "group": "Deployment",
-      "pages": ["deployment/overview"]
-    },
-    {
-      "group": "Benchmarks",
-      "pages": ["benchmarks/overview"]
-    },
-    {
-      "group": "Companies",
-      "pages": ["companies/overview"]
-    },
-    {
-      "group": "Bridges",
-      "pages": ["bridge-to-vla/overview", "bridge-to-spatial/overview"]
+  "favicon": "/favicon.svg",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Get Started",
+        "icon": "rocket",
+        "groups": [
+          {
+            "group": "Start here",
+            "pages": [
+              "ONBOARDING.md",
+              "AGENTS.md",
+              "CONTRIBUTING.md",
+              "MAINTAINER.md"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Cheat Sheet",
+        "icon": "map",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "cheat-sheet/overview.md",
+              "cheat-sheet/controllability_input_matrix.md",
+              "cheat-sheet/functional_map.md",
+              "cheat-sheet/ontology.md",
+              "cheat-sheet/ontology-v1.1-review.md",
+              "cheat-sheet/timeline.md"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Foundations",
+        "icon": "layer-group",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "foundations/overview.md"
+            ]
+          },
+          {
+            "group": "3d Aware Generation",
+            "pages": [
+              "foundations/3d-aware-generation/overview.md",
+              "foundations/3d-aware-generation/generative-gaussian-splatting.md",
+              "foundations/3d-aware-generation/world-labs.md"
+            ]
+          },
+          {
+            "group": "Controllability Mechanisms",
+            "pages": [
+              "foundations/controllability-mechanisms/overview.md",
+              "foundations/controllability-mechanisms/animatediff.md"
+            ]
+          },
+          {
+            "group": "Data Engine",
+            "pages": [
+              "foundations/data-engine/overview.md",
+              "foundations/data-engine/robocasa.md"
+            ]
+          },
+          {
+            "group": "Differentiable Simulators",
+            "pages": [
+              "foundations/differentiable-simulators/overview.md",
+              "foundations/differentiable-simulators/aerial-gym.md",
+              "foundations/differentiable-simulators/difftaichi.md",
+              "foundations/differentiable-simulators/genesis.md",
+              "foundations/differentiable-simulators/mujoco-mjx.md",
+              "foundations/differentiable-simulators/nvidia-warp.md"
+            ]
+          },
+          {
+            "group": "Diffusion Physics",
+            "pages": [
+              "foundations/diffusion-physics/overview.md",
+              "foundations/diffusion-physics/contactgen.md"
+            ]
+          },
+          {
+            "group": "Evaluation Physics",
+            "pages": [
+              "foundations/evaluation-physics/overview.md",
+              "foundations/evaluation-physics/physbench.md",
+              "foundations/evaluation-physics/vbench-physics.md"
+            ]
+          },
+          {
+            "group": "Foundation Physics Models",
+            "pages": [
+              "foundations/foundation-physics-models/overview.md",
+              "foundations/foundation-physics-models/cosmos-wfm.md"
+            ]
+          },
+          {
+            "group": "Latent World Models",
+            "pages": [
+              "foundations/latent-world-models/overview.md",
+              "foundations/latent-world-models/decart-oasis.md",
+              "foundations/latent-world-models/dreamer-v4.md",
+              "foundations/latent-world-models/genie-2.md",
+              "foundations/latent-world-models/v-jepa-2.md"
+            ]
+          },
+          {
+            "group": "Long Horizon Rollout",
+            "pages": [
+              "foundations/long-horizon-rollout/overview.md",
+              "foundations/long-horizon-rollout/teco.md"
+            ]
+          },
+          {
+            "group": "Material And Dynamics",
+            "pages": [
+              "foundations/material-and-dynamics/overview.md",
+              "foundations/material-and-dynamics/neural-mpm.md"
+            ]
+          },
+          {
+            "group": "Neural Surrogates",
+            "pages": [
+              "foundations/neural-surrogates/overview.md",
+              "foundations/neural-surrogates/fno.md",
+              "foundations/neural-surrogates/gencast.md",
+              "foundations/neural-surrogates/graphcast.md",
+              "foundations/neural-surrogates/meshgraphnet.md",
+              "foundations/neural-surrogates/pangu-weather.md"
+            ]
+          },
+          {
+            "group": "Physics Conditioning",
+            "pages": [
+              "foundations/physics-conditioning/overview.md",
+              "foundations/physics-conditioning/force-prompting.md",
+              "foundations/physics-conditioning/hamiltonian-lagrangian-nn.md",
+              "foundations/physics-conditioning/physdiff.md",
+              "foundations/physics-conditioning/physgen.md",
+              "foundations/physics-conditioning/pinn.md"
+            ]
+          },
+          {
+            "group": "Video World Models",
+            "pages": [
+              "foundations/video-world-models/overview.md",
+              "foundations/video-world-models/gaia-2.md",
+              "foundations/video-world-models/sora.md",
+              "foundations/video-world-models/stable-video-diffusion.md",
+              "foundations/video-world-models/veo.md"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Use Cases",
+        "icon": "robot",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "use-cases/overview.md"
+            ]
+          },
+          {
+            "group": "Aerial Sim",
+            "pages": [
+              "use-cases/aerial-sim/overview.md",
+              "use-cases/aerial-sim/champion-level-drone-racing.md"
+            ]
+          },
+          {
+            "group": "Autonomous Driving Sim",
+            "pages": [
+              "use-cases/autonomous-driving-sim/overview.md"
+            ]
+          },
+          {
+            "group": "Digital Twin",
+            "pages": [
+              "use-cases/digital-twin/overview.md"
+            ]
+          },
+          {
+            "group": "Embodied Policy Rollout",
+            "pages": [
+              "use-cases/embodied-policy-rollout/overview.md"
+            ]
+          },
+          {
+            "group": "Media And Content",
+            "pages": [
+              "use-cases/media-and-content/overview.md"
+            ]
+          },
+          {
+            "group": "Robotics Data Gen",
+            "pages": [
+              "use-cases/robotics-data-gen/overview.md",
+              "use-cases/robotics-data-gen/physical-intelligence-pi0.md"
+            ]
+          },
+          {
+            "group": "Scientific Discovery",
+            "pages": [
+              "use-cases/scientific-discovery/overview.md"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Crossing",
+        "icon": "shuffle",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "crossing/overview.md"
+            ]
+          },
+          {
+            "group": "Conservation Violation Atlas",
+            "pages": [
+              "crossing/conservation-violation-atlas/overview.md"
+            ]
+          },
+          {
+            "group": "Controllability Vs Fidelity",
+            "pages": [
+              "crossing/controllability-vs-fidelity/overview.md"
+            ]
+          },
+          {
+            "group": "Pixel Vs Latent Physics",
+            "pages": [
+              "crossing/pixel-vs-latent-physics/overview.md"
+            ]
+          },
+          {
+            "group": "Sim Vs Gen Data",
+            "pages": [
+              "crossing/sim-vs-gen-data/overview.md"
+            ]
+          },
+          {
+            "group": "Text Action Trajectory Spectrum",
+            "pages": [
+              "crossing/text-action-trajectory-spectrum/overview.md"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Deployment",
+        "icon": "screwdriver-wrench",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "deployment/overview.md"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Benchmarks",
+        "icon": "ruler",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "benchmarks/overview.md"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Companies",
+        "icon": "building",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "companies/overview.md"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Bridge to VLA",
+        "icon": "bridge",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "bridge-to-vla/overview.md",
+              "bridge-to-vla/generative-data-for-vla.md",
+              "bridge-to-vla/video-pretraining-for-action.md",
+              "bridge-to-vla/world-model-as-policy.md"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Bridge to Spatial",
+        "icon": "bridge",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "bridge-to-spatial/overview.md",
+              "bridge-to-spatial/3d-aware-video-gen.md",
+              "bridge-to-spatial/nerf-3dgs-meet-world-model.md",
+              "bridge-to-spatial/spatial-controllability.md"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Reports",
+        "icon": "file-lines",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "reports/overview.md"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Docs",
+        "icon": "book",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "docs/mcp-integration.md",
+              "docs/mintlify-deployment.md",
+              "docs/pulsar-integration.md"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "GitHub",
+        "href": "https://github.com/sou350121/Physics-Controllable-Generation-Handbook"
+      },
+      {
+        "label": "VLA-Handbook",
+        "href": "https://github.com/sou350121/VLA-Handbook"
+      },
+      {
+        "label": "Spatial-Handbook",
+        "href": "https://github.com/sou350121/Spatial-Intelligence-Handbook"
+      }
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/sou350121/Physics-Controllable-Generation-Handbook"
     }
-  ],
-  "footerSocials": {
-    "github": "https://github.com/sou350121/Physics-Controllable-Generation-Handbook"
   }
 }
