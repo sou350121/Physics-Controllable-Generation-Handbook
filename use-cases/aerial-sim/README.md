@@ -3,23 +3,15 @@
 > 物理可控生成給無人機自主：6-DoF 自由運動 + 螺旋槳尾流 + 風擾 —— 比 driving 多兩個自由度，比 manipulation 多了「掉下來就壞」的硬性約束。Aerial 是把本 handbook 核心命題逼到極限的 use-case：**外觀可以生成，動力學不能。**
 
 ```mermaid
-flowchart TB
-    P["命題：訓一個會飛的 policy = 閉環的兩條邊<br/>外觀邊（render）· 動力學邊（transition）"]
-    P --> APP["外觀邊 · 可生成<br/>供材：生成資料線 / CARLA-Air / 引擎渲染"]
-    P --> DYN["動力學邊 · 必須物理（全篇主軸）<br/>供材：Aerial Gym / RotorPy / 七套 sim"]
-    APP --> R["三種打法（怎麼處理動力學邊）<br/>(1) 不碰 → 只感知 · (2) 學進 latent → 卡 raw-camera · (3) 交給物理 → 落地（Swift）"]
-    DYN --> R
-    R --> K["落地關鍵：動力學邊『什麼必須真』<br/>thrust map + 延遲必須真 · aero / 參數可學（契約）"]
-    K --> B["交付 → Spatial-Handbook<br/>生成端造資料 → 感知端消費（VIO / 避障）"]
-    PIQ["Physics-IQ r=-0.46<br/>視覺真度 ≠ 物理理解 → 兩邊不可混"] -.-> P
-    classDef appear fill:#e8f0fe,stroke:#4285f4,color:#202124
-    classDef phys fill:#fff4e5,stroke:#f9ab00,color:#202124
-    classDef why fill:#f1f3f4,stroke:#9aa0a6,color:#202124
-    class APP appear
-    class DYN phys
-    class PIQ why
+flowchart LR
+    A["命題<br/>外觀靠生成<br/>動力學靠物理"] --> B["關鍵<br/>在動力學那條邊"]
+    B --> C["三條打法<br/>只有『交給物理』落地"]
+    C --> D["落地契約<br/>那條邊什麼必須真"]
+    D --> E["交付<br/>Spatial-Handbook"]
+    classDef key fill:#fff4e5,stroke:#f9ab00,color:#202124
+    class B key
 ```
-*圖（全境）：aerial-sim 一張看完 —— 命題拆成兩條邊（外觀可生成、動力學必須物理）→ 各自供材（錨點系統）→ 三種打法（只有「交給物理」落地）→ 落地契約（動力學邊什麼必須真）→ 交付給 Spatial-Handbook；Physics-IQ 是「兩邊不可混」的根據。下面三張圖各放大其中一塊：**定調圖**＝兩條邊的閉環機制、**定位圖**＝7 套錨點各站哪邊、**子路線圖**＝怎麼處理動力學邊。*
+*圖（全境）：整篇就一條線 —— 命題 → 動力學邊是關鍵 → 三條打法只有「交給物理」落地 → 落地契約 → 交付 Spatial。下面三張圖分別放大其中一塊：**定調圖**＝兩條邊的閉環機制、**定位圖**＝錨點各站哪邊、**子路線圖**＝怎麼處理動力學邊。*
 
 ```mermaid
 flowchart TD
@@ -54,19 +46,19 @@ flowchart TD
 
 ## 核心張力：外觀靠生成，動力學靠物理
 
-Aerial 是「generation for **appearance**, physics for **dynamics**」這條分界最乾淨的案例 —— 也是檢驗整本 handbook 命題的試金石。一個 video / 3DGS 模型可以合成像真的航拍**外觀**，但它**無法 enforce thrust / drag / gravity / prop-wake**；飛行**動力學**必須來自 physics integrator，不是生成模型。
+Aerial 是「外觀靠生成、動力學靠物理」這條分界最乾淨的案例 —— 也是檢驗整本手冊命題的試金石。一個 video / 3DGS 模型可以合成像真的航拍**外觀**，但它**強加不了 thrust / drag / gravity / prop-wake 這些物理**；飛行**動力學**必須來自 physics integrator，不是生成模型。
 
-證據很硬：迄今所有**驗證過真機**的 aerial 結果，動力學都來自 physics model、生成只負責外觀 —— [SOUS VIDE/FiGS](./generative-aerial-data.md)（10-D 四旋翼模型 + 3DGS 視覺，零樣本 105 次真飛）、[FlightDiffusion](./generative-aerial-data.md)（diffusion 生 FPV video + 獨立 ORB-SLAM3 出動作）皆**架構上拆開**這兩件事。而 Physics-IQ benchmark 量化了原因：**視覺擬真度與物理理解力不相關**（Pearson r=−0.46），Sora 視覺最真卻 physics 分 8.7%。詳見 [Generative Aerial Data 解構](./generative-aerial-data.md)。
+證據很硬：迄今所有**驗證過真機**的 aerial 結果，動力學都來自物理模型、生成只負責外觀 —— [SOUS VIDE/FiGS](./generative-aerial-data.md)（10-D 四旋翼模型 + 3DGS 視覺，零樣本 105 次真飛）、[FlightDiffusion](./generative-aerial-data.md)（diffusion 生 FPV video + 獨立 ORB-SLAM3 出動作）皆**架構上拆開**這兩件事。而 Physics-IQ 這個基準量化了原因：**視覺擬真度與物理理解力不相關**（Pearson r=−0.46），Sora 視覺最真卻 physics 分 8.7%。詳見 [Generative Aerial Data 解構](./generative-aerial-data.md)。
 
 ## 為什麼 aerial 自成一格
 
 不能直接套用 driving / manipulation 子路線：
 
-- **6-DoF free motion** —— 沒有 lane / 沒有桌面，policy 失敗就是墜機；rollout drift 容忍度比 driving 低一個量級
-- **Sensor stack 不同** —— IMU + GNSS + optical flow + downward range，視覺只是其一；WM 需同時生視覺與 IMU 一致的軌跡（這是跨冊 [data contract](../../bridge-to-spatial/aerial-embodiment.md) 的命脈）
-- **Rotor / aerodynamics 是死角** —— propeller wake、ground effect、rotor-rotor interaction 在主流 video WM (Cosmos / Sora) 裡基本不存在；這是 aerial 與其他 use-case 最大的物理差異，也是 [injection 軸](../../cheat-sheet/ontology.md)（本倉 USP）最該被啟用的地方
-- **Wind / turbulence** —— 外部擾動是 first-class 物理量，不是「噪聲」（[NeuroBEM](https://arxiv.org/abs/2106.08015)：高速下空氣動力學是**主導**模型誤差）
-- **HDR + 小目標** —— 天空到地面 14+ stops；其他無人機 / 電線 / 鳥是像素級小物件，photoreal 與否直接決定能否 train avoidance policy
+- **6-DoF 自由運動** —— 沒有車道、沒有桌面，policy 一失敗就是墜機；rollout 漂移的容忍度比 driving 低一個量級
+- **感測器組合不同** —— IMU + GNSS + optical flow + 下視測距，視覺只是其一；WM 要同時生出「視覺與 IMU 一致」的軌跡（這是跨冊 [資料契約](../../bridge-to-spatial/aerial-embodiment.md) 的命脈）
+- **旋翼 / 空氣動力學是死角** —— propeller wake、ground effect、旋翼間交互 在主流 video WM（Cosmos / Sora）裡基本不存在；這是 aerial 與其他 use-case 最大的物理差異，也是 [injection 軸](../../cheat-sheet/ontology.md)（本倉 USP）最該被啟用的地方
+- **風 / 湍流** —— 外部擾動是第一級物理量，不是「噪聲」（[NeuroBEM](https://arxiv.org/abs/2106.08015)：高速下空氣動力學是**主導**的模型誤差）
+- **HDR + 小目標** —— 天空到地面 14+ 級動態範圍；其他無人機 / 電線 / 鳥是像素級小物件，photoreal 與否直接決定能不能訓出避障 policy
 
 ## 錨點系統
 
