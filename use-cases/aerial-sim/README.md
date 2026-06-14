@@ -24,6 +24,7 @@ Aerial 是「generation for **appearance**, physics for **dynamics**」這條分
 |---|---|---|
 | Aerial Gym Simulator | Isaac Gym backend，GPU 並行數萬 env（4.43M SPS @65k），ray-cast depth/seg；**非可微、無 wake/wind** | [foundation 解構](../../foundations/differentiable-simulators/aerial-gym.md) · NTNU ARL 2503.01471 |
 | Aerial sim 七套對比 | Flightmare · PX4-SITL · Isaac-Pegasus · RotorPy · gym-pybullet · **AirSim**（已 archived → Cosys/Project AirSim）；三方權衡 GPU throughput × aero fidelity × photoreal —— **三選二、全員不可微** | [Aerial Sim Stack 對比](./aerial-sim-stack.md) |
+| CARLA-Air | 把 AirSim 飛控塞進 CARLA 城市：**空地同物理 tick + 城市級 photoreal**（唯一空地統一）；但動力學僅 AirSim 剛體級、~20 FPS 單環境、不可微、無 sim-to-real | [解構](./carla-air.md) · arXiv 2603.28032 |
 | Swift (Champion-Level Drone Racing) | Sim-trained RL，真機擊敗人類冠軍；GP perception residual + kNN dynamics residual（~1 分鐘 mocap 數據） | [解構](./champion-level-drone-racing.md) · Nature 2023 |
 | Dream to Fly | DreamerV3 latent WM，raw pixel → CTBR，sim-only 訓練；**「真機」是 HIL + rendered frames**（誠實 caveat） | [解構](./dream-to-fly.md) · UZH RPG 2501.14377 |
 | 生成資料線 | Cosmos FPV（demo）/ NeRF·3DGS（UAV-Sim +55.85% mAP50）/ 合成偵測資料 | [Generative Aerial Data](./generative-aerial-data.md) |
@@ -39,10 +40,11 @@ Aerial 是「generation for **appearance**, physics for **dynamics**」這條分
 
 ## Sim-to-real 契約：什麼必須真、什麼可以學
 
-從 [Swift](./champion-level-drone-racing.md) / [NeuroBEM](https://arxiv.org/abs/2106.08015) / SimpleFlight 萃取的經驗法則 —— **好的標稱物理 + 忠實的 low-level controller + ~1 分鐘真機數據辨識出的小殘差，勝過重度 domain randomization**：
+經驗法則：**好的標稱物理 + 忠實的 low-level controller（用 CTBR）+ 小殘差，勝過重度 domain randomization**。近年 *Science Robotics* 的無人機論文把這條界線講得更具體 —— 完整逐篇讀它們的經驗（含 2026-06 那篇 gap-flight 與 RAPTOR）見 **[Sim-to-Real 契約解構](./sim-to-real-contract.md)**：
 
-- **必須真（建模錯了就墜）**：rigid-body 動力學 + 質量/慣量/推力係數（靠 **system-ID 非 DR**；對已知量做 DR 反而有害）、low-level control 介面（用 **CTBR** + 建模真實 Betaflight/ESC/電壓）、可廉價辨識的一階空氣動力學（**linear rotor drag**）。
-- **可以學/殘差化/生成**：高階空氣動力學（blade flapping / induced drag / rotor-rotor）用 learned residual（NeuroBEM hybrid / Swift kNN）、風擾線上自適應（Neural-Fly，Caltech Sci. Robotics 2022）、感知噪聲/VIO drift 用隨機模型（Swift 的 GP）、**視覺外觀**用生成/渲染。
+- **必須真（量錯就掉）**：**thrust↔throttle 映射 + 你這台的 actuation/感知延遲**（2026-06 Fei Gao 組那篇明說 thrust map 是「the key」，並從真機 system-ID 出延遲）、質量/慣量/推力係數（**system-ID 非 DR，對已知量做 DR 反而有害**）、真實低層控制器（Betaflight/ESC/電壓）。
+- **可以學/殘差化/隨機化**：高階空氣動力學用擾動力包絡或 learned residual（[Swift](./champion-level-drone-racing.md) kNN / [NeuroBEM](https://arxiv.org/abs/2106.08015)）、風擾線上自適應（Neural-Fly，Sci. Robotics 2022）、**感知**用抽象 + 外觀隨機化或真實資料、**視覺外觀**用生成/渲染。
+- **反例（RAPTOR, Sci. Robotics 2026）**：把量不準的參數 randomize 夠寬 + recurrent policy 線上**隱式辨識**，可省掉 per-drone system-ID —— 「最小隨機化」不是唯一解。
 
 ## 關鍵指標
 
@@ -68,6 +70,8 @@ Aerial 是「generation for **appearance**, physics for **dynamics**」這條分
 - [Dream to Fly — DreamerV3 Aerial World Model](./dream-to-fly.md) — latent WM 從 raw pixel 學會飛；及其 HIL-rendered-frames 的誠實邊界
 - [Aerial Sim Stack 對比](./aerial-sim-stack.md) — Flightmare / PX4-SITL / Isaac / RotorPy / Aerial Gym：throughput × aero fidelity × photorealism 三選二
 - [Generative Aerial Data — 外觀靠生成、動力學靠物理](./generative-aerial-data.md) — 生成航拍資料的契約、驗證過的證據（SOUS VIDE / FlightDiffusion / UAV-Sim）與 metric-scale 陷阱
+- [Sim-to-Real 契約（無人機篇）](./sim-to-real-contract.md) — 讀近年 Science Robotics 的無人機論文（含 2026-06 gap-flight、RAPTOR、Neural-Fly），逐條讀出「什麼必須真、什麼可以學」
+- [CARLA-Air — 空地一體城市模擬](./carla-air.md) — 把 AirSim 飛控塞進 CARLA 城市，空中+地面共用一個物理 tick；唯一「城市 photoreal + 空地統一」的公開基座
 
 ## 未來前沿（remaining frontiers）
 

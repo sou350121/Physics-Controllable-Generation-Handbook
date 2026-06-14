@@ -123,6 +123,14 @@
 
 ---
 
+## 6.5 另一類：不在這三角裡比的 sim —— CARLA-Air
+
+上面七套比的是「純空中」的三角。還有**一類不在這個三角裡比**的模擬器值得單獨拉出來：**[CARLA-Air](./carla-air.md)** —— 它把 Microsoft AirSim 的多旋翼飛控塞進 **CARLA 的 photoreal 城市世界**，讓**空中無人機與地面車流／行人共用同一個物理 tick、同一個渲染器**。
+
+它的賣點**不在**動力學精度或吞吐（飛行動力學就是 AirSim 剛體級、~20 FPS 單環境、無 GPU 並行、不可微），而在 **domain × 外觀**：它是目前唯一同時提供「城市級 photoreal + 空地統一」的公開基座，對**空地協同 / 跨視角感知 / 具身導航（VLN-VLA）/ 低空經濟**這些題目對口。一句話分流：**要純空中高保真動力學 → 回這七套；要城市空地場景與多模態資料 → 走 CARLA-Air。** 完整拆解見 [carla-air.md](./carla-air.md)。
+
+---
+
 ## 7. References
 
 **Anchor sims（canonical）**
