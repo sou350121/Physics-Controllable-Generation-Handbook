@@ -146,7 +146,9 @@ CARLA-Air 的外觀來自 CARLA 的 Unreal render——城市夠豐富，但**�
 | **reconstruction**（重建真實場景） | NeRF / 3DGS（driving: NeuRAD；**aerial: [FalconGym](https://arxiv.org/abs/2503.02198) 95.8%、SOUS VIDE 105 飛**） | 外觀近乎完美（重放真感測） | 只限拍過的場景，難造新內容 / 新標籤 |
 | **generation**（生成） | Cosmos / GAIA-2 / FlightDiffusion | 任意場景、可控、最多樣 | 幾何 / 標籤對齊最弱 |
 
-所以 **aerial 的外觀 gap 現在是 3DGS / NeRF 重建在解**（FalconGym / SOUS VIDE 已落地），不是 Carla2Real 式 enhancement——這也再次點出 CARLA-Air 的定位：價值在**空地 physics + 城市場景**；要外觀更真，街景上接 Carla2Real、aerial 上走 3DGS 重建（見 [Generative Aerial Data](./generative-aerial-data.md)）。
+**per-frame enhancement 的 flicker 怎麼解？→ video-to-video（時序一致版的 enhancement）**：把「逐幀翻」換成「整段一起翻」，用光流 warp + 時空判別器把時序吃進去。經典是 **vid2vid**（NVIDIA，NeurIPS 2018，[1808.06601](https://arxiv.org/abs/1808.06601)：seg 影片→photoreal 影片；後續 few-shot / world-consistent vid2vid）；現在多走 **video-diffusion**——**Cosmos-Transfer**（[2503.14492](https://arxiv.org/abs/2503.14492)，depth/seg/edge ControlNet 條件化，**sim→real 已實證**含 robotics）、結構感知去噪的「video EPE」（[2511.14719](https://arxiv.org/abs/2511.14719)）。**兩個代價**：① 算力遠高於 per-frame；② **保標籤變難**——時序一致的生成會 hallucinate / drift，幾何與標籤對不齊，EPE「免費標籤」的賣點被削弱。**而且一樣只動外觀邊、零動力學。** ⚠ **aerial 同樣是空缺（`UNVERIFIED`）**：video2video / video-diffusion 的 sim→photoreal 全在駕駛 / 桌面操作 / 人臉 / 通用場景，**沒有任何「aerial sim-render → photoreal」的時序一致工作**（FlightDiffusion 那種是「文字 / 單幀 → 生影片」、不是把 sim render 翻真，不算）。
+
+所以 **aerial 的外觀 gap 現在是 3DGS / NeRF 重建在解**（FalconGym / SOUS VIDE 已落地），不是 Carla2Real / video2video 式 enhancement——這也再次點出 CARLA-Air 的定位：價值在**空地 physics + 城市場景**；要外觀更真，街景上接 Carla2Real / vid2vid、aerial 上走 3DGS 重建（見 [Generative Aerial Data](./generative-aerial-data.md)）。
 
 ## 自救：如何補強 / 繞過鎖死
 
@@ -274,6 +276,7 @@ while True:
 - **基底**：CARLA 0.9.16（自駕模擬）· AirSim 1.8.1（Microsoft，2022 已封存）· Unreal Engine 4.26
 - **同類取捨**：[Aerial Sim Stack 對比](./aerial-sim-stack.md)（純空中七套）· [Generative Aerial Data](./generative-aerial-data.md)（資料用途）
 - **Carla2Real**（把 CARLA 外觀後處理升 photoreal，appearance-edge）—— arXiv [2410.18238](https://arxiv.org/abs/2410.18238)（IEEE T-ITS 2025）· [github.com/stefanos50/CARLA2Real](https://github.com/stefanos50/CARLA2Real) · 母法 EPE [2105.04619](https://arxiv.org/abs/2105.04619)（Intel）
+- **video-to-video**（時序一致的 sim→photoreal）—— vid2vid [1808.06601](https://arxiv.org/abs/1808.06601)（NVIDIA NeurIPS 2018）· Cosmos-Transfer [2503.14492](https://arxiv.org/abs/2503.14492)（depth/seg ControlNet、sim→real 實證）· 結構感知去噪「video EPE」[2511.14719](https://arxiv.org/abs/2511.14719)
 
 ## §8 踩坑日誌
 
