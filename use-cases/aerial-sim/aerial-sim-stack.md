@@ -25,7 +25,7 @@ flowchart TD
 
 ---
 
-## 1. TL;DR — the "pick two of three" law
+## 1. 一句話總結 — the "pick two of three" 定律
 
 - **核心定律**：aerial sim 的三個你最想要的東西 —— **(A) GPU-parallel RL throughput、(B) per-rotor aero fidelity（prop wash / ground effect / blade flapping / wind）、(C) photorealism** —— **任選兩個，第三個付代價**。沒有反例。
 - **三個角的代表**：
@@ -38,7 +38,7 @@ flowchart TD
 
 ---
 
-## 2. The three-way trade-off — 為什麼沒有 sim 全拿
+## 2. 三方取捨 — 為什麼沒有 sim 全拿
 
 把每套 sim 投到六個軸上，就會看到「三角」是**結構性的**，不是工程懶惰：
 
@@ -53,25 +53,25 @@ flowchart TD
 
 ---
 
-## 3. Comparison matrix — 8 sims × 6 axes（+ crazyflow 補上可微角）
+## 3. 對比矩陣 — 8 sims × 6 軸（+ crazyflow 補上可微角）
 
-> ●●● = best-in-set / native；●● = decent / configurable；● = minimal / absent。所有評分 grounded 於 §7 來源；超出來源的推斷標 **UNVERIFIED**。
+> ●●● = 全 set 最佳 / 原生；●● = 尚可 / 可配置；● = 極少 / 無。所有評分 grounded 於 §7 來源；超出來源的推斷標 **UNVERIFIED**。
 
-| Sim | aero-fidelity | GPU-parallel | differentiable | photorealism | RL-throughput | sim-to-real-proof | License |
+| Sim | 氣動忠實度 | GPU 並行 | 可微 | 像素真實感 | RL 吞吐 | 落地證據 | 授權 |
 |---|---|---|---|---|---|---|---|
-| **Aerial Gym** (NTNU-ARL) | ●● rigid-body + 1st-order motor (asym τ↑/↓) + lin+quad drag; **no wake/ground/rotor-rotor** | ●●● **65,536 envs / 4.43M samples·s⁻¹** (RTX 3090) | ● ❌ | ● geometric depth/seg/LiDAR/ToF, **not photoreal** | ●●● vision nav 訓 ~142 min | ●●● deploy no-fine-tune, motor ‖e‖₂=0.09m | BSD-3 |
-| **Flightmare** (UZH RPG) | ● default simple rigid-body; aero 取決於 bolt-on 模型 | ●● hundreds of quads (CPU) | ● ❌ | ●●● **Unity photoreal** | ●● render ~230Hz / physics ≤~200kHz (decoupled) | ●●● Swift→Nature 2023 (via Flightmare) | MIT (**frozen, last rel. 2020-09-04**) |
-| **PX4-SITL + Gazebo** | ●● Gazebo motor C_T(J)/C_P(J) advance-ratio (thrust↓ w/ airspeed) | ● no GPU parallel | ● ❌ | ● not photoreal | ● lockstep, RL 不適用 | ●●● **runs real PX4 stack (bit-identical sim↔real)** | BSD-3 (PX4) |
-| **Pegasus** (PX4+Isaac Sim) | ●● linear-drag; inherits PX4 fidelity | ●● real-time multi-vehicle (**not 10⁴-env RL**) | ● ❌ | ●●● **Omniverse RTX photoreal** | ● real-time, 非大規模 RL | ●● inherits PX4 controller path | BSD-3 |
-| **RotorPy** | ●●● **best-in-set**: parasitic+rotor+induced drag, blade flapping, translational lift/drag, 1st-order motor lag, **spatio-temporal wind**; no ground/wake/rotor-rotor | ●● batched ~25× CPU speedup @1000+ drones | ● ❌ (pure-Python ODE) | ● **none** (matplotlib), no perception sensors | ●●● **PPO 5M steps <4 min on MacBook Air M3** | ●● benchmarked vs real flight data | MIT |
-| **gym-pybullet-drones** (UTIAS-DSL) | ●● selectable: drag + **ground effect + downwash fit to real CF 2.x** (Förster '15 / Shi '19) | ● CPU-bound | ● ❌ (→ crazyflow JAX is succ.) | ● PyBullet basic | ●● Gym-classic baseline | ●● CF 2.x 經驗擬合 | MIT |
-| **crazyflow** (UTIAS-DSL, JAX) | ●● rigid-body + 非線性 motor + 2nd-order rotor/body drag; **no blade flapping/downwash** | ●●● **262k worlds / 914M steps·s⁻¹** (RTX 4090) | ●●● **唯一 ✅**：`jax.grad` 穿透全 dynamics+control | ● none (photoreal 列 future work) | ●●● 一階 PG 訓 traj policy **1.56s** | ●● sub-cm 無 DR；sim2real gap 比 gym-pybullet-drones **低 61.3%** | MIT |
-| **AirSim** (Microsoft) | ● FastPhysics = rigid-body + **quadratic drag (linear term dropped)**; no wake/ground/rotor-coupling | ● 1-2 (Unreal 限) | ● ❌ | ●●● **Unreal photoreal** | ● Unreal-bound | ●● widely used pre-archive | MIT (**ARCHIVED 2022, read-only**) |
+| **Aerial Gym** (NTNU-ARL) | ●● rigid-body + 1st-order motor (asym τ↑/↓) + lin+quad drag；**無 wake/ground/rotor-rotor** | ●●● **65,536 envs / 4.43M samples·s⁻¹** (RTX 3090) | ● ❌ | ● geometric depth/seg/LiDAR/ToF，**非 photoreal** | ●●● vision nav 訓 ~142 min | ●●● 部署 no-fine-tune，motor ‖e‖₂=0.09m | BSD-3 |
+| **Flightmare** (UZH RPG) | ● 預設 simple rigid-body；aero 取決於 bolt-on 模型 | ●● 數百架 quads (CPU) | ● ❌ | ●●● **Unity photoreal** | ●● render ~230Hz / physics ≤~200kHz（解耦） | ●●● Swift→Nature 2023 (via Flightmare) | MIT（**已凍結，last rel. 2020-09-04**） |
+| **PX4-SITL + Gazebo** | ●● Gazebo motor C_T(J)/C_P(J) advance-ratio（thrust↓ 隨 airspeed） | ● 無 GPU 並行 | ● ❌ | ● 非 photoreal | ● lockstep，RL 不適用 | ●●● **跑真 PX4 stack（bit-identical sim↔real）** | BSD-3 (PX4) |
+| **Pegasus** (PX4+Isaac Sim) | ●● linear-drag；繼承 PX4 忠實度 | ●● real-time 多載具（**非 10⁴-env RL**） | ● ❌ | ●●● **Omniverse RTX photoreal** | ● real-time，非大規模 RL | ●● 繼承 PX4 controller path | BSD-3 |
+| **RotorPy** | ●●● **全 set 最佳**：parasitic+rotor+induced drag、blade flapping、translational lift/drag、1st-order motor lag、**spatio-temporal wind**；無 ground/wake/rotor-rotor | ●● batched ~25× CPU 加速 @1000+ drones | ● ❌（pure-Python ODE） | ● **無**（matplotlib），無 perception sensors | ●●● **PPO 5M steps <4 min on MacBook Air M3** | ●● 對 real flight data 做 benchmark | MIT |
+| **gym-pybullet-drones** (UTIAS-DSL) | ●● 可選：drag + **ground effect + downwash 擬合到真實 CF 2.x** (Förster '15 / Shi '19) | ● CPU-bound | ● ❌（→ crazyflow JAX 為繼承者） | ● PyBullet 基本級 | ●● Gym-classic baseline | ●● CF 2.x 經驗擬合 | MIT |
+| **crazyflow** (UTIAS-DSL, JAX) | ●● rigid-body + 非線性 motor + 2nd-order rotor/body drag；**無 blade flapping/downwash** | ●●● **262k worlds / 914M steps·s⁻¹** (RTX 4090) | ●●● **唯一 ✅**：`jax.grad` 穿透全 dynamics+control | ● 無（photoreal 列 future work） | ●●● 一階 PG 訓 traj policy **1.56s** | ●● sub-cm 無 DR；sim2real gap 比 gym-pybullet-drones **低 61.3%** | MIT |
+| **AirSim** (Microsoft) | ● FastPhysics = rigid-body + **quadratic drag（linear 項已砍）**；無 wake/ground/rotor-coupling | ● 1-2（Unreal 限） | ● ❌ | ●●● **Unreal photoreal** | ● Unreal-bound | ●● archive 前廣泛使用 | MIT（**ARCHIVED 2022, read-only**） |
 
-### Per-sim verdicts
+### 逐套評斷
 
 - **Aerial Gym** — throughput 之王。把 drone-specific stack（多 airframe + 五層 geometric controller + Warp ray-cast depth/LiDAR）GPU 化到萬級。**買它 = 你要大規模 vision policy 且能容忍「無 wake、非 photoreal」**。已有 foundation dissection（[aerial-gym.md](../../foundations/differentiable-simulators/aerial-gym.md)），這裡不重拆。
-- **Flightmare** — photoreal 的學術經典，Swift（Nature 2023）就跑在它上面。**解耦設計**（Unity render ~230Hz / physics ≤~200kHz）是亮點，但**已凍結**（last release 2020-09-04），default physics 是 simple rigid-body —— aero 全靠你 bolt-on。買它 = 要 Unity photoreal + 接受維護停擺。
+- **Flightmare** — photoreal 的學術經典，Swift（Nature 2023）就跑在它上面。**解耦設計**（Unity render ~230Hz / physics ≤~200kHz）是亮點，但**已凍結**（last release 2020-09-04），預設 physics 是 simple rigid-body —— aero 全靠你 bolt-on。買它 = 要 Unity photoreal + 接受維護停擺。
 - **PX4-SITL + Gazebo** — controller-path 落地的黃金標準：**sim 裡跑的 autopilot 二進位和上機完全一致**。代價是 lockstep 把時鐘鎖到 ~6-10× real-time（laptop ~3-4×），無 GPU 並行、非 photoreal。買它 = 你要驗 autopilot 行為，不是訓 vision policy。
 - **Pegasus** — 「PX4 忠實度 + Omniverse RTX photoreal」的縫合：real-time 多載具，**不是 10⁴-env RL 平台**。linear-drag、不可微，physics 忠實度繼承 PX4。買它 = 你要 photoreal 感知**且**真實 autopilot 在環，但只跑少量載具。
 - **RotorPy** — aero 之王。**全 set 最細的 per-rotor 空氣動力**（parasitic+rotor+induced drag、blade flapping、translational lift、時空風場），batched ~25× CPU，PPO 5M steps 在 MacBook Air M3 上 <4 分鐘。代價：**零 photorealism（matplotlib）、無感知 sensor**。買它 = 空氣動力學/控制研究，不碰 pixel。
@@ -107,7 +107,7 @@ flowchart TD
 
 本 handbook 按 [ontology](../../cheat-sheet/ontology.md) 的 injection 軸看「物理怎麼進來」。這七套**全部是 `sim-in-loop-train`**（output=N/A，因為它們是 sim 不是生成模型），但在「sim 怎麼被用」上分四個 sub-mode：
 
-| Sim | injection sub-mode | render 角色 | controller 在環 | differentiable |
+| Sim | injection 子模式 | render 角色 | controller 在環 | 可微 |
 |---|---|---|---|---|
 | Aerial Gym | sim-in-loop-train | data-render (geometric depth/seg, **非 pixel**) | ✅ 五層 geometric controller | ❌ |
 | Flightmare | sim-in-loop-train | data-render (Unity **pixel**, 解耦) | 取決於 bolt-on physics | ❌ |
@@ -125,7 +125,7 @@ flowchart TD
 
 ---
 
-## 5. How to choose — 決策樹
+## 5. 如何選 — 決策樹
 
 ```
 你的瓶頸是什麼？
@@ -154,7 +154,7 @@ flowchart TD
 
 ---
 
-## 6. Cross-line synthesis — dynamics substrate 與 appearance layer 的分工
+## 6. 跨路線綜合 — dynamics substrate 與 appearance layer 的分工
 
 - **這七套是「dynamics 的物理」substrate**：它們提供 6-DoF 剛體 + 馬達 + （部分）空氣動力的**運動忠實度**，但**外觀（appearance）忠實度**要嘛沒有（RotorPy / Aerial Gym geometric），要嘛靠掛載的遊戲引擎（Flightmare/AirSim/Pegasus）。本 handbook 的 generative appearance layer（Cosmos / video-WM）正是補後者：**把 Aerial Gym 的 geometric depth/seg 當 ground-truth，餵 Cosmos 條件生成 photoreal aerial 幀** —— substrate 給軌跡與幾何，generation 給像素。
 - **differentiability**：七套全 `sim-in-loop-train` 但全不可微；**crazyflow 把這角補上**（§3.5：`jax.grad` 全穿透，解鎖一階 PG / diff-MPC / 解析 system-ID），代價是 photoreal 與 near-field aero；要「可微 + photoreal」看 VisFly。可微梯度沒打破 "pick two"，只是再加一條可換軸。
@@ -175,7 +175,7 @@ flowchart TD
 
 ---
 
-## 7. References
+## 7. 參考
 
 **Anchor sims（canonical）**
 - **Aerial Gym** — Kulkarni et al. "Aerial Gym Simulator." arXiv [2503.01471](https://arxiv.org/abs/2503.01471) (v2) / [2305.16510](https://arxiv.org/abs/2305.16510) (v1). Docs: https://ntnu-arl.github.io/aerial_gym_simulator/ · 已有 foundation dissection [aerial-gym.md](../../foundations/differentiable-simulators/aerial-gym.md)
@@ -205,11 +205,11 @@ flowchart TD
 
 ---
 
-## §8 Pitfall log
+## §8 踩坑日誌
 
 > 每條：嚴重度 · 來源 · workaround。標 **UNVERIFIED** 者超出 §7 列示來源，僅供方向參考、未經一手核驗。
 
-| # | Pitfall | Severity | Source | Workaround |
+| # | 坑點 | 嚴重度 | 來源 | 解法 |
 |---|---|---|---|---|
 | 8.1 | **把 "pick two" 當成 "pick three"** —— 同時要萬級並行 + per-rotor aero + photoreal | **High**（選型） | §2 結構性論證 | 重排優先序，砍掉最不痛的軸；或走 §6 surrogate 路把 RotorPy aero 蒸進並行網絡 |
 | 8.2 | **誤以為某套可微** → 想做 first-order policy gradient / diff-MPC | **High**（路線） | 七套全 ❌（matrix §3） | 跳到 crazyflow（JAX）；或改 model-free RL |

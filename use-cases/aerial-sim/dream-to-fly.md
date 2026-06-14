@@ -6,7 +6,7 @@
 >
 > **為什麼進 aerial-sim anchor 名單**：Swift（[champion-level-drone-racing.md](./champion-level-drone-racing.md)）證明了 model-free RL + 機載感知能飛贏人類，但它是 `streaming` 控制、靠一整套 per-track empirical noise model 補 gap。Dream to Fly 是 aerial 領域第一個**用 latent world-model「在腦內做夢」訓出 agile-flight policy** 的乾淨案例 —— actor/critic 完全在 imagined latent rollout 上學，只吃 64×64 RGB、輸出 CTBR，端到端從 raw pixel 學起。它把 ontology 的 `temporal=latent-rollout` 軸座標在 aerial 上佔住了，是 [overview.md](./overview.md) sub-route (2)「action-conditioned aerial WM」的 canonical 代表。但它的「sim-to-real gap 極小」結論有一個必須講清楚的前提 —— 那是本篇的智力核心（見 §1 與 §8.1）。
 
-## 1. TL;DR
+## 1. 一句話總結
 
 **Dream to Fly 把 vanilla DreamerV3 直接套到四旋翼上：只給一支 64×64 RGB 機載相機（無 depth、無 state、無 IMU、無 privileged info），policy 在 world model 的「夢境」latent rollout 裡學會以 CTBR 飛 Figure-8 等軌跡，最高 9 m/s，全程 100% 在模擬器裡訓練。** 關鍵賣點是 sample efficiency：同樣的 raw-pixel 設定下 **PPO 與 SAC 直接失敗**（原文：「fail to execute any meaningful flight maneuvers」），是 DreamerV3 的 model-based 樣本效率讓「從像素學飛」變成可能。
 
@@ -25,7 +25,7 @@ flowchart LR
 ```
 *圖：DreamerV3 想像迴路 —— actor-critic 全在 latent 夢境學；紅框標出「真機=HIL+渲染幀」的貢獻邊界*
 
-## 2. Core mechanism
+## 2. 核心機制
 
 DreamerV3 的核心是 **RSSM（Recurrent State-Space Model）**：把高維像素壓成一個 latent state `s_k = (h_k, z_k)` —— `h_k` 是 deterministic recurrent 狀態（GRU 攜帶的 history），`z_k` 是 stochastic categorical latent（捕捉當下不確定性）。world model 學會在 latent 空間裡「想像」未來，**actor/critic 從不碰真實影像、只在 imagined latent rollout（horizon T=16）上訓練** —— 這就是「dream」的字面意思。
 
@@ -59,7 +59,7 @@ DreamerV3 的核心是 **RSSM（Recurrent State-Space Model）**：把高維像�
 
 ## 3. 五軸定位 + 同軸對手
 
-| Axis | **Dream to Fly** | Swift (Nature 2023) | SkyDreamer (2025) | DreamerV4-driving / GAIA-2 (driving WM) | NeuroBEM (aero model) |
+| 軸 | **Dream to Fly** | Swift (Nature 2023) | SkyDreamer (2025) | DreamerV4-driving / GAIA-2 (driving WM) | NeuroBEM (aero model) |
 |---|---|---|---|---|---|
 | Output | `action-seq`（CTBR @ ?Hz，[UNVERIFIED]） | `action-seq`（CTBR @ ~100 Hz） | `action-seq` via latent-WM | `pixel-video`（+ action cond.） | N/A（dynamics model，非生成） |
 | Injection | **`sim-in-loop-train`（純模擬，無 DR）** | `sim-in-loop` + empirical noise model | `sim-in-loop` + learned WM | data-driven WM（real driving logs） | BEM physics + NN residual |
@@ -71,25 +71,25 @@ DreamerV3 的核心是 **RSSM（Recurrent State-Space Model）**：把高維像�
 
 > **Cross-axis note**：`temporal=latent-rollout` × `control=image-init` × `injection=sim-in-loop-train` × `output=action-seq` 這個座標在 aerial 上目前只有 Dream to Fly 乾淨佔住 —— 它是 latent-WM 路線在 aerial 的 anchor，與 Swift 的 `streaming` model-free 座標互補而非重疊。
 
-## 4. ⚡ shines / ❌ breaks
+## 4. ⚡ 強在哪 / ❌ 崩在哪
 
-⚡ **Shines**
+⚡ **強在哪**
 - **Raw-pixel end-to-end 可行性證明**：64×64 RGB → CTBR，無 depth/state/IMU/map，像人類 FPV 飛手一樣把像素映到搖桿。早期 pixel-racing 需要 gate mask / imitation 起步，這篇從 raw RGB 端到端學成。
-- **Sample efficiency 是 enabler**：同設定 **PPO 與 SAC 完全失敗**（「fail to execute any meaningful flight maneuvers」），DreamerV3 的 model-based imagination 是讓「從像素學飛」可行的關鍵。
+- **Sample efficiency 是關鍵推手**：同設定 **PPO 與 SAC 完全失敗**（「fail to execute any meaningful flight maneuvers」），DreamerV3 的 model-based imagination 是讓「從像素學飛」可行的關鍵。
 - **單卡可複現規模**：~20M env steps、~240h、**單張 Quadro RTX 8000**。對學界友善，不需大型 GPU farm。
 - **湧現 perception-aware 行為**：相機自發轉向紋理豐富的 gate 區，**非 reward 工程**，是 latent dynamics 的副產品 —— 與 Swift 顯式 reward 形成乾淨對照。
 - **CTBR 抽象選對**：CTBR 比 direct motor speeds 更易 transfer，這在多篇 aerial sim2real 工作（Swift / SimpleFlight）反覆驗證。
 
-❌ **Breaks**
+❌ **崩在哪**
 - **「Real-world」是 HIL + rendered observation**：無人機物理飛、但**看到的是模擬器渲染影像**。所謂「minimal sim-to-real gap」**很大程度是因為視覺輸入 sim↔real 幾乎相同**。真實相機的 photometry / motion blur 視覺 gap **未被證明跨越**（作者列 future work）。這是本篇最關鍵的 caveat。
 - **World model 不抓氣動與時間常數**：latent dynamics 只夠 imagination 用，**不涵蓋 motor/rotor 時間常數、aerodynamics（rotor drag / blade flapping / induced flow）、latency、battery sag、wind**。而 NeuroBEM 指出 **aerodynamics 才是高速下主導的模型缺陷**。
 - **無 domain randomization**：本文未提任何 DR。HIL 設定下沒 DR 也能飛，正因為 gap 被旁路；一旦換真實相機，缺 DR 會立刻暴露。
 - **平台輕、推力裕度普通**：mass 0.6 kg、max rotor thrust 4.0 N（TWR≈2.7）、arm 0.14 m。9 m/s Figure-8 在受控 sim/HIL 下漂亮，但離 Swift 的真實 racing 速度與外擾條件還有距離。
 - **控制頻率未公開**：CTBR 控制頻率 Hz 在主文未述（[UNVERIFIED]），無法直接評估 latency 餘量。
 
-## 5. Reproduction notes
+## 5. 復現
 
-**Stack**：Flightmare（sim 框架）+ Agilicious dynamics（四旋翼動力學）+ Habitat renderer（視覺），組合可達**數千 FPS**，這是 20M steps / 240h 能在單卡完成的前提。RL 端是 **vanilla DreamerV3**（無客製演算法改動）—— 復現重點在 world-model 規模與 env 接線，不在 RL trick。
+**技術棧**：Flightmare（sim 框架）+ Agilicious dynamics（四旋翼動力學）+ Habitat renderer（視覺），組合可達**數千 FPS**，這是 20M steps / 240h 能在單卡完成的前提。RL 端是 **vanilla DreamerV3**（無客製演算法改動）—— 復現重點在 world-model 規模與 env 接線，不在 RL trick。
 
 - 規模參數：GRU 2048 units；decoder / reward / continue / actor / critic 皆 4-layer MLP、768 units；imagination horizon **T=16**；observation 64×64 RGB；action CTBR ∈ [−1,1]^4。
 - 預算：~20M env steps，~240h，單張 **Quadro RTX 8000**。瓶頸是 renderer/sim throughput 與 world-model 訓練，不是 RL 樣本量。
@@ -97,11 +97,11 @@ DreamerV3 的核心是 **RSSM（Recurrent State-Space Model）**：把高維像�
 - HIL 復現需要：能把模擬器渲染 frame 餵給真實 autopilot 的 hardware-in-the-loop 裝置 —— 注意這**不等於**真實相機部署，別把 HIL 成功讀成 full sim-to-real。
 - 想真的 close 視覺 gap：參考 Swift 的 real-camera VIO + residual 路線（[champion-level-drone-racing.md](./champion-level-drone-racing.md)），或把 [Cosmos WFM](../../foundations/foundation-physics-models/cosmos-wfm.md) 當更真實的 renderer 候選（bottleneck 是 streaming latency）。
 
-## 6. Cross-line synthesis
+## 6. 跨路線綜合
 
 本 handbook 四條 generation 路線：**pixel-WM / latent-WM / diff-sim / neural-surrogate**。**Dream to Fly 就是 aerial 上的 latent-WM 路線 anchor** —— 它不出 pixel（雖然 RSSM decoder 會 reconstruct 影像，但那是 world-model 訓練的輔助 target，policy 不依賴生成的像素），而是在 latent 空間 imagine 出 control。
 
-| Line | Dream to Fly 的對應位置 |
+| 路線 | Dream to Fly 的對應位置 |
 |---|---|
 | pixel-WM（[Cosmos WFM](../../foundations/foundation-physics-models/cosmos-wfm.md) / Sora / Veo） | 不走 pixel rollout；但 Cosmos 類 WFM 可當 Dream to Fly 的「真實感 renderer」候選，替換 Habitat 去攻克它旁路掉的真實視覺 gap。bottleneck：Cosmos 非 streaming，latency 進不了 control loop。 |
 | **latent-WM（[DreamerV4](../../foundations/latent-world-models/dreamer-v4.md) / [V-JEPA-2](../../foundations/latent-world-models/v-jepa-2.md)）** | **本篇就是這條路在 aerial 的代表。** RSSM latent imagination 出 CTBR；SkyDreamer (2025) 是同路後續，DreamerV4 是更強的 world-model backbone 候選。 |
@@ -116,28 +116,28 @@ DreamerV3 的核心是 **RSSM（Recurrent State-Space Model）**：把高維像�
 - 兩側 IMU 噪聲 / camera-IMU extrinsic 對齊的 data contract：[bridge-to-spatial/aerial-embodiment.md](../../bridge-to-spatial/aerial-embodiment.md)
 - 5 軸 ontology 定義：[cheat-sheet/ontology.md](../../cheat-sheet/ontology.md)
 
-## 7. References
+## 7. 參考
 
-**Primary**
+**主要文獻**
 - Romero, A., Shenai, A., _et al._ (UZH RPG). _Dream to Fly: Model-Based Reinforcement Learning for Vision-Based Drone Flight._ arXiv [2501.14377](https://arxiv.org/abs/2501.14377)（Jan 2025；accepted ICRA 2026）. HTML: [arxiv.org/html/2501.14377](https://arxiv.org/html/2501.14377).
 - Hafner, D., _et al._ _Mastering Diverse Domains through World Models_ (DreamerV3). arXiv [2301.04104](https://arxiv.org/abs/2301.04104) — RSSM + imagination 演算法母本。
 
-**Same-repo dissections / anchors**
+**同倉解構 / anchor**
 - Swift（real-camera VIO + kNN/GP residual 路線，解掉本篇旁路的 gap）：[champion-level-drone-racing.md](./champion-level-drone-racing.md).
 - aerial-sim use-case 總圖：[overview.md](./overview.md).
 - latent-WM backbone 候選：[dreamer-v4.md](../../foundations/latent-world-models/dreamer-v4.md).
 - pixel-WM renderer 候選：[cosmos-wfm.md](../../foundations/foundation-physics-models/cosmos-wfm.md).
 
-**Contrast / context（aerial sim-to-real 地圖的其他角）**
+**對照 / 脈絡（aerial sim-to-real 地圖的其他角）**
 - NeuroBEM — aerodynamics 是高速下主導模型缺陷（BEM 物理 + NN residual，力誤差降 ~50%）：arXiv [2106.08015](https://arxiv.org/abs/2106.08015).
 - SimpleFlight — system-ID > domain randomization；action-smoothness regularization 救 aggressive flight；CTBR robust to sim2real：arXiv [2412.11764](https://arxiv.org/abs/2412.11764).
 
-**Sister handbook（Spatial）handoff**
+**姊妹手冊（Spatial）對接**
 - [aerial dynamics primer](https://github.com/sou350121/Spatial-Intelligence-Handbook/blob/main/embodiments/aerial/dynamics_and_control_primer.md) · [aerial VIO](https://github.com/sou350121/Spatial-Intelligence-Handbook/tree/main/embodiments/aerial/vio).
 
-## §8 Pitfall log
+## §8 踩坑日誌
 
-| # | Severity | Issue | Source | Workaround |
+| # | 嚴重度 | 問題 | 來源 | 緩解方案 |
 |---|---|---|---|---|
 | §8.1 | 🔴 | **「Real-world」= HIL + rendered observation** —— 無人機物理飛但看到的是模擬器渲染影像，sim↔real 視覺幾乎相同，「minimal gap」結論大半來自此。真實相機 photometry / motion blur gap **未證明跨越** | arXiv [2501.14377](https://arxiv.org/html/2501.14377) §deployment / future work | 不可把 HIL 成功讀成 full sim-to-real；要真 close 視覺 gap 走 Swift real-camera VIO 路線或換真實 renderer（Cosmos） |
 | §8.2 | 🔴 | **World model 不抓 aerodynamics** —— motor/rotor 時間常數、rotor drag / blade flapping / induced flow、latency、battery sag、wind 皆未建模，而氣動是高速主導缺陷 | NeuroBEM arXiv [2106.08015](https://arxiv.org/abs/2106.08015)（aero 主導）；本文未涵蓋 | 把 NeuroBEM 類 BEM+NN-residual surrogate 注回 sim 動力學；高速段尤其必要 |
