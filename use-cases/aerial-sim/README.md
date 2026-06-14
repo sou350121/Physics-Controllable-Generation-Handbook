@@ -18,7 +18,7 @@ flowchart TD
     subgraph LOOP["訓練 / 推論閉環（policy 在 sim 裡）"]
         direction LR
         S["目前物理狀態<br/>pos · vel · attitude"]
-        O["觀測 obs<br/>像素 / 深度 / 分割"]
+        O["觀測 obs<br/>像素 / 深度"]
         A["動作 a（CTBR）"]
         S2["下一物理狀態"]
         S -->|"渲染【外觀線 · 可生成】"| O
@@ -26,23 +26,15 @@ flowchart TD
         A -->|"轉移【動力學線 · 必須物理】"| S2
         S2 -.->|"閉環推進"| S
     end
-    GEN["外觀線供材<br/>Cosmos / Sora 微調 · NeRF / 3DGS 重建<br/>給像素，給不了 metric 尺度"]
-    PHY["動力學線供材<br/>thrust / drag / gravity / prop-wake / wind<br/>→ physics integrator，給 state 與 metric 尺度"]
-    GEN -.->|"正用：只供渲染"| O
-    PHY -.->|"供轉移：由 (s,a) 算出 s'"| S2
-    GEN -.->|"誤用：也拿去做轉移 / rollout"| BAD["反模式：像素合理<br/>但守恆 / 接觸 / 尺度違反<br/>→ sim-to-real 崩"]
-    PIQ["Physics-IQ r=-0.46<br/>視覺真度 ≠ 物理理解，兩線不可混"] -.-> BAD
+    GEN["外觀線供材：生成 / 渲染<br/>Cosmos · NeRF / 3DGS · 仿真器引擎<br/>給像素，給不了 metric 尺度"] -.->|"供『渲染』邊"| O
+    PHY["動力學線供材：物理引擎 / 仿真器<br/>AirSim · RotorPy · Aerial Gym<br/>給 state 與 metric 尺度"] -.->|"供『轉移』邊"| S2
     A --> POL["policy 訓練 / 感知 pre-train<br/>→ 真機驗收（掉下來就壞）"]
     classDef appear fill:#e8f0fe,stroke:#4285f4,color:#202124
     classDef phys fill:#fff4e5,stroke:#f9ab00,color:#202124
-    classDef bad fill:#fce8e6,stroke:#ea4335,color:#202124,stroke-width:2px
-    classDef why fill:#f1f3f4,stroke:#9aa0a6,color:#202124
     class GEN,O appear
     class PHY,S,S2 phys
-    class BAD bad
-    class PIQ why
 ```
-*圖：把命題落到閉環的兩條邊上 —— 外觀線只管「state → 觀測」的渲染（藍）、動力學線管「(state, action) → 下一 state」的轉移（橙）；physics 給 state 與 metric 尺度，生成只填像素。生成「正用供渲染、誤用拿去做轉移」就崩 —— Physics-IQ：視覺真度 ≠ 物理理解。*
+*圖（定調）：訓會飛的 policy = 一個閉環 —— 外觀線管「state → 觀測」的渲染（藍）、動力學線管「(state, action) → 下一 state」的轉移（橙）。外觀可生成 / 渲染，動力學必須來自物理引擎（仿真器）。為何不能讓生成代替物理做轉移：見下方 §核心張力（Physics-IQ：視覺真度 ≠ 物理理解）。*
 
 ## 核心張力：外觀靠生成，動力學靠物理
 
