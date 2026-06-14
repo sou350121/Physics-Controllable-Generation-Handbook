@@ -4,25 +4,34 @@
 
 ```mermaid
 flowchart TD
-    subgraph APP["外觀供應線（可生成）"]
-        A1["Cosmos / Sora aerial 微調"]
-        A2["NeRF / 3DGS 重建真實航拍"]
+    subgraph LOOP["訓練 / 推論閉環（policy 在 sim 裡）"]
+        direction LR
+        S["目前物理狀態<br/>pos · vel · attitude"]
+        O["觀測 obs<br/>像素 / 深度 / 分割"]
+        A["動作 a（CTBR）"]
+        S2["下一物理狀態"]
+        S -->|"渲染【外觀線 · 可生成】"| O
+        O -->|"policy / 感知"| A
+        A -->|"轉移【動力學線 · 必須物理】"| S2
+        S2 -.->|"閉環推進"| S
     end
-    subgraph DYN["動力學供應線（必須物理）"]
-        D1["thrust / drag / gravity"]
-        D2["prop-wake / ground effect / wind"]
-        D3["physics integrator（剛體 + 馬達）"]
-    end
-    A1 --> M["匯流：state + observation"]
-    A2 --> M
-    D1 --> D3
-    D2 --> D3
-    D3 --> M
-    M --> P["policy 訓練 / 感知 pre-train"]
-    P --> V["真機驗收（掉下來就壞）"]
-    G["Physics-IQ：r=-0.46<br/>視覺真度與物理理解不相關"] -.->|"所以兩線不能混"| M
+    GEN["外觀線供材<br/>Cosmos / Sora 微調 · NeRF / 3DGS 重建<br/>給像素，給不了 metric 尺度"]
+    PHY["動力學線供材<br/>thrust / drag / gravity / prop-wake / wind<br/>→ physics integrator，給 state 與 metric 尺度"]
+    GEN -.->|"正用：只供渲染"| O
+    PHY -.->|"供轉移：由 (s,a) 算出 s'"| S2
+    GEN -.->|"誤用：也拿去做轉移 / rollout"| BAD["反模式：像素合理<br/>但守恆 / 接觸 / 尺度違反<br/>→ sim-to-real 崩"]
+    PIQ["Physics-IQ r=-0.46<br/>視覺真度 ≠ 物理理解，兩線不可混"] -.-> BAD
+    A --> POL["policy 訓練 / 感知 pre-train<br/>→ 真機驗收（掉下來就壞）"]
+    classDef appear fill:#e8f0fe,stroke:#4285f4,color:#202124
+    classDef phys fill:#fff4e5,stroke:#f9ab00,color:#202124
+    classDef bad fill:#fce8e6,stroke:#ea4335,color:#202124,stroke-width:2px
+    classDef why fill:#f1f3f4,stroke:#9aa0a6,color:#202124
+    class GEN,O appear
+    class PHY,S,S2 phys
+    class BAD bad
+    class PIQ why
 ```
-*圖：外觀靠生成、動力學靠物理 —— 兩條供應線各自取材，只在 state 層匯流*
+*圖：把命題落到閉環的兩條邊上 —— 外觀線只管「state → 觀測」的渲染（藍）、動力學線管「(state, action) → 下一 state」的轉移（橙）；physics 給 state 與 metric 尺度，生成只填像素。生成「正用供渲染、誤用拿去做轉移」就崩 —— Physics-IQ：視覺真度 ≠ 物理理解。*
 
 ## 核心張力：外觀靠生成，動力學靠物理
 
