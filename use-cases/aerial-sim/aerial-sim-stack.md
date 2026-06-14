@@ -19,7 +19,7 @@ flowchart TD
     B --- C
     C --- A
     PX["PX4-SITL：第四種忠實<br/>跑真 autopilot，時鐘最慢、不並行"]
-    DIFF["可微性：七套全缺<br/>逃生口 crazyflow（JAX）"]
+    DIFF["可微：七套全缺<br/>crazyflow 補上（JAX，付 photoreal 與 aero）"]
 ```
 *圖：三選二的物理根源 —— 每套 sim 靠近它換取的那一極；可微與 controller-path 是三角外的另兩種忠實*
 
@@ -33,7 +33,7 @@ flowchart TD
   - 要 **(B) aero fidelity** → **RotorPy** / **gym-pybullet-drones**（最細的 per-rotor 空氣動力，但**零 photorealism**、無感知 sensor）。
   - 要 **(C) photorealism** → **Flightmare** / **AirSim** / **Pegasus**（Unity/Unreal/RTX 像素級，但底層 physics 退回 simple rigid-body）。
 - **第四個隱藏軸 — controller-path sim-to-real**：**PX4-SITL** 跑的是**bit-identical 的真實 PX4 flight stack**，autopilot 在 sim 和真機上同一份二進位 —— 這是 throughput / aero / photoreal 三角之外的第四種「忠實」，代價是時鐘最慢（lockstep ~6-10× real-time，不能 GPU 並行）。
-- **可微性（differentiability）橫跨七套全員缺席**。要 first-order policy gradient / differentiable-MPC / analytic gradient through dynamics → 七套都做不到。**escape hatch = crazyflow（JAX，gym-pybullet-drones 的 GPU/可微繼承者）**。
+- **可微性（differentiability）橫跨七套全員缺席**。要 first-order policy gradient / differentiable-MPC / analytic gradient through dynamics → 七套都做不到。**escape hatch = crazyflow（JAX，UTIAS-DSL；§3.5 有完整 entry）**——但它付的代價是 photoreal 與 near-field aero。
 - **怎麼一句話選**：vision policy 大規模訓 → Aerial Gym；空氣動力學研究 → RotorPy；photoreal 感知 → Pegasus/Flightmare；驗 autopilot → PX4-SITL。詳見 §5 決策樹。
 
 ---
@@ -53,7 +53,7 @@ flowchart TD
 
 ---
 
-## 3. Comparison matrix — 7 sims × 6 axes
+## 3. Comparison matrix — 8 sims × 6 axes（+ crazyflow 補上可微角）
 
 > ●●● = best-in-set / native；●● = decent / configurable；● = minimal / absent。所有評分 grounded 於 §7 來源；超出來源的推斷標 **UNVERIFIED**。
 
@@ -65,6 +65,7 @@ flowchart TD
 | **Pegasus** (PX4+Isaac Sim) | ●● linear-drag; inherits PX4 fidelity | ●● real-time multi-vehicle (**not 10⁴-env RL**) | ● ❌ | ●●● **Omniverse RTX photoreal** | ● real-time, 非大規模 RL | ●● inherits PX4 controller path | BSD-3 |
 | **RotorPy** | ●●● **best-in-set**: parasitic+rotor+induced drag, blade flapping, translational lift/drag, 1st-order motor lag, **spatio-temporal wind**; no ground/wake/rotor-rotor | ●● batched ~25× CPU speedup @1000+ drones | ● ❌ (pure-Python ODE) | ● **none** (matplotlib), no perception sensors | ●●● **PPO 5M steps <4 min on MacBook Air M3** | ●● benchmarked vs real flight data | MIT |
 | **gym-pybullet-drones** (UTIAS-DSL) | ●● selectable: drag + **ground effect + downwash fit to real CF 2.x** (Förster '15 / Shi '19) | ● CPU-bound | ● ❌ (→ crazyflow JAX is succ.) | ● PyBullet basic | ●● Gym-classic baseline | ●● CF 2.x 經驗擬合 | MIT |
+| **crazyflow** (UTIAS-DSL, JAX) | ●● rigid-body + 非線性 motor + 2nd-order rotor/body drag; **no blade flapping/downwash** | ●●● **262k worlds / 914M steps·s⁻¹** (RTX 4090) | ●●● **唯一 ✅**：`jax.grad` 穿透全 dynamics+control | ● none (photoreal 列 future work) | ●●● 一階 PG 訓 traj policy **1.56s** | ●● sub-cm 無 DR；sim2real gap 比 gym-pybullet-drones **低 61.3%** | MIT |
 | **AirSim** (Microsoft) | ● FastPhysics = rigid-body + **quadratic drag (linear term dropped)**; no wake/ground/rotor-coupling | ● 1-2 (Unreal 限) | ● ❌ | ●●● **Unreal photoreal** | ● Unreal-bound | ●● widely used pre-archive | MIT (**ARCHIVED 2022, read-only**) |
 
 ### Per-sim verdicts
@@ -76,6 +77,29 @@ flowchart TD
 - **RotorPy** — aero 之王。**全 set 最細的 per-rotor 空氣動力**（parasitic+rotor+induced drag、blade flapping、translational lift、時空風場），batched ~25× CPU，PPO 5M steps 在 MacBook Air M3 上 <4 分鐘。代價：**零 photorealism（matplotlib）、無感知 sensor**。買它 = 空氣動力學/控制研究，不碰 pixel。
 - **gym-pybullet-drones** — 唯一**內建 ground effect + downwash 且擬合到真實 Crazyflie 2.x**（Förster 2015 / Shi 2019）。CPU-bound、不可微 —— 官方明指 GPU/可微的繼承者是 **crazyflow（JAX）**。買它 = 要近地/編隊 aero 的輕量 baseline。
 - **AirSim** — 早期 Unreal photoreal 標竿，但 **2022 已 archive（read-only）**，FastPhysics 連 linear drag 項都砍掉（只剩 quadratic）。新專案請走 **Cosys-AirSim**（維護中，UE5.5，GPU-LiDAR）或 **Project AirSim**（UE5，MIT）。買它 = 不要買，看繼承者。
+
+---
+
+## 3.5 可微的那一角 —— crazyflow（與補上 photoreal 的 VisFly）
+
+整份對比裡 `differentiable` 一欄原本全 ❌，而那一角現在有真東西填了。
+
+**crazyflow**（[arXiv 2606.01478](https://arxiv.org/abs/2606.01478)，UTIAS-DSL，與 gym-pybullet-drones 同實驗室的 JAX 版、非字面 drop-in）把可微做成一等公民：`jax.grad` 穿透**整條 dynamics + control pipeline**，於是解鎖三件七套都做不到的事——
+
+- **一階 policy gradient（BPTT）**：軌跡追蹤 policy **1.56 秒**訓完、in-flight 復原 policy **0.38 秒**（不是 typo，是秒）。
+- **differentiable / NMPC**：用 CasADi 對 abstracted model 取符號梯度。
+- **解析 system-ID**：用 JAX 梯度（Trust-Region Reflective）反推參數。
+
+吞吐也頂：RTX 4090 上 **914M steps/s、262k 並行 worlds**；sub-cm 追蹤**不靠 DR**、sim2real gap 比 gym-pybullet-drones **低 61.3%**。
+
+**但它沒有打破三角、只是換了一組代價**：crazyflow **無 photoreal 渲染**（官方列 future work）、**aero 簡化**（rigid-body + 2nd-order drag，**無 blade flapping / downwash**）、模型以 **Crazyflie 2.x** 標定為主（大機誤差略升）。換句話說——**「可微 + 吞吐」這一角，付的是 photoreal 與 near-field aero**，正好再次印證 §2 的 pick-two 定律：加一條軸（可微）沒讓你白拿，只是讓三角變成更高維的取捨。
+
+**那「可微 + photoreal」呢？** 新一代 **VisFly**（[arXiv 2407.14783](https://arxiv.org/abs/2407.14783)）把可微物理接上 photoreal 渲染（>10,000 FPS、可匯入 Habitat-Sim 場景）——代價回到 aero 簡化。而 **VisFly-Lab**（[arXiv 2603.21123](https://arxiv.org/abs/2603.21123)）點破可微 RL 自己的坑：一階 RL 的 BPTT 會有**梯度偏差/爆炸與 horizon 初始狀態覆蓋**問題，要用 ABPT（Amended BPTT）修——**可微不是免費午餐**。
+
+**底層基座 vs 開箱即用**：
+
+- **MuJoCo MJX**（JAX MuJoCo，可微、massively parallel）有 Crazyflie-2 / Skydio-X2 的 MJCF（DeepMind Menagerie），**但只給「thrust + body moment」致動、沒有真 aero**——你要自己帶空氣動力模型（crazyflow 本身就用 MJX/MJCF 描述環境）。它是**可微基座、不是無人機 sim**。見 foundation [MuJoCo MJX](../../foundations/differentiable-simulators/mujoco-mjx.md)。
+- **Genesis / Brax**：兩者都宣稱可微，但**無已驗證的可微 aerial 路徑**——Genesis 的 drone 範例是 PID/PPO 剛體（非可微），Brax 沒有現成 quadrotor 環境。標 `UNVERIFIED`，別假設能直接做可微 aero 飛行。見 foundation [Genesis](../../foundations/differentiable-simulators/genesis.md)。
 
 ---
 
@@ -92,11 +116,12 @@ flowchart TD
 | RotorPy | sim-in-loop-train | **none**（state-only, matplotlib） | ✅ param/trajectory（含 aero） | ❌ |
 | gym-pybullet-drones | sim-in-loop-train | data-render (PyBullet basic) | ✅ action/trajectory | ❌（→ crazyflow JAX） |
 | AirSim | sim-in-loop-train | data-render (Unreal **pixel**) | ✅ action/trajectory | ❌ |
+| crazyflow | sim-in-loop-train | **none**（state-only） | ✅ param/trajectory | ✅ **唯一可微**（jax.grad） |
 
 讀法：
 - **data-only render**（餵生成/感知模型的像素工廠）：Flightmare / Pegasus / AirSim 出 pixel；Aerial Gym 出 geometric depth/seg（非 pixel，要 photoreal 得外接）；RotorPy 完全不渲染。
 - **controller-in-loop**：PX4-SITL / Pegasus 把**真實 autopilot** 塞進環 —— 這是最強的 controller-path 忠實。
-- **differentiable-absent**：**整欄 ❌**。這是七套共同的結構性缺口 —— 想要 sim-in-loop-train **且**可微梯度，本 set 無解，須跳到 crazyflow（JAX）。
+- **differentiable**：七套全 ❌、**crazyflow 是唯一 ✅**（§3.5）。想要 sim-in-loop-train **且**可微梯度：crazyflow（state-only）/ MJX（自帶 aero）/ VisFly（加 photoreal）是通路。
 
 ---
 
@@ -113,7 +138,7 @@ flowchart TD
 ├─ aero-research（空氣動力學 / 控制 / 風擾 / lift-drag 研究）
 │     → RotorPy（best per-rotor aero + spatio-temporal wind; PPO 5M <4min M3）
 │        需要 ground effect / downwash 且擬合真機？ → gym-pybullet-drones（CF 2.x fit）
-│        需要可微梯度做 diff-MPC？ → 兩者皆 ❌ → crazyflow（JAX）
+│        需要可微梯度做 diff-MPC / 一階 PG？ → crazyflow（JAX，§3.5）；也要 photoreal → VisFly
 │
 ├─ photoreal-perception（gate detection / 小目標 / sim2real vision backbone）
 │     → 要真實 autopilot 在環 → Pegasus（Omniverse RTX + PX4 SITL）
@@ -132,12 +157,12 @@ flowchart TD
 ## 6. Cross-line synthesis — dynamics substrate 與 appearance layer 的分工
 
 - **這七套是「dynamics 的物理」substrate**：它們提供 6-DoF 剛體 + 馬達 + （部分）空氣動力的**運動忠實度**，但**外觀（appearance）忠實度**要嘛沒有（RotorPy / Aerial Gym geometric），要嘛靠掛載的遊戲引擎（Flightmare/AirSim/Pegasus）。本 handbook 的 generative appearance layer（Cosmos / video-WM）正是補後者：**把 Aerial Gym 的 geometric depth/seg 當 ground-truth，餵 Cosmos 條件生成 photoreal aerial 幀** —— substrate 給軌跡與幾何，generation 給像素。
-- **differentiability 是缺失的 mode**：七套全 `sim-in-loop-train` 但全不可微，所以 first-order policy gradient / differentiable-MPC / analytic system-ID 在本 set 無解。**escape hatch = crazyflow（JAX，gym-pybullet-drones 的 GPU/可微繼承者）** —— 它把 "pick two" 的可微角補上，代價是放棄 photoreal 與部分 near-field aero。
+- **differentiability**：七套全 `sim-in-loop-train` 但全不可微；**crazyflow 把這角補上**（§3.5：`jax.grad` 全穿透，解鎖一階 PG / diff-MPC / 解析 system-ID），代價是 photoreal 與 near-field aero；要「可微 + photoreal」看 VisFly。可微梯度沒打破 "pick two"，只是再加一條可換軸。
 - **與 4 條 generation 路線怎麼接**：
   - **pixel-WM**：Flightmare/Pegasus/AirSim 的 Unity/Unreal/RTX 幀可直接當 video-WM 訓練資料；Aerial Gym 走「geometric → Cosmos 補 photoreal」。
   - **latent-WM**：Aerial Gym 64k-env rollout 餵 Dreamer-style latent（呼應 [Swift](./champion-level-drone-racing.md) 與 Dream to Fly 路線）。
-  - **diff-sim**：七套 ❌ → crazyflow（JAX）是唯一通路。
-  - **neural surrogate**：用 RotorPy 的高保真 aero rollout 蒸 NN surrogate，把 per-rotor 力學壓進可 GPU 並行的網絡 —— 等於把 (B) 的細節搬進 (A) 的吞吐裡，是繞過三角的一條工程路。
+  - **diff-sim**：七套 ❌ → crazyflow / MJX / VisFly（§3.5）；對應本倉可微 sim 之 [Genesis](../../foundations/differentiable-simulators/genesis.md) / [MuJoCo MJX](../../foundations/differentiable-simulators/mujoco-mjx.md)，但那兩套的「可微 aerial」路徑未驗證（§3.5）。
+  - **neural surrogate**：把 RotorPy 級的高保真 aero 蒸成快 NN —— 這正是 [NeuroBEM](https://arxiv.org/abs/2106.08015)（BEM + NN 殘差、誤差砍 ~50%）與 [Neural-Fly](https://www.science.org/doi/10.1126/scirobotics.abm6597)（線上自適應風模型）在做的事：把 per-rotor / 風 aero 學成快模型，等於把 (B) 的細節搬進 (A) 的吞吐裡，是繞過三角的一條工程路。
 - **與 sister handbook 接**：這七套**隱藏**的東西（wake、ground effect、IMU bias、wind gust 在多數 sim 裡不全）正是真機上機翻車點 —— 對齊 Spatial 的 [aerial real-flight gotchas](https://github.com/sou350121/Spatial-Intelligence-Handbook/blob/main/embodiments/aerial/real_flight_production_gotchas.md) 與 [dynamics primer](https://github.com/sou350121/Spatial-Intelligence-Handbook/blob/main/embodiments/aerial/dynamics_and_control_primer.md) 對照閱讀，能直接定位「哪個 sim 砍了哪個項 → 上機會在哪炸」。
 
 ---
@@ -160,11 +185,16 @@ flowchart TD
 - **RotorPy** — Folk, Tao, Cohen. "RotorPy: A Python-based Multirotor Simulator with Aerodynamics." arXiv [2306.04485](https://arxiv.org/abs/2306.04485) · https://github.com/spencerfolk/rotorpy
 - **gym-pybullet-drones** — Panerati et al. arXiv [2103.02142](https://arxiv.org/abs/2103.02142) · https://github.com/utiasDSL/gym-pybullet-drones
 - **AirSim** — Microsoft (archived 2022, read-only): https://github.com/Microsoft/AirSim · successors: Cosys-AirSim, Project AirSim
+- **crazyflow** — Schuck et al. "Crazyflow: An Accurate, GPU-Accelerated, Differentiable Drone Simulator in JAX." arXiv [2606.01478](https://arxiv.org/abs/2606.01478) · https://github.com/utiasDSL/crazyflow （MIT、JAX 可微，§3.5）
+- **VisFly** — "An Efficient and Versatile Simulator for Training Vision-based Flight." arXiv [2407.14783](https://arxiv.org/abs/2407.14783)（可微物理 + photoreal）· **VisFly-Lab**（一階 RL / ABPT）arXiv [2603.21123](https://arxiv.org/abs/2603.21123)
+- **MuJoCo MJX** — JAX MuJoCo（可微基座，thrust-only，自帶 aero）；Crazyflie-2 / Skydio-X2 MJCF 見 [DeepMind Menagerie](https://github.com/google-deepmind/mujoco_menagerie)
 
 **aero / sim-to-real grounding（per-rotor 模型來源）**
 - Förster (2015) — Crazyflie thrust/drag system-ID（gym-pybullet-drones ground-effect/downwash fit 依據）
 - Shi et al. (2019) "Neural Lander" — downwash / ground-effect 真機擬合（gym-pybullet-drones 依據）
 - Kaufmann et al. "Champion-level drone racing using deep reinforcement learning." Nature 2023 (Swift, via Flightmare) — 見 [champion-level-drone-racing.md](./champion-level-drone-racing.md)
+- **NeuroBEM** — Bauersfeld et al. "NeuroBEM: Hybrid Aerodynamic Quadrotor Model." RSS 2021. arXiv [2106.08015](https://arxiv.org/abs/2106.08015)（BEM + NN 殘差，誤差砍 ~50%；§6 neural-surrogate 路線的範本）
+- **Neural-Fly** — O'Connell et al. *Science Robotics* 2022 [10.1126/scirobotics.abm6597](https://www.science.org/doi/10.1126/scirobotics.abm6597)（DAIML 線上自適應風模型）— 亦見 [sim-to-real-contract](./sim-to-real-contract.md)
 
 **Handbook 內部**
 - Aerial-sim overview: [overview.md](./overview.md) · ontology（5 軸定義）: [../../cheat-sheet/ontology.md](../../cheat-sheet/ontology.md)
@@ -192,5 +222,8 @@ flowchart TD
 | 8.9 | **RotorPy 零 photorealism / 無感知 sensor**（matplotlib, state-only） | Medium | arXiv 2306.04485 | 純 aero/control 研究用它；要 pixel perception 另接渲染 sim |
 | 8.10 | **gym-pybullet-drones 的 ground-effect/downwash 只擬合到 Crazyflie 2.x** | Medium | Förster 2015 / Shi 2019（arXiv 2103.02142） | 換機型須重新 system-ID；大機 / 不同 prop 不可直接套 |
 | 8.11 | **Gazebo C_T(J)/C_P(J) advance-ratio 係數要正確標定**，否則高速段 thrust 估錯 | **UNVERIFIED**（係數需逐機標定，超出 §7 列示細節） | PX4 docs（advance-ratio 模型存在；逐機標定影響未由一手 benchmark 核驗） | 用真機/風洞數據標 C_T(J)/C_P(J)；低速段影響小、巡航/俯衝段須校 |
+| 8.12 | **把 crazyflow 當 photoreal/aero 全能** → 它無 photoreal 渲染、aero 無 blade flapping/downwash、以 CF 2.x 標定 | Medium | arXiv 2606.01478 | 可微+吞吐用它；要 photoreal 接 VisFly，要近地 aero 另接 surrogate |
+| 8.13 | **以為 Genesis / Brax 能直接做可微 aerial** | **UNVERIFIED** | Genesis drone 範例為 PID/PPO 剛體（非可微）；Brax 無現成 quadrotor 環境 | 用 crazyflow / MJX（自帶 aero）/ VisFly；別假設 Genesis/Brax 可微 aero |
+| 8.14 | **以為一階（可微）RL 是免費午餐** → BPTT 梯度偏差/爆炸、horizon 初始覆蓋不足 | Medium | VisFly-Lab arXiv 2603.21123（ABPT 修正） | 用 ABPT 類修正；長 horizon 退 model-free RL 或截斷 BPTT |
 
 > 註：matrix 評分與 issue 狀態截至來源 fetch 時點（2026-06）；繼承者專案（Cosys-AirSim / Project AirSim / crazyflow）版本可能演進。
