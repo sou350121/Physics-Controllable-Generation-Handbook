@@ -140,7 +140,7 @@ CARLA-Air 內嵌的 AirSim 裡**就帶 `ExternalPhysicsEngine` 模式**（`.../p
 3. 每個 tick 用 **`simSetKinematics(state, …)`** 把「pose + 線/角速度 + 加速度」推進去——**用這個、別只用 `simSetVehiclePose`**（後者只設 pose，IMU/GNSS/速度 ground-truth 會不一致）；
 4. AirSim + CARLA 在那個 pose 出 frame-aligned 的影像 / LiDAR / IMU。
 
-這是 AirSim **官方支援的 FDM 接法**（upstream PR #3626 加入 `ExternalPhysicsEngine`、#4066 加 `simSetKinematics`；官方 **GazeboDrone** 就是用它把 Gazebo 當 FDM、AirSim 只出感測）。把 RotorPy 換成 PX4 SITL 也是同一個接口。
+這是 AirSim **官方支援的 FDM 接法**（upstream PR #3626 加入 `ExternalPhysicsEngine`、#4066 加 `simSetKinematics`；官方 **GazeboDrone** 就是用它把 Gazebo 當 FDM、AirSim 只出感測）。⚠ **更正前一版**：「把 RotorPy 換成 PX4 SITL 也是同一個接口」是**錯的**——**PX4 是飛控（controller）、不是 FDM**，塞不進 `ExternalPhysicsEngine` 這個 **FDM 槽**（要真 autopilot 見下方「想要真 autopilot？」）。
 
 ```mermaid
 flowchart LR
@@ -160,42 +160,50 @@ flowchart LR
 #                  "PhysicsEngineName": "ExternalPhysicsEngine" }
 import airsim
 from rotorpy.vehicles.multirotor import Multirotor
+from rotorpy.controllers.quadrotor_control import SE3Control   # RotorPy 內建幾何 SE(3) 控制器
+from rotorpy.trajectories.minsnap import MinSnap               # 任一 trajectory 物件
 
 client = airsim.MultirotorClient(); client.confirmConnection()
-veh   = Multirotor(quad_params)                  # 你的高保真機型參數
-dt    = 0.003                                     # FDM 步長 = 無人機更新率
-state = {'x': x0, 'v': v0, 'q': [0, 0, 0, 1],     # RotorPy 狀態（世界 z-up）
+veh   = Multirotor(quad_params)            # 你的高保真機型參數
+ctrl  = SE3Control(quad_params)            # 自帶控制器——不用自己寫
+traj  = MinSnap(points=waypoints)          # setpoint 來源：traj.update(t) → flat_output
+dt    = 0.003                              # FDM 步長 = 無人機更新率
+state = {'x': x0, 'v': v0, 'q': [0,0,0,1], # RotorPy 狀態：ENU 世界 / FLU 機體 / q=[x,y,z,w]
          'w': w0, 'wind': wind0, 'rotor_speeds': rs0}
 
-# CARLA 同步模式（防空地漂移）
-s = world.get_settings()
+s = world.get_settings()                   # CARLA 同步模式（防空地漂移）
 s.synchronous_mode = True; s.fixed_delta_seconds = dt
 world.apply_settings(s)
 
+t = 0.0
 while True:
-    control = controller(state)                   # 你的控制器（cmd_motor_speeds 或 ctbr）
+    flat    = traj.update(t)                       # x / x_dot / x_ddot / yaw / yaw_dot
+    control = ctrl.update(t, state, flat)          # → dict，含 cmd_motor_speeds
     state   = veh.step(state, control, dt)         # RotorPy 積分一步（solve_ivp）
 
-    # UNVERIFIED：RotorPy(z-up) → AirSim(NED, z-down) 翻轉 + 四元數 [x,y,z,w] → (w,x,y,z)
-    #            確切翻轉矩陣是實作定義，自己寫 + 測（RotorPy 僅「z-up」可證、ENU/FLU 軸向未文件化）
-    p, q_wxyz, v_ned, w_ned = to_airsim_ned(state)
-
+    # RotorPy(ENU, z-up) → AirSim(NED, z-down)：交換 x/y ＋ z 反號（見下方座標說明）
+    x, v, w = state['x'], state['v'], state['w']
     ks = airsim.KinematicsState()
-    ks.position         = airsim.Vector3r(*p)
-    ks.orientation      = airsim.Quaternionr(q_wxyz[1], q_wxyz[2], q_wxyz[3], q_wxyz[0])
-    ks.linear_velocity  = airsim.Vector3r(*v_ned)
-    ks.angular_velocity = airsim.Vector3r(*w_ned)
-    client.simSetKinematics(ks, True)             # ignore_collision 為必填位置參數
-
-    world.tick()                                  # CARLA 同步前進一步
+    ks.position         = airsim.Vector3r(x[1], x[0], -x[2])
+    ks.linear_velocity  = airsim.Vector3r(v[1], v[0], -v[2])
+    ks.angular_velocity = airsim.Vector3r(w[0], -w[1], -w[2])    # FLU→FRD（機體系）
+    ks.orientation      = enu_to_ned_quat(state['q'])           # 回傳 Quaternionr(x,y,z,w)
+    client.simSetKinematics(ks, True)              # ignore_collision 必填位置參數
+    world.tick(); t += dt
 ```
 
-> **已核對（VERIFIED，附 PR/源）**：`settings.json` 的 `PhysicsEngineName = ExternalPhysicsEngine`（AirSim docs / GazeboDrone）；`simSetKinematics(state, ignore_collision, vehicle_name='')` + `KinematicsState`（position / orientation / linear_velocity / angular_velocity / ±acceleration）欄位（AirSim `client.py` / `types.py`；upstream PR #4066）；ExternalPhysicsEngine（PR #3626，官方 **GazeboDrone** 即此架構：AirSim 出感測、外部當 FDM）；`Multirotor.step(state, control, t_step)`、state 鍵 `x/v/q/w/wind/rotor_speeds`、control 預設 `cmd_motor_speeds`（亦有 ctbr）（RotorPy `multirotor.py`）；CARLA 同步模式片段（CARLA docs）。
-> **未核對（UNVERIFIED，自己定 + 測）**：RotorPy 的 ENU/FLU 確切軸向（只「z-up」可證）、四元數 `[x,y,z,w]` 順序（從源碼強推、非文件明載）、以及 RotorPy↔AirSim↔CARLA 的確切翻轉矩陣（三方 bridge 無任何專案文件化）。
+> **已核對（VERIFIED，附源）**：`PhysicsEngineName=ExternalPhysicsEngine`（PR #3626，GazeboDrone 即此架構）；`simSetKinematics(state, ignore_collision, vehicle_name='')` + `KinematicsState` 欄位（PR #4066，AirSim `types.py`）；RotorPy `SE3Control.update(t, state, flat_output)`→含 `cmd_motor_speeds`、trajectory `update(t)`→flat output、`Multirotor.step(state, control, t_step)`、state `q=[x,y,z,w]`（scalar-last）、世界 z-up（重力 −z）——皆 RotorPy 源碼核對；CARLA 同步片段（CARLA docs）。
+> **座標（這版已修正並補源，前一版的「只 z-flip」是錯的）**：
+> - **RotorPy**：源碼只硬定 **z-up**；x/y 是否 East/North 是**慣例**（常見採 **ENU 世界 / FLU 機體**，見第三方 Duckietown；RotorPy 自身未明載）。採 ENU → RotorPy→AirSim NED 要**交換 x/y ＋ z 反號**（不只 z），body rate 另做 FLU→FRD（`w[0], −w[1], −w[2]`）。
+> - **AirSim**：世界 NED（+X 北 / +Y 東 / +Z 下）；`Quaternionr` **建構子是 `(x,y,z,w)`**（w 不在前——常見陷阱，[types.py](https://raw.githubusercontent.com/microsoft/AirSim/main/PythonClient/airsim/types.py)）。
+> - **AirSim↔CARLA 這段 CARLA-Air 已幫你算好**：repo [`COORDINATE_SYSTEMS.md`](https://github.com/louiszengCN/CarlaAir/blob/main/CarlaAir_Release/guide/COORDINATE_SYSTEMS.md) + 論文 Eq.1/2 給 NED↔CARLA（÷100 cm→m、z 反號、x/y 對齊、**加逐圖標定原點位移**，如 Town10HD `+172.20 / −183.86 / +27.45`）。所以 A2 你**只需做 RotorPy→AirSim NED 那一段**，AirSim 在 CARLA 的落位 CARLA-Air 自理。
+> - **唯一真正 implementation-defined**：你的 RotorPy 世界原點 / yaw 基準落在地圖哪（= 上面那個逐圖位移）＋ ENU 慣例的選擇；其餘是標準可推導。
 
-> **三個坑**：① **積分節奏由你掌握**——你的 RotorPy step → `simSetKinematics` 的頻率**就是**無人機更新率，務必開 CARLA **同步模式**（`fixed_delta_seconds` + `world.tick()`），CARLA-Air **預設 async**，不然空地會漂移；② 你**接管了飛控**（`moveByXXX` / simple_flight / PX4 不再飛它，RotorPy 要自己閉環）；③ **座標**：RotorPy 是 ENU/FLU、AirSim 是 NED、CARLA 左手系（關係 `AirSim NED z = −CARLA z`），推進去前要轉。
+> **三個坑**：① **積分節奏由你掌握**——你的 RotorPy step → `simSetKinematics` 的頻率**就是**無人機更新率，務必開 CARLA **同步模式**（`fixed_delta_seconds` + `world.tick()`），CARLA-Air **預設 async**，不然空地會漂移；② **飛控被 ExternalPhysicsEngine 短路**——simple_flight 不再算 pose，改由你（RotorPy 自帶 `SE3Control` ＋ trajectory）閉環；③ **座標**：RotorPy(ENU)→AirSim(NED) 要**交換 x/y ＋ z 反號**（不只 z），AirSim↔CARLA 那段 CARLA-Air 已算好（見上方座標說明）。
 >
 > **為什麼這條最划算**：一個 `settings.json` 開關 + 一段 Python，動力學保真度直接拉到 RotorPy 級，外觀/場景照用 CARLA——這正是本手冊「**動力學靠物理、外觀靠渲染**」的字面落地。
+
+> **想要「真 autopilot ＋ 高保真動力學」？**（= [sim-stack](./aerial-sim-stack.md) 講的 controller-path 黃金標準 ＋ RotorPy 級 aero）架構是 **PX4 SITL（飛控）→ actuator 輸出 → RotorPy（FDM）→ state → AirSim 出感測 → 回 PX4**。官方 **GazeboDrone** 正是這形（PX4 ＋ Gazebo-as-FDM ＋ AirSim 感測），但**換成 RotorPy 沒有現成 bridge（`UNVERIFIED`）**：要自己寫一個 MAVLink HIL shim（收 `HIL_ACTUATOR_CONTROLS`→餵 RotorPy，把 RotorPy state 合成 `HIL_SENSOR`/`HIL_GPS`→回 PX4，並守 PX4 lockstep），先例見 **px4xplane**（PX4 ＋ 外接 X-Plane FDM）。難度高，但這是唯一同時拿到**真飛控**與**高保真動力學**的路。
 
 **A1 —— 殘差注入（保留 AirSim 當 nominal、加你的力）**
 
