@@ -206,7 +206,9 @@
           {
             "group": "Embodied Policy Rollout",
             "pages": [
-              "use-cases/embodied-policy-rollout/overview.md"
+              "use-cases/embodied-policy-rollout/overview.md",
+              "use-cases/embodied-policy-rollout/planning-and-trust-contract.md",
+              "use-cases/embodied-policy-rollout/world-model-as-policy.md"
             ]
           },
           {
@@ -227,7 +229,9 @@
           {
             "group": "Scientific Discovery",
             "pages": [
-              "use-cases/scientific-discovery/overview.md"
+              "use-cases/scientific-discovery/overview.md",
+              "use-cases/scientific-discovery/surrogate-limits-and-discovery.md",
+              "use-cases/scientific-discovery/weather-surrogates.md"
             ]
           }
         ]
