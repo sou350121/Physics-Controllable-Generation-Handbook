@@ -98,10 +98,32 @@ flowchart LR
 
 放回本手冊「外觀靠生成、動力學靠物理」的框架：**CARLA-Air 是『物理 + 真實外觀』那層底層的一個特例——特別之處在於它的『場景』不只是地形，而是一個有車流、有行人、有交通規則的活城市。** 因此：
 
-- 對 **pixel-WM / 生成路線**：它是極好的**條件真值工廠**——空地同場景出 18 模態，可拿 CARLA-Air 的幀＋幾何當條件去餵 [Cosmos](../../foundations/foundation-physics-models/cosmos-wfm.md) 這類 video-WM 做像素級真實感增廣，補足純空中模擬器拿不到的「城市動態背景」。
+- 對 **pixel-WM / 生成路線**：它是極好的**條件真值工廠**——空地同場景出 18 模態，可拿 CARLA-Air 的幀＋幾何當條件去餵 [Cosmos](../../foundations/foundation-physics-models/cosmos-wfm.md) 這類 video-WM 做像素級真實感增廣，補足純空中模擬器拿不到的「城市動態背景」。另一條更輕的外觀路是事後**增強**——[CARLA2Real / EPE](../autonomous-driving-sim/closing-the-appearance-gap.md)（駕駛端把 CARLA renderer 輸出增強成更真、標註不變）理論上可疊在 CARLA-Air 上，但只在駕駛地面視角驗證過，俯視可遷移性 `UNVERIFIED`。
 - 對 **動力學**：它**不解決**空氣動力學問題（那仍是 AirSim 天花板）——要高保真飛行動力學，仍得回到 [RotorPy / 殘差法](./aerial-sim-stack.md) 那條路。它的價值在 domain × 外觀，不在空氣動力學。
 - 對 **空地具身 / VLN-VLA**：規則車流 + 社會化行人當無人機的動態背景，是「無人機在城市裡看著人車做決策」這類任務難得的公開資料源。
 - 跨冊：它生成的城市空地資料，最終要餵給 Spatial-Handbook 的感知端消費——對齊問題（尤其 IMU 噪聲模型與 camera-IMU extrinsic）見 [Bridge: Aerial Embodiment](../../bridge-to-spatial/aerial-embodiment.md)；它和純空中七套的取捨見 [Aerial Sim Stack 對比](./aerial-sim-stack.md)。
+
+## 把外觀邊升到 photoreal：Carla2Real
+
+CARLA-Air 的外觀來自 CARLA 的 Unreal render——城市夠豐富，但**是遊戲引擎級、不是真 photoreal**。要把那個 render **後處理升到 photoreal**，有一條現成的學習式路：**Carla2Real**（Pasios & Nikolaidis，Aristotle Univ.；arXiv [2410.18238](https://arxiv.org/abs/2410.18238)，IEEE T-ITS 2025；[code](https://github.com/stefanos50/CARLA2Real)，MIT）。
+
+**它是什麼**：把 Intel 的 **EPE（Enhancing Photorealism Enhancement，[2105.04619](https://arxiv.org/abs/2105.04619)）移植進 CARLA**——吃 CARLA 的 RGB **+ G-buffer**（透過 `listen_to_gbuffer()`，需 **CARLA 0.9.14**），用 GAN image-to-image 把畫面拉向真實街景資料集（Cityscapes / KITTI / Mapillary Vistas，repo 另加 nuScenes）。**13 FPS @ RTX 4090**（TensorRT FP16）。
+
+**為什麼對 CARLA-Air 有意義、關鍵在哪**：EPE 用 **LPIPS 結構損失**逼輸出**不改幾何與語意內容**——所以 enhancement 後的畫面**仍對得上原本 sim 的 ground-truth 標籤**。這是它最大價值：**免費保留標籤**，你能拿 CARLA-Air 出的多模態標籤直接訓練、只是畫面更真。實測（driving）：sim 訓練的分割器在**真 Cityscapes** 上 mIoU 約 **2.6×**（Town10HD 0.065→0.167）；但**絕對值仍低（~0.17）**，且只補**外觀**、補不了 **content gap**——區域性號誌 / 車種等仍失敗（見原文表格）。
+
+> **⚠ 對 aerial 是一個乾淨的空缺（`UNVERIFIED`）**：Carla2Real / EPE **只在 driving 街景驗證過**（target 全是街景資料集），**目前沒有任何把它用在 aerial / CARLA-Air 上的工作**。架構上可行（同 CARLA / Unreal、同 G-buffer），但 EPE 的 discriminator 與 patch-matching 是**調在街景統計上的**，能不能轉到**俯視 / 斜視 aerial 視角**未證——這是個沒人占的乾淨機會。
+
+**它對動力學零貢獻**：Carla2Real 是純 image-to-image 後處理，**只動外觀邊、完全不碰動力學**（動力學還是 AirSim 剛體那套，要靠 [§自救 A2](#自救如何補強--繞過鎖死) 換 RotorPy）。所以 **Carla2Real 補外觀、§自救 補動力學，兩者正交**——正是本手冊「外觀靠生成 / 渲染、動力學靠物理」的字面分工。
+
+**放進「補外觀 gap」的三條路看**（aerial 實際用的是第二條、不是 enhancement）：
+
+| 路 | 代表 | 給你 | 代價 |
+|---|---|---|---|
+| **enhancement**（後處理 sim render） | EPE / **Carla2Real** | 留標籤、便宜、保留你的 sim 幾何 | 只補外觀不補 content；per-frame 有 flicker 風險；需引擎 G-buffer；**aerial 未證** |
+| **reconstruction**（重建真實場景） | NeRF / 3DGS（driving: NeuRAD；**aerial: [FalconGym](https://arxiv.org/abs/2503.02198) 95.8%、SOUS VIDE 105 飛**） | 外觀近乎完美（重放真感測） | 只限拍過的場景，難造新內容 / 新標籤 |
+| **generation**（生成） | Cosmos / GAIA-2 / FlightDiffusion | 任意場景、可控、最多樣 | 幾何 / 標籤對齊最弱 |
+
+所以 **aerial 的外觀 gap 現在是 3DGS / NeRF 重建在解**（FalconGym / SOUS VIDE 已落地），不是 Carla2Real 式 enhancement——這也再次點出 CARLA-Air 的定位：價值在**空地 physics + 城市場景**；要外觀更真，街景上接 Carla2Real、aerial 上走 3DGS 重建（見 [Generative Aerial Data](./generative-aerial-data.md)）。
 
 ## 自救：如何補強 / 繞過鎖死
 
@@ -207,6 +229,7 @@ while True:
 - **CARLA-Air**（本篇主體）—— arXiv [2603.28032](https://arxiv.org/abs/2603.28032) · [github.com/louiszengCN/CarlaAir](https://github.com/louiszengCN/CarlaAir) · [carla-air.com](https://www.carla-air.com/) · [HuggingFace papers](https://huggingface.co/papers/2603.28032)
 - **基底**：CARLA 0.9.16（自駕模擬）· AirSim 1.8.1（Microsoft，2022 已封存）· Unreal Engine 4.26
 - **同類取捨**：[Aerial Sim Stack 對比](./aerial-sim-stack.md)（純空中七套）· [Generative Aerial Data](./generative-aerial-data.md)（資料用途）
+- **Carla2Real**（把 CARLA 外觀後處理升 photoreal，appearance-edge）—— arXiv [2410.18238](https://arxiv.org/abs/2410.18238)（IEEE T-ITS 2025）· [github.com/stefanos50/CARLA2Real](https://github.com/stefanos50/CARLA2Real) · 母法 EPE [2105.04619](https://arxiv.org/abs/2105.04619)（Intel）
 
 ## §8 踩坑日誌
 
@@ -221,3 +244,4 @@ while True:
 | 8.7 | **授權自動偵測 NOASSERTION**（README 稱 MIT+CC-BY） | 🟡 Low | GitHub API vs README 不一致 | 商用前以實際 LICENSE 檔為準 `UNVERIFIED` |
 | 8.8 | 署名單位與「同儕審查」**未公開查證** | 🟡 Low | arXiv 技術報告 | 引用時標 `UNVERIFIED`，勿當已發表期刊 |
 | 8.9 | **README 數字與 repo 源碼不符**：自稱「3 檔/35 行薄整合 + CARLAAirGameMode」但實為完整內嵌分支（無該檔/diff）；「~1000 Hz」實為 ~333 Hz（`SimModeWorldBase.h` 預設 3 ms）；「0.0000 m/89-89/18 模態」皆論文/README 宣稱 | 🟠 Medium（影響「能否輕鬆換版本」判斷） | clone repo 全樹核對（見 [§自救 B](#自救如何補強--繞過鎖死)） | 以源碼為準；重接新版本是對完整分支動刀、非套 patch |
+| 8.10 | **把 Carla2Real（街景訓練的 EPE）直接套 aerial 俯視 / 斜視**，假設它會 work | 🟡 Low（`UNVERIFIED`） | EPE discriminator / patch-matching 調在街景統計；無任何 aerial 工作 | 先在 aerial 視角驗證 / 微調，別假設轉移；aerial 外觀現走 3DGS 重建（FalconGym / SOUS VIDE） |
