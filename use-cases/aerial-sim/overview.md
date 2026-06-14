@@ -95,6 +95,12 @@ flowchart TD
 ```
 *圖：7 個錨點系統的定位 —— **CARLA-Air** 在外觀邊（城市 photoreal + 空地一體）強、動力學邊弱（AirSim 剛體，要換 FDM）；**Aerial sim 七套** 跨兩邊（部分能渲染 + 各家動力學保真度不同）；Swift 靠動力學邊落地，生成資料線只供外觀，Dream to Fly 想把兩條邊都學進 latent。*
 
+> **澄清一個常見誤解：「動力學靠物理」的「物理」就是仿真器（物理引擎）。** AirSim / RotorPy / Aerial Gym 都是仿真器——**仿真器正是扛動力學的那一方**；扛不起動力學的是**生成模型**（Cosmos / NeRF 只產像素、不算物理）。但「扛動力學」不是有 / 沒有，是一條**保真度光譜**：
+>
+> 生成模型（動力學 0）< **剛體級 sim**（AirSim / CARLA-Air / Aerial Gym：推力 + 阻力的 6-DoF，無 wake / wind / ground effect）< **高保真 aero sim**（RotorPy：blade flapping / 時空風場；gym-pybullet：地效 / 下洗擬合真機）< **sim + 真機殘差**（Swift / Neural-Fly：標稱物理 + 量出來的殘差，最接近真機）。
+>
+> 所以 **CARLA-Air / AirSim 扛得起「溫和 / 準靜態」飛行的動力學，但 aggressive / 高速 / 貼地就不夠**（要 rotor wake、ground effect、風擾）——這時把飛控的 FDM 換成 RotorPy（見 [CARLA-Air §自救 A2](./carla-air.md#自救如何補強--繞過鎖死)）或加殘差 / system-ID（見 [Sim-to-Real 契約](./sim-to-real-contract.md)）。所以「**動力學邊弱**」指的是它**內建的動力學保真度在光譜低端**，不是「不做動力學」。
+
 ## 三條子路線（對齊 robotics-data-gen 切法）
 
 三條路線的差別，就在它們**怎麼處理定調圖裡那條「轉移（動力學）」邊**——(1) 不碰、(2) 學起來、(3) 交給物理：
