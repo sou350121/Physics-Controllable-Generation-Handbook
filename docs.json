@@ -200,7 +200,9 @@
           {
             "group": "Digital Twin",
             "pages": [
-              "use-cases/digital-twin/overview.md"
+              "use-cases/digital-twin/overview.md",
+              "use-cases/digital-twin/real2sim-twins.md",
+              "use-cases/digital-twin/twin-fidelity-contract.md"
             ]
           },
           {
@@ -214,7 +216,9 @@
           {
             "group": "Media And Content",
             "pages": [
-              "use-cases/media-and-content/overview.md"
+              "use-cases/media-and-content/overview.md",
+              "use-cases/media-and-content/appearance-dynamics-decoupling.md",
+              "use-cases/media-and-content/directors-control-stack.md"
             ]
           },
           {
