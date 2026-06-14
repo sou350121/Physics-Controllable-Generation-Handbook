@@ -98,7 +98,7 @@ flowchart LR
 
 放回本手冊「外觀靠生成、動力學靠物理」的框架：**CARLA-Air 是『物理 + 真實外觀』那層底層的一個特例——特別之處在於它的『場景』不只是地形，而是一個有車流、有行人、有交通規則的活城市。** 因此：
 
-- 對 **pixel-WM / 生成路線**：它是極好的**條件真值工廠**——空地同場景出 18 模態，可拿 CARLA-Air 的幀＋幾何當條件去餵 [Cosmos](../../foundations/foundation-physics-models/cosmos-wfm.md) 這類 video-WM 做像素級真實感增廣，補足純空中模擬器拿不到的「城市動態背景」。另一條更輕的外觀路是事後**增強**——[CARLA2Real / EPE](../autonomous-driving-sim/closing-the-appearance-gap.md)（駕駛端把 CARLA renderer 輸出增強成更真、標註不變）理論上可疊在 CARLA-Air 上，但只在駕駛地面視角驗證過，俯視可遷移性 `UNVERIFIED`。
+- 對 **pixel-WM / 生成路線**：它是極好的**條件真值工廠**——空地同場景出 18 模態，可拿 CARLA-Air 的幀＋幾何當條件去餵 [Cosmos](../../foundations/foundation-physics-models/cosmos-wfm.md) 這類 video-WM 做像素級真實感增廣，補足純空中模擬器拿不到的「城市動態背景」。另一條更輕的外觀路是事後**增強**——CARLA2Real / EPE（駕駛端把 CARLA renderer 輸出增強成更真、標註不變）理論上可疊在 CARLA-Air 上，但只在駕駛地面視角驗證過，俯視可遷移性 `UNVERIFIED`（詳見本篇下方「把外觀邊升到 photoreal：Carla2Real」一節）。
 - 對 **動力學**：它**不解決**空氣動力學問題（那仍是 AirSim 天花板）——要高保真飛行動力學，仍得回到 [RotorPy / 殘差法](./aerial-sim-stack.md) 那條路。它的價值在 domain × 外觀，不在空氣動力學。
 - 對 **空地具身 / VLN-VLA**：規則車流 + 社會化行人當無人機的動態背景，是「無人機在城市裡看著人車做決策」這類任務難得的公開資料源。
 - 跨冊：它生成的城市空地資料，最終要餵給 Spatial-Handbook 的感知端消費——對齊問題（尤其 IMU 噪聲模型與 camera-IMU extrinsic）見 [Bridge: Aerial Embodiment](../../bridge-to-spatial/aerial-embodiment.md)；它和純空中七套的取捨見 [Aerial Sim Stack 對比](./aerial-sim-stack.md)。
