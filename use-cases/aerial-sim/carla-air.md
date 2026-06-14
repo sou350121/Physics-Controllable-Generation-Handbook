@@ -131,6 +131,46 @@ flowchart LR
 ```
 *圖：§自救 A2 —— ExternalPhysicsEngine 把 RotorPy 當 FDM，每 tick 經座標轉換推 state，CARLA 同步模式防漂移。*
 
+**可跑骨架**（API 簽名已對 AirSim / RotorPy / CARLA 源碼核對；座標翻轉是實作定義，標 `UNVERIFIED`，必須自己寫 + 測）：
+
+```python
+# settings.json：{ "SettingsVersion": 1.2, "SimMode": "Multirotor",
+#                  "PhysicsEngineName": "ExternalPhysicsEngine" }
+import airsim
+from rotorpy.vehicles.multirotor import Multirotor
+
+client = airsim.MultirotorClient(); client.confirmConnection()
+veh   = Multirotor(quad_params)                  # 你的高保真機型參數
+dt    = 0.003                                     # FDM 步長 = 無人機更新率
+state = {'x': x0, 'v': v0, 'q': [0, 0, 0, 1],     # RotorPy 狀態（世界 z-up）
+         'w': w0, 'wind': wind0, 'rotor_speeds': rs0}
+
+# CARLA 同步模式（防空地漂移）
+s = world.get_settings()
+s.synchronous_mode = True; s.fixed_delta_seconds = dt
+world.apply_settings(s)
+
+while True:
+    control = controller(state)                   # 你的控制器（cmd_motor_speeds 或 ctbr）
+    state   = veh.step(state, control, dt)         # RotorPy 積分一步（solve_ivp）
+
+    # UNVERIFIED：RotorPy(z-up) → AirSim(NED, z-down) 翻轉 + 四元數 [x,y,z,w] → (w,x,y,z)
+    #            確切翻轉矩陣是實作定義，自己寫 + 測（RotorPy 僅「z-up」可證、ENU/FLU 軸向未文件化）
+    p, q_wxyz, v_ned, w_ned = to_airsim_ned(state)
+
+    ks = airsim.KinematicsState()
+    ks.position         = airsim.Vector3r(*p)
+    ks.orientation      = airsim.Quaternionr(q_wxyz[1], q_wxyz[2], q_wxyz[3], q_wxyz[0])
+    ks.linear_velocity  = airsim.Vector3r(*v_ned)
+    ks.angular_velocity = airsim.Vector3r(*w_ned)
+    client.simSetKinematics(ks, True)             # ignore_collision 為必填位置參數
+
+    world.tick()                                  # CARLA 同步前進一步
+```
+
+> **已核對（VERIFIED，附 PR/源）**：`settings.json` 的 `PhysicsEngineName = ExternalPhysicsEngine`（AirSim docs / GazeboDrone）；`simSetKinematics(state, ignore_collision, vehicle_name='')` + `KinematicsState`（position / orientation / linear_velocity / angular_velocity / ±acceleration）欄位（AirSim `client.py` / `types.py`；upstream PR #4066）；ExternalPhysicsEngine（PR #3626，官方 **GazeboDrone** 即此架構：AirSim 出感測、外部當 FDM）；`Multirotor.step(state, control, t_step)`、state 鍵 `x/v/q/w/wind/rotor_speeds`、control 預設 `cmd_motor_speeds`（亦有 ctbr）（RotorPy `multirotor.py`）；CARLA 同步模式片段（CARLA docs）。
+> **未核對（UNVERIFIED，自己定 + 測）**：RotorPy 的 ENU/FLU 確切軸向（只「z-up」可證）、四元數 `[x,y,z,w]` 順序（從源碼強推、非文件明載）、以及 RotorPy↔AirSim↔CARLA 的確切翻轉矩陣（三方 bridge 無任何專案文件化）。
+
 > **三個坑**：① **積分節奏由你掌握**——你的 RotorPy step → `simSetKinematics` 的頻率**就是**無人機更新率，務必開 CARLA **同步模式**（`fixed_delta_seconds` + `world.tick()`），CARLA-Air **預設 async**，不然空地會漂移；② 你**接管了飛控**（`moveByXXX` / simple_flight / PX4 不再飛它，RotorPy 要自己閉環）；③ **座標**：RotorPy 是 ENU/FLU、AirSim 是 NED、CARLA 左手系（關係 `AirSim NED z = −CARLA z`），推進去前要轉。
 >
 > **為什麼這條最划算**：一個 `settings.json` 開關 + 一段 Python，動力學保真度直接拉到 RotorPy 級，外觀/場景照用 CARLA——這正是本手冊「**動力學靠物理、外觀靠渲染**」的字面落地。
@@ -145,13 +185,22 @@ flowchart LR
 
 **先認清一個被 README 掩蓋的事實**：CARLA-Air 的 repo **不是**「3 檔 / 35 行薄整合」——實測它是**完整 vendored fork**（整套 CARLA 源 + 內嵌完整 AirSim plugin，約 2,357 檔，全樹找不到 `CARLAAirGameMode`、`MODIFICATIONS.md` 或任何 diff）。所以「換新版本」是對一個**完整 fork** 動刀、不是套 patch。`UNVERIFIED`：README 的 3-檔/35-行/~1000 Hz/0.0000 m 等說法與 repo 內容不符或無法從源碼證實——引用前自行核。
 
-選項：
+選項（已用 web 對 GitHub repo / 官方 docs 核對，2026-06）：
 
-- **接受凍結**：研究 / 復現多半 OK，整套能跑、可重現。
-- **搬到 UE5 維護中的繼承者**：飛控側選 **Cosys-AirSim**（UE 5.5、MIT、加 ROS2 + GPU-LiDAR；但自承「as-is、不主動更新」）或 **Project AirSim**（UE 5.2/5.7、MIT、前 MS AirSim 團隊**主動維護**，但 API 變了、要照它的 migration guide——CARLA-Air「AirSim 腳本零改動」的賣點會破）；場景側配 **CARLA 0.10.0（= UE 5.5）**。但 CARLA 0.10.0 **還不成熟**：只有 Town10、無 SUMO/Chrono 共模擬、無 V2X、無 OSM/OpenDRIVE 匯入、~24–25 FPS。**等於把兩個 UE5 大型 codebase 重整合，是一個工程專案、不是 port。**
-- **走 A2 解耦後就少依賴 AirSim**，版本鎖的痛跟著小——這也是為什麼 A2 同時是 A 和 B 的解。
+| 路線 | UE | License | 維護 | API 相容 | 對 CARLA-Air 的意義 |
+|---|---|---|---|---|---|
+| **接受凍結（現狀）** | 4.26 | MIT | AirSim 上游已死 | 原樣 | 研究/復現多半 OK、整套可跑可重現——**大多數人該選這個 + A2** |
+| **Cosys-AirSim** | 5.5（另有 5.2 LTS 分支） | MIT | **as-is、不主動更新**（明示） | `import cosysairsim as airsim`（呼叫面高度相容、非 100%） | UE5.5 + 豐富研究感測（GPU-LiDAR / echo / instance-seg / annotation）。**但它是獨立 UE、不是 CARLA plugin**——「把 AirSim 接進 CARLA」那層膠水在它身上不存在，**等於重新移植、不是搬運** |
+| **Project AirSim** | 5.2 / 5.7 ⚠ | MIT | **唯一主動維護**（前 MS 團隊 / IAMAI，v0.2.0 ~2026-06，DARPA 支持） | **破壞性改版**：`settings.json`→JSONC Scene/Robot config、新 client、官方 API migration 表 | 長期最佳賭注**若你本就要離開舊 API**；代價是重寫 client + config，且**離開 CARLA 道路/交通生態** |
+| **CARLA 0.10.0** | 5.5 | MIT | WIP | CARLA API（非 AirSim） | UE5.5 + Lumen/Nanite + 原生 ROS2。**但只有 Town10（+礦圖）**，無 SUMO/Chrono/Vissim 共模擬、無 V2X、無 OpenDRIVE/OSM 匯入、天氣鎖白天、~24–25 FPS；**且 AirSim 飛控沒有 UE5 對應**——仍要自己把飛控移植上 UE5.5 |
 
-**一句話分流**：要真 aero → **先試 A2**（RotorPy + `ExternalPhysicsEngine`，純 Python 最划算）；要徹底現代化 → **CARLA 0.10/UE5 + Cosys/Project AirSim**，但這是大重構。
+**最關鍵的一句**：**沒有任何 version-bump 能原樣保住 CARLA-Air**——它把「CARLA 的 UE4.26 build」和「AirSim 1.8.1 飛控」綁在一起，兩半各自往前走、而**沒有任一目的地同時保住這兩半**。每條現代化路都是**重整合專案、不是升級**：要 CARLA UE5 → 上 CARLA 0.10、丟掉多數城市/共模擬/天氣、且**自己把 AirSim 飛控移植到 UE5.5**；要維護中的 AirSim → 上 Project AirSim、**重寫所有 client + config**、但離開 CARLA 生態。連 CARLA 官方都說 **UE4.26 與 UE5.5 版本會並存**——它自己也預期用戶為了缺的功能留在 4.26。
+
+> ⚠ `UNVERIFIED`：Project AirSim 官方文件寫「UE 5.2 與 5.7」，但 5.7 截至本文非公開引擎版本，疑為前瞻目標或文件筆誤，採用前先以實際 build 驗。CARLA 0.10.0 的 **Traffic Manager 對等狀態**官方未在 release notes 明列（以其功能追蹤表為準）。
+
+**走 A2 解耦後就少依賴 AirSim**，版本鎖的痛跟著小——這也是為什麼 A2 同時是 A 和 B 的解。
+
+**一句話分流**：絕大多數情況 → **接受凍結 + 走 A2**（RotorPy + `ExternalPhysicsEngine` 解耦動力學，純 Python 最划算）；真要徹底現代化 → 認清那是**把兩個 UE5 大型 codebase 重整合的工程專案**，不是 port。
 
 ## 參考
 
@@ -167,7 +216,7 @@ flowchart LR
 | 8.2 | **~20 FPS 單環境、無 GPU 並行多環境** | 🔴 High（RL 規模） | 論文實測 19.8±1.1 FPS；GPU 並行列為 future work | 大規模 RL 走 Aerial Gym/Isaac；CARLA-Air 用於真實感資料與評測 |
 | 8.3 | **無 sim-to-real 真機實證**（驗證全在模擬內） | 🟠 Medium | 論文僅報 in-sim precision landing <0.5 m | 真機遷移需自行補殘差辨識（參 Swift），別假設零樣本 |
 | 8.4 | **換地圖要重啟整個進程**；多無人機 >2 未正式驗證 | 🟠 Medium | repo README / issues | 場景批次設計避免頻繁切圖；多機需自行壓測 |
-| 8.5 | **版本鎖 UE4.26 / CARLA0.9.16 / AirSim1.8.1，且 AirSim 上游已 archived** | 🟠 Medium（長期維護） | GitHub repo 依賴 | 接受版本凍結；長期方案考慮 Cosys-AirSim / Project AirSim 路線 |
+| 8.5 | **版本鎖 UE4.26 / CARLA0.9.16 / AirSim1.8.1，且 AirSim 上游已 archived** | 🟠 Medium（長期維護） | GitHub repo 依賴 | 接受凍結 + A2 解耦；現代化對比見 [§自救 B 矩陣](#自救如何補強--繞過鎖死)（每條都是重整合非升級） |
 | 8.6 | **不可微** | 🟡 Low | 論文無可微分宣稱 | 需梯度走 crazyflow（JAX）等可微基座 |
 | 8.7 | **License 自動偵測 NOASSERTION**（README 稱 MIT+CC-BY） | 🟡 Low | GitHub API vs README 不一致 | 商用前以實際 LICENSE 檔為準 `UNVERIFIED` |
 | 8.8 | 署名單位與「peer-reviewed」**未公開查證** | 🟡 Low | arXiv 技術報告 | 引用時標 `UNVERIFIED`，勿當已發表期刊 |
