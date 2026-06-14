@@ -7,7 +7,7 @@ Pulsar 每個 weekday 自動掃 arxiv、用 qwen3.5-plus 評級、把當天 phys
 | Subdirectory | Cadence | Format |
 |---|---|---|
 | `physics-gen-daily/` | 每 weekday (00:40 UTC ≈ 08:40 CN) | 當天 arxiv cs.CV / cs.LG / cs.GR / cs.RO / cs.AI / physics.flu-dyn / cond-mat.soft 過濾後 LLM 評級 (⚡/🔧/📖) |
-| `weekly/` | (Phase 2) | Forward-looking — 趨勢 / 可證偽命題 / 觀察清單 |
+| `weekly/` | 每週五 (02:30 UTC ≈ 10:30 CN) | 前瞻偵察 — 本週主軸 / 意外信號 / 五軸熱度 / 可證偽觀察清單（彙整本週日報的 ⚡/🔧） |
 
 ## 機制
 

@@ -24,6 +24,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 STATE_DIR = REPO_ROOT / "scripts" / "pulsar" / "state"
 REPORTS_DIR = REPO_ROOT / "reports" / "physics-gen-daily"
+WEEKLY_DIR = REPO_ROOT / "reports" / "weekly"
 
 # ---- LLM ------------------------------------------------------------
 # DashScope OpenAI-compatible endpoint (CodingPlan Pro since 2026-04)
@@ -156,6 +157,27 @@ tags 從 5 軸詞彙選 1-3 個（output / injection / control / temporal / doma
 # ---- Daily report format --------------------------------------------
 REPORT_TOP_N = 5  # top N ⚡/🔧 picks to push + write to markdown
 REPORT_RETENTION_DAYS = 90  # auto-clean reports/physics-gen-daily/ older than N days
+
+# ---- Weekly synthesis -----------------------------------------------
+WEEKLY_TITLE = "Physics-Gen Weekly"   # report H1 / banner label
+WEEKLY_LOOKBACK_DAYS = 7        # how many days of dailies to aggregate
+WEEKLY_RETENTION_WEEKS = 26     # auto-clean reports/weekly/ older than N weeks
+# Forward-looking (前瞻偵察) per VLA convention — weekly = scout, not retrospective.
+WEEKLY_PROMPT_SYSTEM = """你是 Physics-Controllable-Generation Handbook 的週度前瞻偵察員。
+
+輸入是本週每日 arxiv 評級裡的 ⚡/🔧 論文（physics-controllable generation 領域：video/world-model /
+diffusion-physics / differentiable-sim / neural-surrogate / physics-conditioning / controllability /
+3D-aware gen / 長程 rollout / 生成式機器人數據）。
+
+週報不是日報的索引，是**前瞻判斷**。寫成 markdown，4 節：
+1. **## 本週主軸** — 2-3 個反覆出現的主題/技術方向（每個 1-2 句，點名代表論文）。
+2. **## 意外信號** — 1-3 個出乎意料或反共識的點（沒有就寫「本週無明顯意外」）。
+3. **## 五軸熱度** — 這週論文在 5 軸（output/injection/control/temporal/domain）上偏向哪裡；
+   特別關注 USP 軸 injection（data-only→hard-constraint 的物理注入強度光譜）這週移動到哪。
+4. **## 可證偽觀察清單** — 2-4 條**下週可檢驗**的具體預測或待觀察項（要可證偽，不要空話）。
+
+只依據輸入論文，不要編造不存在的論文或數字。語氣精煉、判斷性強，避免堆砌。
+"""
 
 # ---- Memory / dedup -------------------------------------------------
 DEDUP_FILE = STATE_DIR / "seen_arxiv_ids.json"
