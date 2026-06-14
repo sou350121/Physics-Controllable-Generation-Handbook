@@ -63,19 +63,31 @@ Aerial 是「generation for **appearance**, physics for **dynamics**」這條分
 
 ## 三條子路線（對齊 robotics-data-gen 切法）
 
+三條路線的差別，就在它們**怎麼處理定調圖裡那條「轉移（動力學）」邊**——(1) 不碰、(2) 學起來、(3) 交給物理：
+
 1. **Pure video / 3DGS gen（外觀）** —— Cosmos / Sora aerial fine-tune + NeRF/3DGS 重建真實航拍，生 FPV / overhead footage 給感知模型 pre-train。痛點：rotor wake、IMU 一致性、ground effect 不在訓練分布內，且 monocular 重建**scale-free**（gate/障礙距離不可信）。目前主要當「視覺 augmentation」，不驅動 control。→ [Generative Aerial Data](./generative-aerial-data.md)
 2. **Action-conditioned aerial WM（latent 路線）** —— [Dream to Fly](./dream-to-fly.md)（DreamerV3 on quadrotor）是最清楚的代表：raw pixel + CTBR token，latent imagination 訓 policy。**但其真機部署用 HIL + rendered frames**，尚未證明吃下 raw-camera 與 aero/latency 的 sim-to-real gap —— 這是研究熱點，不是已解問題。
 3. **Sim-augmented（動力學）** —— [Aerial Gym / Flightmare](./aerial-sim-stack.md) + domain randomization；[Swift](./champion-level-drone-racing.md) 是這條路唯一證明過 real-world champion-level 落地的。重點不是 photoreal，而是 **dynamics fidelity + 大規模 parallelization + 小殘差辨識**。
 
-> 三條路的真實關係：(3) sim-augmented 是當前**唯一**證過真機冠軍級落地的；(2) action-WM 是熱點但仍卡在 raw-camera gap；(1) pure gen 在「能不能生對外觀」之上，動力學一律外接物理。
-
 ```mermaid
-flowchart LR
-    R1["(1) Pure gen 外觀<br/>Cosmos / NeRF / 3DGS"] -->|"視覺 augmentation 餵感知"| GAP1["卡點：metric-scale 不可信<br/>動力學一律外接物理"]
-    R2["(2) Action-WM latent<br/>Dream to Fly"] -->|"latent imagination 訓 policy"| GAP2["卡點：raw-camera gap<br/>真機=HIL+rendered"]
-    R3["(3) Sim-augmented 動力學<br/>Aerial Gym / Swift"] -->|"dynamics fidelity + DR + 殘差"| WIN["唯一證過真機冠軍級落地"]
+flowchart TD
+    Q{"怎麼處理定調圖裡<br/>那條『轉移（動力學）』邊？"}
+    Q -->|"不碰：不閉環、只生外觀"| R1["(1) 純生成外觀<br/>Cosmos / NeRF / 3DGS"]
+    Q -->|"學起來：在 latent 自己學轉移"| R2["(2) Action-WM<br/>Dream to Fly（DreamerV3）"]
+    Q -->|"交給物理：sim 算轉移"| R3["(3) Sim-augmented<br/>Aerial Gym / Flightmare + Swift"]
+    R1 --> G1["只能做感知 pre-train<br/>卡點：metric-scale 不可信"]
+    R2 --> G2["能訓 policy，但動力學是學來的<br/>卡點：raw-camera gap，真機僅 HIL+rendered"]
+    R3 --> W["唯一證過真機冠軍級落地<br/>dynamics fidelity + DR + 小殘差"]
+    classDef ok fill:#e6f4ea,stroke:#34a853,color:#202124
+    classDef warn fill:#fff4e5,stroke:#f9ab00,color:#202124
+    classDef stop fill:#fce8e6,stroke:#ea4335,color:#202124
+    class R3,W ok
+    class R2,G2 warn
+    class R1,G1 stop
 ```
-*圖：三條子路線的成熟度階梯 —— 只有 (3) 真正落地，(1)(2) 各卡一道 gap*
+*圖：三條子路線＝對定調圖那條「轉移（動力學）邊」的三種處理 —— 交給物理 (3) 才落地、學進 latent (2) 卡 raw-camera gap、不碰只生外觀 (1) 只能做感知；成熟度 (3) > (2) > (1)。*
+
+→ 所以問題收斂成一個：**(3) 要落地，那條動力學邊到底「什麼必須真、什麼可以學」？** 正是下一節契約要回答的。
 
 ## Sim-to-real 契約：什麼必須真、什麼可以學
 
