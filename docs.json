@@ -180,7 +180,10 @@
             "group": "Aerial Sim",
             "pages": [
               "use-cases/aerial-sim/overview.md",
-              "use-cases/aerial-sim/champion-level-drone-racing.md"
+              "use-cases/aerial-sim/aerial-sim-stack.md",
+              "use-cases/aerial-sim/champion-level-drone-racing.md",
+              "use-cases/aerial-sim/dream-to-fly.md",
+              "use-cases/aerial-sim/generative-aerial-data.md"
             ]
           },
           {
@@ -384,6 +387,7 @@
             "pages": [
               "bridge-to-spatial/overview.md",
               "bridge-to-spatial/3d-aware-video-gen.md",
+              "bridge-to-spatial/aerial-embodiment.md",
               "bridge-to-spatial/nerf-3dgs-meet-world-model.md",
               "bridge-to-spatial/spatial-controllability.md"
             ]
