@@ -1,6 +1,6 @@
-# Use Case: Autonomous Driving Sim
+# 使用案例：自動駕駛模擬
 
-> 閉環駕駛模擬 —— 沒有它就沒有 long-tail 場景的安全驗證。而駕駛剛好把本手冊命題演成一套清楚的**三方分工**：**重建給外觀（sensor-faithful）、生成給長尾多樣性、物理+反應式 agent 給動力學**。三者各管一塊，誰越界誰出事。
+> 閉環駕駛模擬 —— 沒有它就沒有長尾場景的安全驗證。而駕駛剛好把本手冊命題演成一套清楚的**三方分工**：**重建給外觀（感測保真）、生成給長尾多樣性、物理+反應式 agent 給動力學**。三者各管一塊，誰越界誰出事。
 
 ```mermaid
 flowchart TD
@@ -37,7 +37,7 @@ flowchart TD
 
 開環 metric 會騙人——這是 [閉環，否則白搭](./closed-loop-or-bust.md) 整篇的主題：① open-loop nuScenes 規劃可被「只吃 ego-status 的 MLP」刷穿（量的是模仿不是駕駛）；② 即使閉環，agent 若非反應式（IDM 太被動）仍會高估 planner。**NeuroNCAP** 把命題端到端兜起來：重建外觀 + 物理碰撞情境 + 閉環，證實「開環好 ≠ 閉環安全」。
 
-## Anchor 系統
+## 錨點系統
 
 | 系統 | 重點 | 解構 / 來源 |
 |---|---|---|
@@ -46,18 +46,18 @@ flowchart TD
 | UniSim / NeuRAD / Street Gaussians | 真實 log 重建成可重模擬場景（cam+LiDAR、metric） | [神經重建模擬](./neural-reconstruction-sim.md) |
 | NeuroNCAP / DriveArena | 閉環驗證（重建式 / 生成式） | [閉環，否則白搭](./closed-loop-or-bust.md) |
 
-## 本區 Dissections
+## 本區解構
 
 - [生成式駕駛世界模型](./driving-world-models.md) — GAIA-2 / Cosmos-Drive / Vista：控制契約、VALIDATED-增廣 vs DEMO-閉環
 - [神經重建模擬](./neural-reconstruction-sim.md) — UniSim / NeuRAD / Street Gaussians：感測保真的 real2sim，及「只能重渲 log 看過的」限制
 - [閉環，否則白搭](./closed-loop-or-bust.md) — 開環陷阱、反應式 agent、NeuroNCAP 端到端證據
 
-## 與 sister handbook 的對應
+## 與姊妹手冊的對應
 
 駕駛 WM 是通用 video-WM 的 embodiment 鏡像（同樣 action-conditioning + long-horizon + compounding-error），但 AV 多了硬的感測/metric/反應性約束。對接 [Spatial-Handbook 駕駛 embodiment](https://github.com/sou350121/Spatial-Intelligence-Handbook/tree/main/embodiments/driving)。資料集錨點：nuScenes（開環陷阱展品）、Waymo Open、nuPlan（閉環 + 反應式 agent benchmark）。
 
 ## 未來前沿
 
 - **生成式閉環驗證**：把生成 WM 當 AV stack 的*評測器*仍不可信（低 FID/FVD 可掩蓋安全關鍵幻覺）；DriveArena 是起點。
-- **混合 production 路線**：重建（外觀）+ 顯式動力學/反應式 agent（物理）+ 生成（長尾）的三方縫合，是落地形態。
+- **混合生產路線**：重建（外觀）+ 顯式動力學/反應式 agent（物理）+ 生成（長尾）的三方縫合，是落地形態。
 - **反應性沒有 ontology 槽**：5 軸目前無「反應性」軸，是個 taxonomy 缺口。

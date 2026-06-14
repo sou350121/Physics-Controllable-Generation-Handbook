@@ -4,14 +4,14 @@
 
 > **引用區**：GAIA-1 [arXiv 2309.17080](https://arxiv.org/abs/2309.17080) · GAIA-2 [arXiv 2503.20523](https://arxiv.org/abs/2503.20523) · Vista [arXiv 2405.17398](https://arxiv.org/abs/2405.17398) · DriveDreamer-2 [arXiv 2403.06845](https://arxiv.org/abs/2403.06845) · GenAD [arXiv 2403.09630](https://arxiv.org/abs/2403.09630) · MagicDrive [arXiv 2310.02601](https://arxiv.org/abs/2310.02601) · Cosmos-Drive-Dreams [arXiv 2506.09042](https://arxiv.org/abs/2506.09042)
 >
-> **為什麼進名單**：駕駛是「生成式世界模型」**唯一一個控制契約已經收斂**的 domain —— 整條賽道五年內從各說各話收斂到同一組條件（**3D-box + HDMap/road layout + ego-action + text(天氣/時間)**）。對 AV practitioner，這篇要回答的不是「哪個模型 FVD 低」，而是兩個工程決策：**(a) 我能餵什麼進去、拿什麼出來（controllability contract）**；**(b) 它的數字是「下游驗證過的增益」還是「論文裡的好看 demo」（VALIDATED vs DEMO）**。本手冊的乾淨命題在這個 domain 最鋒利：**幾何由 HDMap/LiDAR 物理錨定，生成模型嚴格只負責外觀（appearance）** —— 這正是 `injection=data-only` 為何在駕駛資料增廣上能 work、卻不能拿來做閉環安全驗證的根因。
+> **為什麼進名單**：駕駛是「生成式世界模型」**唯一一個控制契約已經收斂**的領域 —— 整條賽道五年內從各說各話收斂到同一組條件（**3D-box + HDMap/road layout + ego-action + text(天氣/時間)**）。對 AV practitioner，這篇要回答的不是「哪個模型 FVD 低」，而是兩個工程決策：**(a) 我能餵什麼進去、拿什麼出來（可控性契約）**；**(b) 它的數字是「下游驗證過的增益」還是「論文裡的好看 demo」（VALIDATED vs DEMO）**。本手冊的乾淨命題在這個領域最鋒利：**幾何由 HDMap/LiDAR 物理錨定，生成模型嚴格只負責外觀（appearance）** —— 這正是 `injection=data-only` 為何在駕駛資料增廣上能奏效、卻不能拿來做閉環安全驗證的根因。
 
 ---
 
-## 1. TL;DR
+## 1. 一句話總結
 
-- **可控性已收斂**。GAIA-2、Cosmos-Drive、DriveDreamer-2、MagicDrive 各自獨立演化，卻全部落到同一組條件介面：**3D agent boxes（位置/朝向/尺寸/類別）+ HDMap/road layout（車道/路型/限速）+ ego-action（speed/steering curvature 或 trajectory）+ text（天氣/時間）**。這不是巧合 —— 是駕駛 domain 的幾何約束逼出來的均衡。
-- **沒有一個是「自身可信的閉環驗證 harness」**。所有公開系統都是 **open-loop 預測** 或 **action-conditioned rollout**（餵動作→生成下一段）。GAIA-2 作者把後者**描述成**「閉環＝迭代生成幀」，但這是 rollout 機制、**不是一個經過驗證的 evaluation harness**（沒有公開的 policy-in-the-loop 誤差校準）→ 標記 **UNVERIFIED 閉環宣稱**。
+- **可控性已收斂**。GAIA-2、Cosmos-Drive、DriveDreamer-2、MagicDrive 各自獨立演化，卻全部落到同一組條件介面：**3D agent boxes（位置/朝向/尺寸/類別）+ HDMap/road layout（車道/路型/限速）+ ego-action（speed/steering curvature 或 trajectory）+ text（天氣/時間）**。這不是巧合 —— 是駕駛領域的幾何約束逼出來的均衡。
+- **沒有一個是「自身可信的閉環驗證 harness」**。所有公開系統都是 **open-loop 預測** 或 **action-conditioned rollout**（餵動作→生成下一段）。GAIA-2 作者把後者**描述成**「閉環＝迭代生成幀」，但這是 rollout 機制、**不是一個經過驗證的評估 harness**（沒有公開的 policy-in-the-loop 誤差校準）→ 標記 **UNVERIFIED 閉環宣稱**。
 - **VALIDATED 與 DEMO 是兩種完全不同的可信度等級**。⚡ **VALIDATED = 拿生成資料做下游增廣，量到 mAP/F-score 漲**（Cosmos-Drive +6.0 F-score 3D-lane、MagicDrive nuScenes mAP 20.85、DriveDreamer-2 改善 3D 偵測+追蹤）。❌ **DEMO = 拿來做閉環安全驗證**（碰撞瞬間是「畫出來」不是「算出來」，pixel realism ≠ behavior realism）。**把 DEMO 級當 VALIDATED 用，是這個領域最貴的工程誤判。**
 - **物理錨定程度決定可信度**。Cosmos-Drive 用 **HDMap + LiDAR-depth** 把幾何物理錨定，生成模型只補外觀 → 本手冊命題最乾淨的 VALIDATED-增廣案。純 `data-only`（GAIA / GenAD）在分布外（罕見物體、劇烈轉向）就崩。
 - **NO-DUP**：**GAIA-2 內部架構已有 foundation 解構** → [`../../foundations/video-world-models/gaia-2.md`](../../foundations/video-world-models/gaia-2.md)；**Cosmos 引擎內部** → [`../../foundations/foundation-physics-models/cosmos-wfm.md`](../../foundations/foundation-physics-models/cosmos-wfm.md)。本篇是 **use-case 橫向視角**：控制契約收斂 + VALIDATED/DEMO 切分，不重拆它們的內部。
@@ -70,7 +70,7 @@ flowchart TD
 | **語意** | weather、time-of-day、country | **弱**（純外觀調制） | 全部 |
 | **相機** | intrinsics / extrinsics、camera pose | **強**（幾何投影約束） | GAIA-2（≤5 環景）、Cosmos-Drive（多視角） |
 
-**為什麼會收斂到這四根？** 駕駛 domain 的下游任務（3D 偵測、車道、追蹤、規劃）**全部吃 3D 幾何**。如果生成資料的幾何不可控（純 text-to-video），下游模型無法用 —— 因為沒有對齊的 GT label。**所以幾何必須「以 condition 形式錨定進去」，標籤才能跟著生成資料一起產出**。這是契約收斂的根本驅動力，也是 `control=layout` 在駕駛 domain 幾乎強制的原因（見 [`../../cheat-sheet/ontology.md`](../../cheat-sheet/ontology.md) Axis 3 的 `layout` / `trajectory` 條目，標註「GAIA-2 / Cosmos-Drive 主用」）。
+**為什麼會收斂到這四根？** 駕駛領域的下游任務（3D 偵測、車道、追蹤、規劃）**全部吃 3D 幾何**。如果生成資料的幾何不可控（純 text-to-video），下游模型無法用 —— 因為沒有對齊的 GT label。**所以幾何必須「以 condition 形式錨定進去」，標籤才能跟著生成資料一起產出**。這是契約收斂的根本驅動力，也是 `control=layout` 在駕駛領域幾乎強制的原因（見 [`../../cheat-sheet/ontology.md`](../../cheat-sheet/ontology.md) Axis 3 的 `layout` / `trajectory` 條目，標註「GAIA-2 / Cosmos-Drive 主用」）。
 
 ---
 
@@ -100,7 +100,7 @@ flowchart TD
 
 **這節是整篇的工程重心。** AV practitioner 唯一需要記住的切分：**生成式駕駛 WM 在「資料增廣」上是 production-grade，在「閉環安全驗證」上還是 demo-grade。** 兩者差一個數量級的可信度。
 
-### ⚡ VALIDATED —— 資料增廣有下游增益（可進 production data pipeline）
+### ⚡ VALIDATED —— 資料增廣有下游增益（可進生產資料管線）
 
 | 證據 | 系統 | 數字（author-reported） | 為什麼可信 |
 |---|---|---|---|
@@ -110,7 +110,7 @@ flowchart TD
 | 多視角 3D 偵測 + BEV | MagicDrive | nuScenes **mAP 20.85、vehicle mIoU 31.05** | 3-層幾何控制（3D-box + road-map）→ 標籤可控 |
 | 3D 偵測 + 追蹤 | DriveDreamer-2 | 改善（論文報告，未給單一 headline 數） | HDMap-conditioned，幾何錨定 |
 
-**VALIDATED 為何成立 —— 一句話：因為幾何不是生成出來的，是錨定進去的。** Cosmos-Drive 是最乾淨的例子：HDMap 給 road geometry、LiDAR-depth 給 3D 結構，**生成模型嚴格只負責「這條已知幾何的車道，在霧天傍晚長什麼樣」**。所以產出的影片**自帶對齊的 GT label**（因為 label 就是那個 HDMap/box）。下游偵測器拿這種「外觀多樣、幾何精準」的資料訓練，自然漲點。**這對映 `injection=data-only` 在駕駛的正確用法：物理（幾何）走 conditioning 錨定，外觀走 data-only 生成。**
+**VALIDATED 為何成立 —— 一句話：因為幾何不是生成出來的，是錨定進去的。** Cosmos-Drive 是最乾淨的例子：HDMap 給道路幾何、LiDAR-depth 給 3D 結構，**生成模型嚴格只負責「這條已知幾何的車道，在霧天傍晚長什麼樣」**。所以產出的影片**自帶對齊的 GT label**（因為 label 就是那個 HDMap/box）。下游偵測器拿這種「外觀多樣、幾何精準」的資料訓練，自然漲點。**這對映 `injection=data-only` 在駕駛的正確用法：物理（幾何）走 conditioning 錨定，外觀走 data-only 生成。**
 
 ### ❌ DEMO —— 閉環安全驗證還不可信（不可進 safety case）
 
@@ -125,7 +125,7 @@ flowchart TD
 **DEMO 為何不可信 —— 一句話：閉環需要「對動作的因果正確反應」，但 `data-only` 只學到「看起來對」。** 閉環安全驗證的本質是：policy 做動作 → 世界**正確地**反應（含碰撞、接觸、長尾因果）→ 驗證 policy 安全。生成式 WM 在前兩步就斷了：(1) 沒有經驗證的 policy-in-loop harness（GAIA-2 的「閉環」是 rollout，**UNVERIFIED**）；(2) 反應是「畫出來的外觀」不是「算出來的物理」。**所以拿生成 WM 做閉環 safety case，會把「視覺合理」誤當「行為安全」** —— 這是 [`./closed-loop-or-bust.md`](./closed-loop-or-bust.md) 反覆論證的核心警告。
 
 > **一句話契約規則給 AV practitioner**：
-> **生成 WM 可以告訴你「霧天傍晚那輛 bus 長怎樣」（VALIDATED 增廣），但不能告訴你「你急剎時它會不會撞上來」（DEMO 閉環）。** 前者進 data pipeline，後者必須回到 neural reconstruction / 可微 sim（見 §6）。
+> **生成 WM 可以告訴你「霧天傍晚那輛 bus 長怎樣」（VALIDATED 增廣），但不能告訴你「你急剎時它會不會撞上來」（DEMO 閉環）。** 前者進資料管線，後者必須回到 neural reconstruction / 可微 sim（見 §6）。
 
 ---
 
@@ -141,7 +141,7 @@ flowchart TD
 | **Axis 4 Temporal** | `autoregressive`（GAIA-1）/ `clip-parallel`（GAIA-2/Cosmos）| 一幀餵下一幀（drift 累積）或整段 clip（長度受限、跨 clip 銜接難）。**沒有任一是經驗證的閉環時序 harness**。 |
 | **Axis 5 Domain** | `driving` | 非 `generalist`（ontology Check 9c 白名單只給 Sora/Veo/Cosmos-Predict）。駕駛專屬幾何先驗是整個領域存在的理由。 |
 
-**Cross-axis 註記（依 ontology Check 9b/descriptive notes）：**
+**跨軸註記（依 ontology Check 9b/descriptive notes）：**
 - **Control × Domain**：ontology 明說「`layout`/`trajectory` 通常 `driving`」—— 本領域正是該規則的 canonical 例證。
 - **Injection × Temporal**：`data-only` + `autoregressive` 是合法但弱組合（Check 9b 矩陣 `pixel-video × data-only` = ✓）；弱在 long-horizon drift（§4 DEMO）。
 - **無 `hard-constraint`**：駕駛 WM **沒有**在像素空間做 exact constraint（ontology Check 9b 標 `pixel-video × hard-constraint` = ✗ too high-dim）—— 這正是物理錨定走 conditioning 而非 injection 的原因。
@@ -160,7 +160,7 @@ flowchart TD
 
 - **× foundation 內部（NO-DUP 邊界）**：GAIA-2 latent-diffusion 架構、conditioning 細節 → [`../../foundations/video-world-models/gaia-2.md`](../../foundations/video-world-models/gaia-2.md)；Cosmos WFM 引擎（tokenizer/diffusion 底座/ControlNet 機制）→ [`../../foundations/foundation-physics-models/cosmos-wfm.md`](../../foundations/foundation-physics-models/cosmos-wfm.md)。**本篇只做橫向 use-case 視角，不重拆它們內部。**
 
-- **× Spatial 駕駛 embodiment（cross-handbook）**：sister Spatial-Intelligence-Handbook 的駕駛章從 **embodiment/感知** 視角切同一批系統 —— 兩冊互補：本冊問「生成什麼、控制契約、增廣是否 VALIDATED」；Spatial 問「駕駛 agent 怎麼感知 + 表徵 3D 世界」。對位閱讀見 <https://github.com/sou350121/Spatial-Intelligence-Handbook/tree/main/embodiments/driving>。
+- **× Spatial 駕駛 embodiment（cross-handbook）**：姊妹手冊 Spatial-Intelligence-Handbook 的駕駛章從 **embodiment/感知** 視角切同一批系統 —— 兩冊互補：本冊問「生成什麼、控制契約、增廣是否 VALIDATED」；Spatial 問「駕駛 agent 怎麼感知 + 表徵 3D 世界」。對位閱讀見 <https://github.com/sou350121/Spatial-Intelligence-Handbook/tree/main/embodiments/driving>。
 
 ---
 
@@ -185,16 +185,16 @@ flowchart TD
 
 ## §8 踩坑日誌
 
-> 來源：(a) 作者 paper 自承 limitation、(b) 公開 demo 可觀察破綻、(c) 數字解讀陷阱。Severity：H=阻止用於該用途 / M=工程可繞 / L=cosmetic。**所有 FID/FVD/mAP/F-score 皆 author-reported；閉環宣稱 beyond UNVERIFIED。**
+> 來源：(a) 作者 paper 自承 limitation、(b) 公開 demo 可觀察破綻、(c) 數字解讀陷阱。嚴重度：H=阻止用於該用途 / M=工程可繞 / L=外觀瑕疵。**所有 FID/FVD/mAP/F-score 皆 author-reported；閉環宣稱 beyond UNVERIFIED。**
 
-| # | 來源 | 摘錄 / 觀察 | Severity | Workaround |
+| # | 來源 | 摘錄 / 觀察 | 嚴重度 | 繞法 |
 |---|---|---|---|---|
 | §8.1 | GAIA-2 作者宣稱 | 「閉環＝迭代生成幀」**= action-conditioned rollout，非經驗證 eval harness**（UNVERIFIED） | **H** | 閉環安全驗證回到 neural reconstruction + 可微 sim（[closed-loop-or-bust](./closed-loop-or-bust.md)）；生成 WM 僅做增廣 |
 | §8.2 | 全領域 `injection=data-only` | 碰撞瞬間是「畫出來」非「算出來」—— pixel realism ≠ contact dynamics | **H** | 不可做 fine-grained collision/safety validation；碰撞物理交給 sim-in-loop（CARLA/Genesis）或重建端 |
 | §8.3 | **數字解讀陷阱（最常見誤判）** | FID 11.2 / FVD 漂亮 **≠** 下游偵測器更準。**生成品質 metric 與下游任務增益是兩回事** | **H** | 採購/選型只認 ⚡ VALIDATED（下游 mAP/F-score 漲過）；不要用 FID/FVD 拍板資料增廣價值 |
 | §8.4 | GAIA-2 作者自承 | long-horizon/複雜場景「偶有時序或語義不一致」 | M | 限制 rollout 長度；複雜場景用重建 replay 補；跨 clip 銜接加 consistency 後處理 |
 | §8.5 | GAIA / GenAD（`data-only`） | 罕見物體（動物/施工錐/異常車型）OOD 時 identity 漂 | M | 用 structured 3D-box/layout conditioning 注入幾何；不依賴純 text 生成長尾 |
-| §8.6 | Cosmos-Drive 資產依賴 | +6.0 F-score 等增益**前提是有 HDMap + LiDAR-depth 餵進去** | M | 沒有高品質 HDMap/LiDAR 資產時增益不成立 —— 先確認重建端資產 pipeline 就緒 |
+| §8.6 | Cosmos-Drive 資產依賴 | +6.0 F-score 等增益**前提是有 HDMap + LiDAR-depth 餵進去** | M | 沒有高品質 HDMap/LiDAR 資產時增益不成立 —— 先確認重建端資產管線就緒 |
 | §8.7 | DriveDreamer-2 LLM 軌跡 | LLM 生成 agent 軌跡有**幻覺**風險（不合物理/路權的軌跡） | M | 軌跡過 HDMap/road-graph 合法性檢查再餵生成；不盲信 LLM 輸出 |
 | §8.8 | Vista / GenAD = open-loop predictor | 「預測下一幀」≠「對 policy 動作的因果反應」 | M | 不可當閉環反饋環節；只用於 open-loop 預測品質 / 域遷移評估 |
 | §8.9 | MagicDrive 單幀 | 量到 nuScenes mAP 20.85 但**是單幀街景圖**，無時序 rollout | L | 用於影像級 BEV/偵測增廣 OK；長程時序場景需配影片級系統 |

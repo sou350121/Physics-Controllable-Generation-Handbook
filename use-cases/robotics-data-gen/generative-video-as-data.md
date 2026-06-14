@@ -10,7 +10,7 @@
 
 ---
 
-## 1. TL;DR（核心張力：影片有了，動作是「猜」出來的）
+## 1. 一句話總結（核心張力：影片有了，動作是「猜」出來的）
 
 **生成影片→真機 policy 在 2026 已經是 VALIDATED，不再是 demo——但這個勝利的形狀，反過來給命題打了兩個洞。**
 
@@ -118,7 +118,7 @@ flowchart LR
 ### ⚡ VALIDATED（真機閉環，非模擬器）
 
 - **DreamGen 真機增益（3 embodiment, [2505.12705](https://arxiv.org/html/2505.12705v1)）**：GR1 37%→**46.4%**、Franka 23%→**37%**、SO-100 21%→**45.5%**。這是把 neural trajectories 喂進 policy 後的真機 success rate，跨三種硬體一致為正。
-- **行為/環境泛化**：baseline（GR00T N1 僅 pick-place）在新行為 **0%**；DreamGen **43.2%（seen 環境）/ 28.5%（unseen 環境）**。從單任務種子長出 **22 行為 / 10 未見環境**。
+- **行為/環境泛化**：基準（GR00T N1 僅 pick-place）在新行為 **0%**；DreamGen **43.2%（seen 環境）/ 28.5%（unseen 環境）**。從單任務種子長出 **22 行為 / 10 未見環境**。
 - **Cosmos Transfer（sim-GT 保留）**：X-Mobility 在 hybrid（sim + Cosmos）資料上**勝過 sim-only**（[NVIDIA blog](https://www.edge-ai-vision.com/2025/08/r%C2%B2d%C2%B2-boost-robot-training-with-world-foundation-models-and-workflows-from-nvidia-research/)）。意義：保留物理、只生成外觀的增廣，是 sim2real 視覺 gap 的有效解。
 
 ### ❌ 物理保真度瓶頸（不會因 scale 自動解）
@@ -187,7 +187,7 @@ flowchart LR
 - WorldModelBench — arXiv [2502.20694](https://arxiv.org/abs/2502.20694)（instruction following + 違反物理幻覺）
 - From Generative Engines to Actionable Simulators — arXiv [2601.15533](https://arxiv.org/abs/2601.15533)（核心 blocker 框定）
 
-**Cross-links（同倉相對）**
+**跨檔連結（同倉相對）**
 - [autonomous-demo-gen.md](./autonomous-demo-gen.md)（forward-ref）· [physical-intelligence-pi0.md](./physical-intelligence-pi0.md) · [overview.md](./overview.md)
 - [../../foundations/foundation-physics-models/cosmos-wfm.md](../../foundations/foundation-physics-models/cosmos-wfm.md) · [../../foundations/latent-world-models/genie-2.md](../../foundations/latent-world-models/genie-2.md)
 - [../../bridge-to-vla/generative-data-for-vla.md](../../bridge-to-vla/generative-data-for-vla.md) · [../../cheat-sheet/ontology.md](../../cheat-sheet/ontology.md)
@@ -196,35 +196,35 @@ flowchart LR
 
 ## §8 踩坑日誌
 
-> Severity 標尺：🔴 blocker · 🟠 major · 🟡 minor。
+> 嚴重度標尺：🔴 blocker · 🟠 major · 🟡 minor。
 
 ### §8.1 🔴 動作是「猜」的，不是觀測的（[2505.12705](https://arxiv.org/html/2505.12705v1)）
 
-自由生成影片無 native action；pseudo-action 由 IDM/LAPA 從相鄰幀逆解。**根因**：世界模型只 decode 像素，不吐 action。**後果**：影片的視覺誤差被翻譯成「錯誤但自洽」的 action label，policy 學到自洽的錯。**Workaround**：能用 sim-GT（Cosmos Transfer）就別回推；非回推不可時，先過 physics 篩再餵 IDM（見 §8.3）。
+自由生成影片無 native action；pseudo-action 由 IDM/LAPA 從相鄰幀逆解。**根因**：世界模型只 decode 像素，不吐 action。**後果**：影片的視覺誤差被翻譯成「錯誤但自洽」的 action label，policy 學到自洽的錯。**繞法**：能用 sim-GT（Cosmos Transfer）就別回推；非回推不可時，先過 physics 篩再餵 IDM（見 §8.3）。
 
 ### §8.2 🔴 瓶頸在生成端的物理合理性，不在回推頭（[2505.12705](https://arxiv.org/html/2505.12705v1)）
 
-DreamGen 提 DreamGen Bench（Instruction Following + Physics Alignment via VideoCon-Physics）正因主要 failure 是**影片物理崩**，非 IDM 解錯。**後果**：升級回推頭 ROI 低，錢要花在生成保真度。**Workaround**：把生成器評測（DreamGen Bench / World Consistency Score）擺在資料管線**最前面**當閘門，不要等下游 policy 失敗才回頭查。
+DreamGen 提 DreamGen Bench（Instruction Following + Physics Alignment via VideoCon-Physics）正因主要 failure 是**影片物理崩**，非 IDM 解錯。**後果**：升級回推頭 ROI 低，錢要花在生成保真度。**繞法**：把生成器評測（DreamGen Bench / World Consistency Score）擺在資料管線**最前面**當閘門，不要等下游 policy 失敗才回頭查。
 
 ### §8.3 🔴 標準感知 metric 偵測不到致命物理錯誤（[2601.17067](https://arxiv.org/abs/2601.17067)）
 
-夾爪穿過物件、物件漂浮/憑空出現，FVD/PSNR 看不出來，卻對動作回推致命。**根因**：感知 metric 量「像不像」，不量「物理對不對」。**Workaround**：上 **World Consistency Score**（物件恆存 / 關係穩定 / 因果）做幀級過濾，丟掉穿模幀再回推；別讓穿模幀進 IDM。
+夾爪穿過物件、物件漂浮/憑空出現，FVD/PSNR 看不出來，卻對動作回推致命。**根因**：感知 metric 量「像不像」，不量「物理對不對」。**繞法**：上 **World Consistency Score**（物件恆存 / 關係穩定 / 因果）做幀級過濾，丟掉穿模幀再回推；別讓穿模幀進 IDM。
 
 ### §8.4 🟠 auto-evaluator 自己會幻覺（[2505.12705](https://arxiv.org/html/2505.12705v1)）
 
-DreamGen 明說 auto-evaluator「評物理真實性時偶爾幻覺」。**後果**：自動化大規模生成資料時，連「物理對不對」的裁判都不可靠 → 錯誤資料可能整批漏過。**Workaround**：對 Physics Alignment 判定保留人工抽檢；對高風險（contact-rich）任務不要全自動信任 auto-evaluator。
+DreamGen 明說 auto-evaluator「評物理真實性時偶爾幻覺」。**後果**：自動化大規模生成資料時，連「物理對不對」的裁判都不可靠 → 錯誤資料可能整批漏過。**繞法**：對 Physics Alignment 判定保留人工抽檢；對高風險（contact-rich）任務不要全自動信任 auto-evaluator。
 
 ### §8.5 🟠 需人工給 initial frame + 任務偏簡單（[2505.12705](https://arxiv.org/html/2505.12705v1)）
 
-DreamGen 不是全自動 text→trajectory：每段生成要**人工給 initial frame**，且成功任務偏簡單。**後果**：可擴展性與「自動示範生成」的願景有落差。**Workaround**：把 initial frame 來源（真機快照 / sim render）納入管線設計成本；複雜 long-horizon 任務先別期待純生成覆蓋。
+DreamGen 不是全自動 text→trajectory：每段生成要**人工給 initial frame**，且成功任務偏簡單。**後果**：可擴展性與「自動示範生成」的願景有落差。**繞法**：把 initial frame 來源（真機快照 / sim render）納入管線設計成本；複雜 long-horizon 任務先別期待純生成覆蓋。
 
 ### §8.6 🟠 生成成本不是免費午餐（[2505.12705](https://arxiv.org/html/2505.12705v1)）
 
-240k RoboCasa 樣本 = **54 小時 × 1500 顆 L40**。**後果**：「生成資料比收真實 demo 便宜」不是無條件成立，要算 GPU 帳。**Workaround**：做 ROI 對比時把生成 compute 與「同預算多收真實 teleop」放天平兩端（連 [physical-intelligence-pi0.md](./physical-intelligence-pi0.md) 的 ground-truth 比法）。
+240k RoboCasa 樣本 = **54 小時 × 1500 顆 L40**。**後果**：「生成資料比收真實 demo 便宜」不是無條件成立，要算 GPU 帳。**繞法**：做 ROI 對比時把生成 compute 與「同預算多收真實 teleop」放天平兩端（連 [physical-intelligence-pi0.md](./physical-intelligence-pi0.md) 的 ground-truth 比法）。
 
 ### §8.7 🟡 命題最純的反例是 Genie：動作未錨定任何 embodiment（[2402.15391](https://arxiv.org/abs/2402.15391)）
 
-Genie 從 unlabeled 網路影片學 latent action，生成 action-controllable 世界**但無 GT 動作**，latent action 未對應任何真實機器人。**後果**：看起來「可控」，但那個「動作」拿不到真機去用。**Workaround**：把 Genie 類 latent-action 世界模型當「表徵 / 多樣性來源」，不要當「可直接部署的 action 來源」；真機落地仍需 grounding（IDM 對齊真實 action space，或回到 sim-GT / 真人）。
+Genie 從 unlabeled 網路影片學 latent action，生成 action-controllable 世界**但無 GT 動作**，latent action 未對應任何真實機器人。**後果**：看起來「可控」，但那個「動作」拿不到真機去用。**繞法**：把 Genie 類 latent-action 世界模型當「表徵 / 多樣性來源」，不要當「可直接部署的 action 來源」；真機落地仍需 grounding（IDM 對齊真實 action space，或回到 sim-GT / 真人）。
 
 ---
 

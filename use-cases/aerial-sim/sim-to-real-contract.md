@@ -22,7 +22,7 @@
 
 **5 軸定位**：它坐在 `injection = sim-in-loop-train` 與真機之間的**遷移邊界**上；`domain = robotics`（aerial）、`control = action / trajectory`、`temporal = streaming`。本手冊核心命題是「外觀靠生成、動力學靠物理」（見 [overview](./overview.md)）——這篇就是「**動力學那一半要真到什麼程度**」的精算，是該命題在「部署」這一刻的落地。
 
-**在三冊裡的分工**：動力學側的 sim-to-real 由本倉（generation 端）負責；它**刻意把感知忠實度脫鉤**出去（§5），指向 [Spatial-Intelligence-Handbook](https://github.com/sou350121/Spatial-Intelligence-Handbook) 的 VIO / 狀態估計側；policy / action 的學習側指向 VLA-Handbook。所以這篇是「三冊在無人機 sim-to-real 上的**動力學分工書**」，也是 [bridge-to-spatial/aerial-embodiment](../../bridge-to-spatial/aerial-embodiment.md) 資料契約的動力學前提。
+**在三冊裡的分工**：動力學側的 sim-to-real 由本倉（generation 端）負責；它**刻意把感知保真度脫鉤**出去（§5），指向 [Spatial-Intelligence-Handbook](https://github.com/sou350121/Spatial-Intelligence-Handbook) 的 VIO / 狀態估計側；policy / action 的學習側指向 VLA-Handbook。所以這篇是「三冊在無人機 sim-to-real 上的**動力學分工書**」，也是 [bridge-to-spatial/aerial-embodiment](../../bridge-to-spatial/aerial-embodiment.md) 資料契約的動力學前提。
 
 **為什麼是 aerial-sim 最關鍵的一篇**：對做無人機的人，這是唯一一頁直接回答「我的 sim policy 會不會上機就掉」——它把模糊的「sim2real gap」收斂成一份**有優先序的契約**：thrust map = the key、你這台的延遲、控制器介面（必須真）｜ aero、量不準的參數、殘差（可以學）｜ 感知（脫鉤的另一條軸）。
 
@@ -31,10 +31,10 @@
 舊的經驗法則是：**好的標稱物理（nominal model）+ 忠實的 low-level controller + ~1 分鐘真機數據辨識出的小殘差，勝過重度 domain randomization。** 近年 *Science Robotics* 與開源工程論文**大致支持**這條，但補了三個關鍵的修正：
 
 1. **「必須真」的東西是具體的兩項：thrust↔throttle 映射 + 你自己這台的延遲（actuation / 感知 latency）。** 不是「整個動力學」。SimpleFlight 把這條量化成「**SysID 可量參數、且不要對它們做 DR**，效果勝過加 DR」。
-2. **空氣動力學大多是『小殘差 + 隨機化包絡』，不是要你建高忠實度 aero 模型** —— 除非你的飛行器本身就是一張翅膀（撲翼/變形機）。NeuroBEM 量到：aero 在低速可忽略、**在高速/agile 才變成主要的模型缺陷**。
+2. **空氣動力學大多是『小殘差 + 隨機化包絡』，不是要你建高保真度 aero 模型** —— 除非你的飛行器本身就是一張翅膀（撲翼/變形機）。NeuroBEM 量到：aero 在低速可忽略、**在高速/agile 才變成主要的模型缺陷**。
 3. **有一條有原則的反例光譜（RAPTOR / Ferede / MAVEN）**：把『量不準的參數』randomize 得夠寬 + 配一個會在線上**隱式辨識**的 recurrent policy，可以**省掉 per-drone 的 system-ID**。所以「最小隨機化」不是唯一解——這是本篇 §6 的真實張力。
 
-外加一條獨立軸：**感知忠實度是另一回事**，跟動力學脫鉤，常常才是真正的瓶頸。
+外加一條獨立軸：**感知保真度是另一回事**，跟動力學脫鉤，常常才是真正的瓶頸。
 
 ```mermaid
 flowchart TD
@@ -61,9 +61,9 @@ Fei Gao 組這篇做的是**端到端 sensorimotor policy**：機載相機（分
 
 也就是：**真正要對的是 thrust↔throttle 那條執行路徑**。他們從真機飛行數據 **system-ID 出 actuation 延遲 `h` 與低通平均窗 `w`**，用 RK4 整進去；並直言「在消費級飛控上準確模擬飛控執行 + 螺旋槳力生成『far from trivial』」。
 
-**剩下沒建模的空氣動力學，他們不去建高忠實度模型，而是用『擾動 + 隨機化』兜住**：persistent perturbation forces（PF，持續擾動力）、response randomization（RR，乘性 actuator 噪聲、保持數十步）、response-parameter randomization（RPR，把辨識出的延遲再隨機化），再加相機內參 / 邊緣噪聲 / 感知延遲的隨機化。實測（已 fact-check 對上 arXiv 正文）：5 cm 餘隙、90° roll / 60° pitch、60° 傾斜縫 **96.7%（29/30）**、>100 次真飛、機載 Jetson Orin NX + PX4、分割推論 ~4 ms、訓練 ~1.5 h。
+**剩下沒建模的空氣動力學，他們不去建高保真度模型，而是用『擾動 + 隨機化』兜住**：persistent perturbation forces（PF，持續擾動力）、response randomization（RR，乘性 actuator 噪聲、保持數十步）、response-parameter randomization（RPR，把辨識出的延遲再隨機化），再加相機內參 / 邊緣噪聲 / 感知延遲的隨機化。實測（已 fact-check 對上 arXiv 正文）：5 cm 餘隙、90° roll / 60° pitch、60° 傾斜縫 **96.7%（29/30）**、>100 次真飛、機載 Jetson Orin NX + PX4、分割推論 ~4 ms、訓練 ~1.5 h。
 
-**一句話**：把 thrust map 與你自己的延遲量準，剩下的不模高忠實度 aero，用擾動力 + actuator 噪聲 + 感知延遲隨機化，就能把一個端到端視覺策略帶上真機。
+**一句話**：把 thrust map 與你自己的延遲量準，剩下的不模高保真度 aero，用擾動力 + actuator 噪聲 + 感知延遲隨機化，就能把一個端到端視覺策略帶上真機。
 
 ## 2. 為什麼 thrust map 是「the key」—— 執行路徑的物理（深入）
 
@@ -109,7 +109,7 @@ flowchart LR
 |---|---|---|---|
 | **執行（actuation）** | **thrust↔throttle 映射**、**你這台的 actuation 延遲** | 延遲值的隨機化包絡（RPR） | gap-flight（thrust map「the key」+ sysID 延遲）；§2 物理 |
 | **剛體動力學** | 質量 / 慣量 / 推力係數（**system-ID，別對已知量做 DR**） | 量不準的就 randomize 並讓策略推（見 §6） | **SimpleFlight（SysID 勝 DR，實測 DR 反而變差）**；Swift；RAPTOR |
-| **高階空氣動力學** | （一般**不需**高忠實度）；除非飛行器本身是翅膀 | rotor drag / blade flapping / induced：殘差（NeuroBEM/Swift kNN）或線上自適應（Neural-Fly）或擾動力包絡（gap-flight PF） | NeuroBEM（低速可忽略、高速才主導）；Neural-Fly；gap-flight |
+| **高階空氣動力學** | （一般**不需**高保真度）；除非飛行器本身是翅膀 | rotor drag / blade flapping / induced：殘差（NeuroBEM/Swift kNN）或線上自適應（Neural-Fly）或擾動力包絡（gap-flight PF） | NeuroBEM（低速可忽略、高速才主導）；Neural-Fly；gap-flight |
 | **低層控制器** | **建真實 low-level controller**（Betaflight/ESC/電壓），用 **CTBR** 介面 | —— | Swift；gap-flight；RAPTOR；Geles 都用 CTBR |
 | **感知（見 §5）** | 你**模不真**的模態放真實資料 | 能抽象 + 外觀隨機化的放 sim | 高速 in-the-wild；neuromorphic；Geles |
 
@@ -117,7 +117,7 @@ flowchart LR
 
 ## 5. 感知是另一條軸（跟動力學脫鉤）
 
-近年論文反覆顯示：**感知忠實度跟動力學忠實度是兩件事，而且感知常常才是綁住 sim-to-real 的那一條**。處理方式分兩種：
+近年論文反覆顯示：**感知保真度跟動力學保真度是兩件事，而且感知常常才是綁住 sim-to-real 的那一條**。處理方式分兩種：
 
 - **能抽象 + 隨機外觀就放 sim**：「高速 in-the-wild」把 NN 輸出設成**抽象的無碰撞軌跡**（不是原始馬達命令），對 sim-real 視覺差不敏感，純 sim + 外觀/幾何隨機化就**零樣本**飛進森林/建築（40 km/h）。更極端的 **Geles（RSS 2024）**：**像素直接→CTBR、完全不用狀態估計（無 SLAM/VIO/IMU 位姿）**，用 asymmetric actor-critic 訓、把閘門邊緣當感知抽象，agile 飛到 40 km/h / 2 g。**選一個對視覺 gap 魯棒的輸出抽象，是感知遷移的關鍵。**
 - **模不真的模態放真實資料**：neuromorphic 那篇把 event-camera 視覺**用真實 event 資料自監督**訓（event 統計難模真），控制才放 sim 用演化學——**「模得真的放 sim、模不真的放真實資料」的分裂策略**。
@@ -126,12 +126,12 @@ flowchart LR
 
 **那些 photoreal 模擬器（AirSim / CARLA-Air / Flightmare）落在這份契約的哪裡？**
 
-直接講結論：**它們是「感知軸」的工具，不是「動力學遷移」的工具。** 它們的賣點是 photoreal 渲染與場景（CARLA-Air 還多一塊空地一體的 `domain` 覆蓋），對應的是本節與 [aerial-sim-stack](./aerial-sim-stack.md) 三角的 **photoreal 那一極**；而它們的**飛行動力學是剛體 6-DoF、低忠實度**（AirSim 的 FastPhysics 無 rotor / blade-element / 馬達動態 / 風擾）——按本契約的 §2–§4，這正是**你最不該直接信、必須 system-ID、用 CTBR 藏起來、或乾脆換掉的那一塊**。所以它們**既不違反契約、也不滿足契約**：把「感知那一半」做好，「動力學那一半」留給你照 §2–§6 補。
+直接講結論：**它們是「感知軸」的工具，不是「動力學遷移」的工具。** 它們的賣點是 photoreal 渲染與場景（CARLA-Air 還多一塊空地一體的 `domain` 覆蓋），對應的是本節與 [aerial-sim-stack](./aerial-sim-stack.md) 三角的 **photoreal 那一極**；而它們的**飛行動力學是剛體 6-DoF、低保真度**（AirSim 的 FastPhysics 無 rotor / blade-element / 馬達動態 / 風擾）——按本契約的 §2–§4，這正是**你最不該直接信、必須 system-ID、用 CTBR 藏起來、或乾脆換掉的那一塊**。所以它們**既不違反契約、也不滿足契約**：把「感知那一半」做好，「動力學那一半」留給你照 §2–§6 補。
 
 正規用法是**把這兩軸拆開**：
 
 - **感知 / 外觀**：用 AirSim / CARLA-Air / Flightmare 出 photoreal 影像 + 多模態 +（CARLA-Air）城市車流背景 —— 滿足 §5。
-- **動力學**：**別用它們內建的剛體飛控做 aggressive sim-to-real**。換成高忠實度 FDM —— 這正是 [carla-air.md §自救 A2](./carla-air.md#自救如何補強--繞過鎖死) 寫的：用 AirSim 的 `ExternalPhysicsEngine` 把 RotorPy（或你的模型）當 FDM、每 tick `simSetKinematics` 推 state，外觀照用 CARLA、動力學換成物理。**這就是本手冊「外觀靠渲染、動力學靠物理」的字面落地。**
+- **動力學**：**別用它們內建的剛體飛控做 aggressive sim-to-real**。換成高保真度 FDM —— 這正是 [carla-air.md §自救 A2](./carla-air.md#自救如何補強--繞過鎖死) 寫的：用 AirSim 的 `ExternalPhysicsEngine` 把 RotorPy（或你的模型）當 FDM、每 tick `simSetKinematics` 推 state，外觀照用 CARLA、動力學換成物理。**這就是本手冊「外觀靠渲染、動力學靠物理」的字面落地。**
 
 它們也都用 CTBR / 標準介面（§4），所以接得上。完整解構見 [CARLA-Air](./carla-air.md) 與 [七套 sim 對比](./aerial-sim-stack.md)。
 
@@ -201,7 +201,7 @@ flowchart TD
 1. **動作介面用 CTBR**，並**建真實 low-level controller**（含 ESC/電壓）——先把難模的執行細節藏到控制器後面。
 2. **實測 thrust↔throttle 映射 + 你這台的 actuation/感知延遲**，system-ID 進 sim（別對這兩項做 DR）。**把電池電壓當 map 的輸入**（或飛行中補償），別用滿電的靜態 map 飛到沒電。
 3. **質量/慣量/推力係數能量就量**（system-ID）；**量不準的（或要跨多台）才 randomize**，並考慮用 recurrent policy 讓它線上推（RAPTOR 路線）。
-4. **空氣動力學別急著建高忠實度模型**：先用擾動力 + actuator 噪聲包絡（gap-flight），不夠再上殘差（Swift kNN / NeuroBEM）或線上自適應（Neural-Fly）。記得 aero 只在**高速/agile** 才主導。
+4. **空氣動力學別急著建高保真度模型**：先用擾動力 + actuator 噪聲包絡（gap-flight），不夠再上殘差（Swift kNN / NeuroBEM）或線上自適應（Neural-Fly）。記得 aero 只在**高速/agile** 才主導。
 5. **感知獨立處理**：選對視覺 gap 魯棒的輸出抽象 + 外觀隨機化；**模不真的感測模態（event/超聲波）放真實資料**。
 6. **用 model-based prior 當骨架**（informed reset / 安全層），別讓學習從零硬扛動力學。
 
@@ -233,7 +233,7 @@ flowchart TD
 | 8.1 | **對「已知可量」的參數做 domain randomization**（質量/慣量/thrust map） | 🔴 High | SimpleFlight 實測：DR 可量參數反而變差（0.028→0.041 m） | 量得到的就量、釘死；DR 只留給量不準的 |
 | 8.2 | **以為動作直出馬達轉速也行** → 馬達延遲/電壓把 aggressive 飛行打爆 | 🔴 High | Swift / gap-flight / RAPTOR / Geles 全用 CTBR | 改 CTBR + 真實低層控制器 |
 | 8.3 | **用滿電的靜態 thrust map 飛到沒電** → 後段系統性高估推力 | 🟠 Medium | thrust 約隨電壓平方下降（Bitcraze）；RPG 用 voltage-compensated map | 把電壓當 map 輸入，或飛行中補償 |
-| 8.4 | **想用高忠實度 aero 模型一步到位** | 🟠 Medium | 無人機 aero 難建難泛化（NeuroBEM 都要 NN 殘差）；且只在高速才主導 | 先擾動力包絡，不夠再殘差/線上自適應 |
+| 8.4 | **想用高保真度 aero 模型一步到位** | 🟠 Medium | 無人機 aero 難建難泛化（NeuroBEM 都要 NN 殘差）；且只在高速才主導 | 先擾動力包絡，不夠再殘差/線上自適應 |
 | 8.5 | **把感知 gap 當動力學 gap 一起處理** | 🟠 Medium | neuromorphic / Geles：感測模態/輸出抽象才是瓶頸 | 感知獨立軸：抽象+外觀 DR，或真實資料 |
 | 8.6 | **照搬 RAPTOR 的『不用 system-ID』但漏了延遲** | 🟠 Medium | RAPTOR 仍加延遲濾波打 10–30 ms | in-context 自適應≠不管延遲；延遲仍要處理 |
 | 8.7 | **把 RAPTOR 的 TWR 1.5–5 當真機可飛上限** | 🟡 Low | 那是**訓練隨機化範圍**；部署平台 TWR 跨度約 1.75–12 | 區分「隨機化範圍」與「真機能力」 |

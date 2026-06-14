@@ -9,7 +9,7 @@
 
 ---
 
-## 1. TL;DR（重建出來的是視覺孿生；要可預測還得加物理 + 狀態同步）
+## 1. 一句話總結（重建出來的是視覺孿生；要可預測還得加物理 + 狀態同步）
 
 **一句話**：RialTo 把一個真實場景**掃描 → textured mesh → 手工切分並加關節 / 物理參數 → USD/URDF → 收幾條真 demo → inverse distillation 把真 demo 抬進 sim 偏置 RL 探索 → RL + domain randomization 微調 state policy → 蒸餾成 point-cloud(depth) policy → 零樣本部署回真機**。它**強在「real2sim2real 閉環真的把真機 success rate 從個位數拉到七八成」**（pose-rand **91% vs 10%**、加 distractors **77% vs 0%**、加 disturbances **75% vs 0%**，皆 vs 15-demo BC；VALIDATED 真機）。
 
@@ -53,7 +53,7 @@ flowchart TD
 ```
 *圖：RialTo Real2Sim2Real 管線 —— quasistatic 逃生口是繞過動力學保真的成立前提*
 
-**兩個 load-bearing 設計選擇**：
+**兩個關鍵承載的設計選擇**：
 - **「手工加關節」不是工程偷懶，是 articulated-rigid 的硬約束**：RialTo 只處理 **articulated rigid**（可動但剛性的物件，如微波爐門、櫃門、碗架）。關節必須人手指定，因為自動關節估計在這個保真度要求下不可靠——這也圈死了「**無可變形 / 無液體**」（mesh + 剛性關節無法表達布料/流體）。
 - **「depth/point-cloud student」是 sim-real gap 的權衡**：選 depth 而非 RGB 是為了縮小渲染域 gap，但代價是繼承 depth 感測對 thin/transparent/reflective 的盲區——**這是把「外觀 gap」換成「幾何感測 gap」，不是消除 gap**。
 
@@ -61,7 +61,7 @@ flowchart TD
 
 ## 3. ⚡ 驗證（RialTo 真機 transfer-back 數字）/ ❌ 限制（quasistatic 逃生口、無可變形/液體）
 
-### ⚡ 驗證：real2sim2real 真的把真機 success 從 0 拉起來（VALIDATED 真機）
+### ⚡ 驗證：real2sim2real 真的把真機成功率從 0 拉起來（VALIDATED 真機）
 
 RialTo 的 headline 是**真機 transfer-back**，不是 sim 數字——所以標 **VALIDATED**（真機）：
 
@@ -70,7 +70,7 @@ RialTo 的 headline 是**真機 transfer-back**，不是 sim 數字——所以�
 | **pose randomization** | **91%** | 10% | [2403.03949](https://arxiv.org/abs/2403.03949) |
 | **+ distractors**（加干擾物） | **77%** | 0% | 同上 |
 | **+ disturbances**（加擾動） | **75%** | 0% | 同上 |
-| robustness 提升（綜述） | **「over 67%」** 提升 | — | 同上 |
+| 穩健性提升（綜述） | **「over 67%」** 提升 | — | 同上 |
 | **in-wild**（微波爐 / 垃圾桶 / 碗架等真實場景） | 平均 **57%** 勝 BC | — | 同上 |
 
 > **讀數三點**：(1) **BC 在 distractors / disturbances 下直接歸 0**，RialTo 仍守住 75-77%——這證明「孿生 + RL + DR」買到的是**穩健性**，不只是平均成功率；(2) **8 任務零樣本 transfer-back**——sim 訓出的 policy 不經真機 fine-tune 就部署，是 sim→real 閉環成立的硬證據；(3) **in-wild 57%** 把它從「lab 演示」推進到真實雜亂場景——但 57% 也誠實暴露了天花板。
@@ -84,7 +84,7 @@ RialTo 的 headline 是**真機 transfer-back**，不是 sim 數字——所以�
 
 ---
 
-## 4. 視覺孿生 vs 可預測孿生（Real-to-Sim Policy Eval：要 render + physics 兩者）
+## 4. 視覺孿生 vs 可預測孿生（Real-to-Sim Policy Eval：要渲染 + physics 兩者）
 
 把 RialTo 的逃生口反過來想：**如果任務不是 quasistatic，要怎麼讓孿生「可預測」？** 答案是不能只靠重建——得**同時補物理動力學 + photoreal 渲染**。這正是 **Real-to-Sim Policy Evaluation**（[2511.04665](https://arxiv.org/abs/2511.04665)）直面的問題：
 
@@ -114,10 +114,10 @@ flowchart TD
 | 動力學 | **近似**（RialTo 靠 quasistatic 繞過） | **physics-informed reconstruction**（建可變形動力學） |
 | 渲染 | mesh 貼圖 | **deformation-aware rendering**（隨形變更新外觀） |
 | 它驗證了什麼 | policy 能零樣本 transfer-back（VALIDATED 真機） | **sim rollout 與真機強相關**（plush-pack / rope-route / T-block） |
-| 對照基線 | vs 15-demo BC | **勝純物理的 IsaacLab 於 sim-real correlation** |
-| 核心主張 | quasistatic 下幾何+運動學就夠 | ★**要 render 與 physics 兩者**——缺一個，sim-real correlation 就掉 |
+| 對照基準 | vs 15-demo BC | **勝純物理的 IsaacLab 於 sim-real correlation** |
+| 核心主張 | quasistatic 下幾何+運動學就夠 | ★**要渲染與 physics 兩者**——缺一個，sim-real correlation 就掉 |
 
-> **★ 核心對照**：Real-to-Sim Policy Eval 的論文結論是「**要 render 與 physics 兩者**」（physics-informed reconstruction + deformation-aware rendering），並且**勝過純物理的 IsaacLab**——這證明「光有物理（IsaacLab）不夠，光有外觀（純渲染）也不夠；可預測孿生需要兩者耦合」。它把孿生用在 **policy evaluation**（用 sim rollout 預測真機表現）而非 RialTo 的 **policy training**——而 evaluation 對「可預測性」的要求比 training 更苛刻（training 可靠 DR 容錯，evaluation 要 rollout 數字本身可信）。
+> **★ 核心對照**：Real-to-Sim Policy Eval 的論文結論是「**要渲染與 physics 兩者**」（physics-informed reconstruction + deformation-aware rendering），並且**勝過純物理的 IsaacLab**——這證明「光有物理（IsaacLab）不夠，光有外觀（純渲染）也不夠；可預測孿生需要兩者耦合」。它把孿生用在 **policy evaluation**（用 sim rollout 預測真機表現）而非 RialTo 的 **policy training**——而 evaluation 對「可預測性」的要求比 training 更苛刻（training 可靠 DR 容錯，evaluation 要 rollout 數字本身可信）。
 >
 > **「r > 0.9」相關係數**：**PARTIALLY-VERIFIED** —— 此精確值來自 secondary 轉述，[2511.04665](https://arxiv.org/abs/2511.04665) 摘要未見精確相關係數；引用前須回正文 table 核實。
 >
@@ -142,17 +142,17 @@ domain     = robotics                    ← articulated-rigid 操作（微波/�
 
 ---
 
-## 6. 跨路線綜合（連 twin-fidelity-contract；與 robotics-data-gen / 駕駛 neural-recon 是 real2sim sibling）
+## 6. 跨路線綜合（連 twin-fidelity-contract；與 robotics-data-gen / 駕駛 neural-recon 是 real2sim 姊妹篇）
 
 | 路線 | 它給什麼 | 它缺什麼 | 怎麼接 |
 |---|---|---|---|
 | **本篇（RialTo real2sim2real）** | **掃描孿生 → RL → 零樣本部署真機**（VALIDATED：pose-rand 91% vs 10%） | 動力學保真度（靠 quasistatic 繞過）；無可變形/液體 | 提供「掃一個剛性場景就能訓 policy」的範式；不可預測的動力學交給可微 sim |
 | **[twin-fidelity-contract.md](./twin-fidelity-contract.md)**（孿生保真度契約） | 「視覺孿生 vs 可預測孿生」的契約框架 | 具體真機數字 | 本篇是該契約的**robotics 端錨點**：RialTo = 視覺孿生 + quasistatic 逃生口的存在性證明 |
-| **[../robotics-data-gen/autonomous-demo-gen.md](../robotics-data-gen/autonomous-demo-gen.md)**（MimicGen real2sim sibling） | sim-GT 動作擴增（SE(3) 開環 replay） | 同樣 quasi-static 假設、不造新接觸動力學 | **real2sim sibling**：兩者都繞動力學保真（一個 RL 探索、一個開環 replay）；可組合（孿生資產 + MimicGen 擴增） |
-| **[../autonomous-driving-sim/neural-reconstruction-sim.md](../autonomous-driving-sim/neural-reconstruction-sim.md)**（駕駛 real2sim sibling） | metric-scale 感測保真重建（NeuRAD/UniSim） | 多樣性受 log 邊界鎖死；`injection=data-only` | **real2sim sibling（駕駛版）**：同是「真實 → 可重模擬場景」，差在 driving 是 data-only 重渲染、本篇是 sim-in-loop RL 訓練 |
+| **[../robotics-data-gen/autonomous-demo-gen.md](../robotics-data-gen/autonomous-demo-gen.md)**（MimicGen real2sim 姊妹篇） | sim-GT 動作擴增（SE(3) 開環 replay） | 同樣 quasi-static 假設、不造新接觸動力學 | **real2sim 姊妹篇**：兩者都繞動力學保真（一個 RL 探索、一個開環 replay）；可組合（孿生資產 + MimicGen 擴增） |
+| **[../autonomous-driving-sim/neural-reconstruction-sim.md](../autonomous-driving-sim/neural-reconstruction-sim.md)**（駕駛 real2sim 姊妹篇） | metric-scale 感測保真重建（NeuRAD/UniSim） | 多樣性受 log 邊界鎖死；`injection=data-only` | **real2sim 姊妹篇（駕駛版）**：同是「真實 → 可重模擬場景」，差在 driving 是 data-only 重渲染、本篇是 sim-in-loop RL 訓練 |
 
 - **與 foundation 生成 3DGS（[../../foundations/3d-aware-generation/generative-gaussian-splatting.md](../../foundations/3d-aware-generation/generative-gaussian-splatting.md)）的關係（NO-DUP）**：本篇**不重拆通用 3DGS 表徵**。foundation 的生成 GS 是**生成端**（從文字/單圖外推、必須 hallucinate）；本篇是 **real2sim 端**（從真實掃描反演成可訓練孿生）。資訊來源相反。Real-to-Sim Policy Eval / PolaRiS 用到 3DGS/2DGS 只是作為**渲染/重建工具**，下游目的是孿生保真，不是生成新場景。
-- **三個 real2sim sibling 的統一視角**：本篇（robotics 操作）、[autonomous-demo-gen.md](../robotics-data-gen/autonomous-demo-gen.md)（robotics 資料擴增）、[neural-reconstruction-sim.md](../autonomous-driving-sim/neural-reconstruction-sim.md)（driving）—— 三者共享「真實 → 可重模擬」骨架，**也共享同一條母 caveat**：重建/孿生交付視覺保真，動力學保真要嘛繞過（quasistatic）、要嘛另外補（可微 sim / soft-body physics）。
+- **三個 real2sim 姊妹篇的統一視角**：本篇（robotics 操作）、[autonomous-demo-gen.md](../robotics-data-gen/autonomous-demo-gen.md)（robotics 資料擴增）、[neural-reconstruction-sim.md](../autonomous-driving-sim/neural-reconstruction-sim.md)（driving）—— 三者共享「真實 → 可重模擬」骨架，**也共享同一條母 caveat**：重建/孿生交付視覺保真，動力學保真要嘛繞過（quasistatic）、要嘛另外補（可微 sim / soft-body physics）。
 - **本軸結論回扣 ontology**：RialTo 的價值不是「達到了物理保真度」，而是**乾淨地示範了「不需要物理保真度時，real2sim2real 能 work 到真機」的那一側邊界**。它讓 Axis 2（physics injection）的意義具體化——**physics 管動力學；當任務 quasistatic，動力學那一格可以近似甚至跳過；當任務不是，這一格立刻變成 blocker**。「視覺孿生 → 可預測孿生」的差距 = 動力學保真度 + 即時狀態同步，這正是本篇要傳達的契約。
 
 ---
@@ -163,7 +163,7 @@ domain     = robotics                    ← articulated-rigid 操作（微波/�
 - **RialTo**：Torne, M., Simeonov, A., Li, Z., et al. (2024). "Reconciling Reality through Simulation: A Real-to-Sim-to-Real Approach for Robust Manipulation." **RSS 2024**, MIT. arXiv **2403.03949**. https://arxiv.org/abs/2403.03949
 
 **對照錨點**：
-- **Real-to-Sim Policy Evaluation（GS + soft-body）**：arXiv **2511.04665**. https://arxiv.org/abs/2511.04665 —— 從真實影片建 soft-body 孿生 + 3DGS photoreal 渲染；sim rollout 與真機強相關（plush-pack / rope-route / T-block）；主張**要 render 與 physics 兩者**，勝純物理 IsaacLab 於 sim-real correlation。「r > 0.9」**PARTIALLY-VERIFIED**（secondary，摘要未見精確值）。
+- **Real-to-Sim Policy Evaluation（GS + soft-body）**：arXiv **2511.04665**. https://arxiv.org/abs/2511.04665 —— 從真實影片建 soft-body 孿生 + 3DGS photoreal 渲染；sim rollout 與真機強相關（plush-pack / rope-route / T-block）；主張**要渲染與 physics 兩者**，勝純物理 IsaacLab 於 sim-real correlation。「r > 0.9」**PARTIALLY-VERIFIED**（secondary，摘要未見精確值）。
 - **PolaRiS（2DGS + physics-ready insertion）**：arXiv **2512.16881**. https://arxiv.org/abs/2512.16881 —— 2DGS 掃 → sim + physics-ready 物件插入；與真機 generalist-policy 相關性勝既有 sim benchmark，sim-data 共訓提升相關性。精確 **SRCC UNVERIFIED**。
 
 **同倉交叉**：[twin-fidelity-contract.md](./twin-fidelity-contract.md) · [overview.md](./overview.md) · [../robotics-data-gen/autonomous-demo-gen.md](../robotics-data-gen/autonomous-demo-gen.md) · [../autonomous-driving-sim/neural-reconstruction-sim.md](../autonomous-driving-sim/neural-reconstruction-sim.md) · [../../foundations/3d-aware-generation/generative-gaussian-splatting.md](../../foundations/3d-aware-generation/generative-gaussian-splatting.md) · [../../cheat-sheet/ontology.md](../../cheat-sheet/ontology.md)
@@ -179,7 +179,7 @@ domain     = robotics                    ← articulated-rigid 操作（微波/�
 - **9c**：非 generalist 白名單；明確標 `robotics`，與 [overview.md](./overview.md) 一致。
 - **Descriptive note（Control × Domain）**：`param`（手工關節/物理參數）+ `trajectory`（真 demo 偏置）皆屬 `robotics` 典型，符合 ontology §181 描述。
 
-### §8.2 🔴 quasistatic 逃生口是全篇前提，不是 footnote（[2403.03949](https://arxiv.org/abs/2403.03949) 原文）
+### §8.2 🔴 quasistatic 逃生口是全篇前提，不是註腳（[2403.03949](https://arxiv.org/abs/2403.03949) 原文）
 RialTo 的真機數字（91% / 77% / 75%）成立的根本是它**只挑 quasistatic 任務**——原文「exact identification of physics parameters is not necessary」。**任何把 RialTo 範式套到非 quasistatic 任務（投擲/敲擊/動態抓取/接落體/慣性主導）的人，孿生的物理近似會直接變成致命誤差源**。**繞法**：先判定任務是否 quasistatic；不是的話，這條路不適用，改走可微 sim（接觸動力學 gradient）或真機 RL。
 
 ### §8.3 🔴 無可變形 / 無液體是表徵硬邊界（[2403.03949](https://arxiv.org/abs/2403.03949)）
@@ -192,7 +192,7 @@ student policy 吃 depth/point-cloud，而 depth 感測在薄物/透明/反光�
 每個場景要在 GUI 手工切 mesh、手工指定關節與物理參數——**不是全自動「掃一下就有孿生」**。加上 ~3 天 RL 訓練，前置成本是規模化的現實摩擦。**繞法**：把關節 schema 模板化複用；同類物件（各種櫃門）共用 articulation 標註；接受「孿生建構是一次性投資、policy 是攤提收益」的成本模型。
 
 ### §8.6 🟡 視覺孿生 vs 可預測孿生混淆是最常見誤讀（核心論點，機制推論）
-把「掃描重建出 textured mesh」當成「可預測孿生」是最常見的錯——重建交付的是**幾何+運動學+外觀**（視覺孿生），**動力學保真度 + 即時狀態同步**才是「可預測孿生」的另一半。RialTo 靠 quasistatic **繞過**動力學那一半；[2511.04665](https://arxiv.org/abs/2511.04665) 靠 physics+render **補足**那一半。**繞法**：評估任何「digital twin for robotics」方案時，先問「它在動力學那一格做了什麼——繞過（quasistatic）/ 近似（DR）/ 補足（soft-body physics）？」，別把視覺保真誤當可預測性。
+把「掃描重建出 textured mesh」當成「可預測孿生」是最常見的錯——重建交付的是**幾何+運動學+外觀**（視覺孿生），**動力學保真度 + 即時狀態同步**才是「可預測孿生」的另一半。RialTo 靠 quasistatic **繞過**動力學那一半；[2511.04665](https://arxiv.org/abs/2511.04665) 靠 physics+渲染 **補足**那一半。**繞法**：評估任何「digital twin for robotics」方案時，先問「它在動力學那一格做了什麼——繞過（quasistatic）/ 近似（DR）/ 補足（soft-body physics）？」，別把視覺保真誤當可預測性。
 
 ### §8.7 量測缺口（UNVERIFIED / PARTIALLY-VERIFIED — 本篇不臆造）
 
@@ -205,7 +205,7 @@ student policy 吃 depth/point-cloud，而 depth 感測在薄物/透明/反光�
 ### §8.8 結構性批判
 - **RialTo 的成功是「繞過動力學保真度」的成功，不是「達到」它**：它示範的是 Axis 2 的**邊界條件**——quasistatic 下 physics injection 可退化為近似。把它當「real2sim 已解決」會誤判；它解決的是「real2sim 在 quasistatic 子集已可真機」。
 - **depth student 是「把外觀 gap 換成幾何感測 gap」**：選 point-cloud 縮小渲染域 gap，但繼承 depth 感測盲區——**gap 被搬移、不是消除**。評估部署穩健性時要把這層 gap 算進去。
-- **三個 real2sim sibling 共享同一條母 caveat**：本篇 / [autonomous-demo-gen.md](../robotics-data-gen/autonomous-demo-gen.md) / [neural-reconstruction-sim.md](../autonomous-driving-sim/neural-reconstruction-sim.md) —— 重建/孿生給視覺保真，動力學保真永遠是另外一筆帳（繞過 / 近似 / 補足）。這是 digital-twin zone 的統一結構性事實。
+- **三個 real2sim 姊妹篇共享同一條母 caveat**：本篇 / [autonomous-demo-gen.md](../robotics-data-gen/autonomous-demo-gen.md) / [neural-reconstruction-sim.md](../autonomous-driving-sim/neural-reconstruction-sim.md) —— 重建/孿生給視覺保真，動力學保真永遠是另外一筆帳（繞過 / 近似 / 補足）。這是 digital-twin zone 的統一結構性事實。
 
 ### §8.9 待釐清項目（[TBD]）
 - [TBD] RialTo 各任務逐項 success-rate 與 demo-count 曲線（待 [2403.03949](https://arxiv.org/abs/2403.03949) table 核對）
@@ -215,4 +215,4 @@ student policy 吃 depth/point-cloud，而 depth 感測在薄物/透明/反光�
 
 ---
 
-> **Pulsar maintenance**：本篇是 digital-twin zone 的 **robotics real2sim 錨點**，與 [twin-fidelity-contract.md](./twin-fidelity-contract.md)（保真度契約）互鎖，與 [autonomous-demo-gen.md](../robotics-data-gen/autonomous-demo-gen.md)（robotics 資料 sibling）、[neural-reconstruction-sim.md](../autonomous-driving-sim/neural-reconstruction-sim.md)（driving sibling）並列為 real2sim 三 sibling。核心論點 = **掃描重建交付「視覺孿生」（幾何+運動學+外觀）；RialTo 靠 quasistatic 逃生口繞過動力學保真度，真機 transfer-back VALIDATED（pose-rand 91% vs 10%）；要變「可預測孿生」還得補物理(動力學)+即時狀態同步（Real-to-Sim Policy Eval 證明要 render+physics 兩者）；限 articulated rigid，無可變形/液體**。daily monitoring keyword：「RialTo real-to-sim-to-real」「digital twin robot manipulation RL」「real-to-sim policy evaluation gaussian splatting soft body」「PolaRiS 2DGS physics-ready」「articulated object scan USD RL deploy」。下次相關 release 後重 audit §8.7 的 UNVERIFIED / PARTIALLY-VERIFIED 數字。
+> **Pulsar maintenance**：本篇是 digital-twin zone 的 **robotics real2sim 錨點**，與 [twin-fidelity-contract.md](./twin-fidelity-contract.md)（保真度契約）互鎖，與 [autonomous-demo-gen.md](../robotics-data-gen/autonomous-demo-gen.md)（robotics 資料姊妹篇）、[neural-reconstruction-sim.md](../autonomous-driving-sim/neural-reconstruction-sim.md)（driving 姊妹篇）並列為 real2sim 三姊妹篇。核心論點 = **掃描重建交付「視覺孿生」（幾何+運動學+外觀）；RialTo 靠 quasistatic 逃生口繞過動力學保真度，真機 transfer-back VALIDATED（pose-rand 91% vs 10%）；要變「可預測孿生」還得補物理(動力學)+即時狀態同步（Real-to-Sim Policy Eval 證明要渲染+physics 兩者）；限 articulated rigid，無可變形/液體**。daily monitoring keyword：「RialTo real-to-sim-to-real」「digital twin robot manipulation RL」「real-to-sim policy evaluation gaussian splatting soft body」「PolaRiS 2DGS physics-ready」「articulated object scan USD RL deploy」。下次相關 release 後重 audit §8.7 的 UNVERIFIED / PARTIALLY-VERIFIED 數字。

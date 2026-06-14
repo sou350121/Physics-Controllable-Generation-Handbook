@@ -7,7 +7,7 @@
 
 ---
 
-## 1. TL;DR（真實量測 → 可重渲染場景：被信任的那半；但只能重渲染 log 看過的）
+## 1. 一句話總結（真實量測 → 可重渲染場景：被信任的那半；但只能重渲染 log 看過的）
 
 **一句話**：UniSim / NeuRAD 這類系統把**單條真實駕駛 log（多相機 + LiDAR）反演成一個顯式 3D 神經場**，可在**任意新視角 / 新軌跡**下重渲染出 metric-scale 的相機與 LiDAR 觀測，並支援**移動 SDV、增刪 / 重置 actor、反應式避讓**等閉環操作。**它強在感測保真**（NeuRAD 連 rolling shutter、ray-drop 都建模），這是它「被信任」的根本 —— 像素不是想像出來的，是真實量測的重投影。**它的硬限制同樣根本**：一切只在**原 log 觀測過的範圍內**成立；大幅改視角或挪走 actor，就會把渲染推進「沒被任何感測器看過」的外推區（UniSim 用一個 **CNN 補未見區**，就是這個外推本質的 tell）。**結論：重建的多樣性被 log 邊界鎖死 —— 這正是生成式 WM 要接手的縫。**
 
@@ -112,7 +112,7 @@ domain     = driving                     ← AD 道路場景；Check 9c 白名�
 | **[closed-loop-or-bust.md](./closed-loop-or-bust.md)**（閉環評估的硬要求） | 閉環評估的方法論與門檻 | 需要可快速重渲染、可微的場景 | 3DGS 線的 **135 FPS** 讓 policy 動作回饋後即時重渲成為可能 —— 重建是 closed-loop 的**算力可行性那一塊** |
 | **本篇（神經重建）** | **metric-scale、感測保真、被信任的外觀**（log 邊界內可編輯閉環） | **多樣性受 log 邊界鎖死** | 提供可信 backbone；把「沒看過的」交給生成式 WM |
 
-- **與 foundation 生成 3DGS（[generative-gaussian-splatting.md](../../foundations/3d-aware-generation/generative-gaussian-splatting.md)）**：同表徵（3DGS）兩個相反方向 —— 生成端從文字 / 單圖**外推 hallucinate**，重建端從真實 log **反演量測**。pipeline 上可互補：重建場景當 anchor，生成補 corner-case。
+- **與 foundation 生成 3DGS（[generative-gaussian-splatting.md](../../foundations/3d-aware-generation/generative-gaussian-splatting.md)）**：同表徵（3DGS）兩個相反方向 —— 生成端從文字 / 單圖**外推 hallucinate**，重建端從真實 log **反演量測**。管線上可互補：重建場景當錨點，生成補 corner-case。
 - **跨 handbook（Spatial 的 3DGS 建圖 / on-board mapping）**：Spatial-Handbook 的機載建圖（https://github.com/sou350121/Spatial-Intelligence-Handbook/tree/main/embodiments/aerial/on-board-mapping）走**感知 / 定位**視角的 3DGS 重建；本篇走**模擬 / 重渲染**視角。同一族 3DGS 重建技術，下游目的不同（建圖定位 vs 場景再模擬）。
 - **本軸結論回扣 ontology**：`injection=data-only` 在這裡的天花板不是物理一致性的缺失（重建本就不宣稱模擬物理），而是**多樣性 = log 邊界**。要突破，要嘛接生成式 WM 補分佈，要嘛接可微 sim 補 dynamics —— 重建自己補不了。
 
@@ -143,12 +143,12 @@ domain     = driving                     ← AD 道路場景；Check 9c 白名�
 
 ### 8.2 已知限制（paper / 公開頁確認）
 
-| # | 來源 | 描述 | Severity | Workaround |
+| # | 來源 | 描述 | 嚴重度 | 繞法 |
 |---|---|---|---|---|
-| 8.2.1 | UniSim paper / project page | **single-log 覆蓋是外推天花板**；「small domain gap」但外推品質受單條 log 限制 | High | 多 log 融合 / 接生成式 WM 補分佈 |
-| 8.2.2 | UniSim 機制 | **未見區靠 CNN 補全** —— 改視角露出未觀測區即 hallucinate，可信度下降 | High（保真） | 限制視角偏移幅度；標記補全區為低信賴 |
-| 8.2.3 | 全線共有 | **多樣性 = log 邊界**：不生 log 沒出現的 agent / 天氣 / 長尾 | High（多樣性） | 交給 [driving-world-models.md](./driving-world-models.md) |
-| 8.2.4 | NeuRAD / Street GS | 多為 **per-log / per-scene** 重建，非單模型覆蓋全分佈 | Medium | 工程化批量重建管線 |
+| 8.2.1 | UniSim paper / project page | **single-log 覆蓋是外推天花板**；「small domain gap」但外推品質受單條 log 限制 | 高 | 多 log 融合 / 接生成式 WM 補分佈 |
+| 8.2.2 | UniSim 機制 | **未見區靠 CNN 補全** —— 改視角露出未觀測區即 hallucinate，可信度下降 | 高（保真） | 限制視角偏移幅度；標記補全區為低信賴 |
+| 8.2.3 | 全線共有 | **多樣性 = log 邊界**：不生 log 沒出現的 agent / 天氣 / 長尾 | 高（多樣性） | 交給 [driving-world-models.md](./driving-world-models.md) |
+| 8.2.4 | NeuRAD / Street GS | 多為 **per-log / per-scene** 重建，非單模型覆蓋全分佈 | 中 | 工程化批量重建管線 |
 
 ### 8.3 量測缺口（UNVERIFIED — 本篇不臆造）
 

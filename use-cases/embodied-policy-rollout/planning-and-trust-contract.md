@@ -10,9 +10,9 @@
 > - **DIAMOND** arXiv [2405.12399](https://arxiv.org/abs/2405.12399) —— diffusion WM 內訓 agent；★ discrete-latent 壓縮**會丟掉控制相關像素**。[DEMO games]
 > - **Runway GWM-1**（runwayml.com/research/accelerating-robot-policy-evaluation）—— 把 video model 當 sim **排序** VLA 策略（評測 sidebar）。
 >
-> **為什麼進名單**：本手冊一路在問「外觀靠生成、動力學靠物理，那驗收標準是什麼」。embodied-policy-rollout 把這條推到極致——**不只用 WM 看，而是用 WM 想、用 WM 決策**。[world-model-as-policy.md](./world-model-as-policy.md) 講 Dreamer 派把 WM 當策略訓練場；本篇補上它的**反面**：**在學到的 WM 裡規劃，是一份有違約條款的合約**。違約的代價不是「畫面醜一點」，而是 agent 找到模型的破綻、把自己優化到一個現實裡根本不存在的狀態。這條契約和自駕的 [closed-loop-or-bust](../autonomous-driving-sim/closed-loop-or-bust.md) 是 sibling：那邊問「閉環評測何時可信」，這邊問「閉環規劃何時可信」——同一枚硬幣。
+> **為什麼進名單**：本手冊一路在問「外觀靠生成、動力學靠物理，那驗收標準是什麼」。embodied-policy-rollout 把這條推到極致——**不只用 WM 看，而是用 WM 想、用 WM 決策**。[world-model-as-policy.md](./world-model-as-policy.md) 講 Dreamer 派把 WM 當策略訓練場；本篇補上它的**反面**：**在學到的 WM 裡規劃，是一份有違約條款的合約**。違約的代價不是「畫面醜一點」，而是 agent 找到模型的破綻、把自己優化到一個現實裡根本不存在的狀態。這條契約和自駕的 [closed-loop-or-bust](../autonomous-driving-sim/closed-loop-or-bust.md) 是姊妹篇：那邊問「閉環評測何時可信」，這邊問「閉環規劃何時可信」——同一枚硬幣。
 
-## 1. TL;DR —— 三句契約
+## 1. 一句話總結 —— 三句契約
 
 在學到的 WM 裡規劃 / 行動，**只在三條同時成立時可信**；缺一條，信任就從「漸進退化」變成「災難性崩潰」。**關鍵不對稱**：第 1 條失守只是**慢慢變差**（誤差線性累積），第 2、3 條失守則是**直接翻車**（優化到不存在的狀態 / 優化錯的目標）——所以三條的防法不同、優先級也不同。
 
@@ -48,7 +48,7 @@ flowchart TD
 
 *圖：三層契約條款，各對應一條不同的違約信任曲線；缺一即不可信*
 
-## 2. 規劃-on-WM 的代表（TD-MPC2 / V-JEPA 2-AC）
+## 2. 在 WM 上規劃的代表（TD-MPC2 / V-JEPA 2-AC）
 
 兩個極點：一個是**純 sim、把 latent 規劃做到極致**（TD-MPC2），一個是**真機零樣本、把契約推到野外**（V-JEPA 2-AC）。
 
@@ -60,7 +60,7 @@ flowchart TD
 | 成本 | 純 sim，便宜 | **~16 s / action**（CEM 800×~10–16 refine）vs Cosmos ~**4 min** |
 | 限制 | sim domain；像素丟掉後**不可視覺 debug** | **camera-pose 敏感**（手調相機位）、**只吃 image goal**（無語言）、**長程誤差累積** |
 
-**兩個一起看才是完整命題**：TD-MPC2 證明「**只要規劃在 latent、靠學習 value bootstrap，就能短程展開拿長程效果**」——這是契約第 1 條（短 horizon + value tail）的乾淨實現。V-JEPA 2-AC 證明「**這套真的能零樣本上真機**」——但它的三條限制（相機敏感 / 只吃 image goal / 長程累積）**逐條對應**本篇三失效模式，是契約在野外的活樣本。**成本是被低估的第三個維度**：V-JEPA 2-AC 的 **~16 s/action**（CEM 800 樣本 × ~10–16 refine）已遠勝 Cosmos 的 ~4 min，但對真機連續控制仍偏慢——這直接逼著「**規劃要短、樣本要省**」，於是**契約第 1 條（短 horizon）不只是精度考量，也是算力考量**：每多展開一步，sample-based MPC 的成本就線性上漲。TD-MPC2 把成本壓下來的辦法正是 §3-B 的 value tail——**用一個 amortized 的 Q 取代長展開**，省下的不只是誤差，也是 FLOPs。NO-DUP 註記：**本篇只把 V-JEPA 2-AC 當「規劃-on-WM 的部署範例」用**；它的內部架構 / 數學 / 訓練細節見 [../../foundations/latent-world-models/v-jepa-2.md](../../foundations/latent-world-models/v-jepa-2.md)，此處不重拆。
+**兩個一起看才是完整命題**：TD-MPC2 證明「**只要規劃在 latent、靠學習 value bootstrap，就能短程展開拿長程效果**」——這是契約第 1 條（短 horizon + value tail）的乾淨實現。V-JEPA 2-AC 證明「**這套真的能零樣本上真機**」——但它的三條限制（相機敏感 / 只吃 image goal / 長程累積）**逐條對應**本篇三失效模式，是契約在野外的活樣本。**成本是被低估的第三個維度**：V-JEPA 2-AC 的 **~16 s/action**（CEM 800 樣本 × ~10–16 refine）已遠勝 Cosmos 的 ~4 min，但對真機連續控制仍偏慢——這直接逼著「**規劃要短、樣本要省**」，於是**契約第 1 條（短 horizon）不只是精度考量，也是算力考量**：每多展開一步，sample-based MPC 的成本就線性上漲。TD-MPC2 把成本壓下來的辦法正是 §3-B 的 value tail——**用一個 amortized 的 Q 取代長展開**，省下的不只是誤差，也是 FLOPs。NO-DUP 註記：**本篇只把 V-JEPA 2-AC 當「在 WM 上規劃的部署範例」用**；它的內部架構 / 數學 / 訓練細節見 [../../foundations/latent-world-models/v-jepa-2.md](../../foundations/latent-world-models/v-jepa-2.md)，此處不重拆。
 
 ## 3. 三個失效模式（契約的三條違約條款）
 
@@ -105,7 +105,7 @@ WM 每步都有小誤差 ε；展開 H 步，誤差**逐步累積**。**MBPO**�
 | **B 複利誤差** | 逐步誤差累積 | **隨 horizon 線性退化**（MBPO 界） | 短 k 步 · 真實 state 起點 · value tail bootstrap |
 | **C reward/動力學錯設** | 優化錯的目標 | **隱蔽**（畫面對、目標錯） | 單測 reward/termination 校準 · 驗 goal 可達性 |
 
-**給 practitioner 的決策序（debug 一個「在 WM 裡規劃但表現爛」的系統時，按此順序排查）**：
+**給實踐者的決策序（debug 一個「在 WM 裡規劃但表現爛」的系統時，按此順序排查）**：
 
 1. **先量 horizon 敏感度**——把規劃 horizon 從 k 砍到 1，若表現**回升**，就是 B（複利誤差）在作祟，加 value bootstrap / 縮 horizon。
 2. **再查是否在 exploit**——比對 WM 內 rollout 的 value 與真機 / 真環境 rollout 的實得回報，若**WM 高估且高估隨優化迭代擴大**，就是 A，加 conservatism / τ 加噪 / 餵真資料。
@@ -124,10 +124,10 @@ WM 每步都有小誤差 ε；展開 H 步，誤差**逐步累積**。**MBPO**�
 | WM 表徵選擇 | 丟掉了什麼 | 後果 | 何時用 |
 |---|---|---|---|
 | **decoder-free latent**（TD-MPC2） | 外觀重建（reward 無關） | 快、不被外觀干擾；不可視覺 debug | reward/value 可靠、任務語義明確時 |
-| **discrete-latent 壓縮**（naive） | ★控制相關像素（磚塊/分數） | agent「看不見」關鍵狀態 → 敗 | **避免**用於 reward-相關細節佔像素極少的任務 |
+| **discrete-latent 壓縮**（樸素做法） | ★控制相關像素（磚塊/分數） | agent「看不見」關鍵狀態 → 敗 | **避免**用於 reward-相關細節佔像素極少的任務 |
 | **連續 diffusion**（DIAMOND/EDM） | 幾乎不丟（保高頻細節） | 保住控制相關像素；長程更穩 | 需 pixel-level reward 訊號 / 細節決定成敗時 |
 
-> **抽象的鐵則**：**抽象的安全與否，取決於被抽掉的維度是不是 reward-相關。** TD-MPC2 丟的是「外觀」（reward 無關，安全）；discrete-latent 在 Breakout 丟的是「磚塊 / 分數」（reward **直接**相關，致命）。**一句話：latent 可以抽掉「世界長什麼樣」，但抽掉「世界給多少分 / 哪裡算贏」就等於拔掉指南針。** 這也解釋了為何 decoder-free 能成立而 naive discrete 壓縮會敗——差別不在「壓不壓」，在**壓掉的是不是任務語義**。
+> **抽象的鐵則**：**抽象的安全與否，取決於被抽掉的維度是不是 reward-相關。** TD-MPC2 丟的是「外觀」（reward 無關，安全）；discrete-latent 在 Breakout 丟的是「磚塊 / 分數」（reward **直接**相關，致命）。**一句話：latent 可以抽掉「世界長什麼樣」，但抽掉「世界給多少分 / 哪裡算贏」就等於拔掉指南針。** 這也解釋了為何 decoder-free 能成立而樸素 discrete 壓縮會敗——差別不在「壓不壓」，在**壓掉的是不是任務語義**。
 
 ## 5. 五軸定位
 
@@ -145,7 +145,7 @@ WM 每步都有小誤差 ε；展開 H 步，誤差**逐步累積**。**MBPO**�
 
 ## 6. WM 當評測器（Runway GWM-1 — 規劃的「弱化版」用法）
 
-> **Sidebar**：把 learned WM 從「規劃器」降級成「**評測器**」，契約會鬆一條——但鬆的正好是最危險那條。
+> **旁註**：把 learned WM 從「規劃器」降級成「**評測器**」，契約會鬆一條——但鬆的正好是最危險那條。
 
 **Runway GWM-1**（runwayml.com/research/accelerating-robot-policy-evaluation）不拿 WM 規劃，而是把 video model 當 sim **排序** VLA 策略：跨 **8 策略**達 **Pearson 0.95 / MMRV 0.033**（與真機成功率的相關 / 排序保真）。★**但它只驗 rank-ordinal、非絕對成功率，且限 tabletop 單 Franka。**
 
@@ -153,7 +153,7 @@ WM 每步都有小誤差 ε；展開 H 步，誤差**逐步累積**。**MBPO**�
 
 **規劃 vs 評測 —— 同一個 learned WM，兩種風險預算**：
 
-| | **規劃-on-WM**（TD-MPC2 / V-JEPA 2-AC） | **評測-on-WM**（GWM-1） |
+| | **在 WM 上規劃**（TD-MPC2 / V-JEPA 2-AC） | **在 WM 上評測**（GWM-1） |
 |---|---|---|
 | 用途 | 在 WM 裡**搜索**更好的動作 | 對既定策略**排序** |
 | §3-A exploitation | **存在且致命**（優化器主動搜破綻） | **不存在**（無優化器） |
@@ -173,11 +173,11 @@ WM 每步都有小誤差 ε；展開 H 步，誤差**逐步累積**。**MBPO**�
 - Ha, D. & Schmidhuber, J. *World Models.* worldmodels.github.io；+ arXiv [2605.15960](https://arxiv.org/abs/2605.15960).（模型利用/對抗策略；夢中怪物不開火；safe-horizon 界；τ 加噪 / conservatism / 餵真資料緩解）
 - Alonso, E. 等. *DIAMOND: Diffusion for World Modeling.* arXiv [2405.12399](https://arxiv.org/abs/2405.12399).（diffusion WM 內訓 agent，Atari100k HNS 1.46 > DreamerV3 1.097；discrete-latent 丟控制相關像素；EDM > DDPM 長程穩）[DEMO games]
 
-評測 sidebar
+評測旁註
 - Runway. *Accelerating Robot Policy Evaluation (GWM-1).* runwayml.com/research/accelerating-robot-policy-evaluation.（video model 當 sim 排序 VLA；Pearson 0.95 / MMRV 0.033 跨 8 策略；★rank-ordinal only、限 tabletop 單 Franka）
 
 同倉交叉
-- [world-model-as-policy.md](./world-model-as-policy.md)（Dreamer 派把 WM 當策略訓練場——本篇的正面）· [overview.md](./overview.md) · [../autonomous-driving-sim/closed-loop-or-bust.md](../autonomous-driving-sim/closed-loop-or-bust.md)（AV 評測可靠性 sibling，同形命題）· [../../foundations/latent-world-models/v-jepa-2.md](../../foundations/latent-world-models/v-jepa-2.md)（V-JEPA 2 內部解構，NO-DUP）· [../../cheat-sheet/ontology.md](../../cheat-sheet/ontology.md)
+- [world-model-as-policy.md](./world-model-as-policy.md)（Dreamer 派把 WM 當策略訓練場——本篇的正面）· [overview.md](./overview.md) · [../autonomous-driving-sim/closed-loop-or-bust.md](../autonomous-driving-sim/closed-loop-or-bust.md)（AV 評測可靠性姊妹篇，同形命題）· [../../foundations/latent-world-models/v-jepa-2.md](../../foundations/latent-world-models/v-jepa-2.md)（V-JEPA 2 內部解構，NO-DUP）· [../../cheat-sheet/ontology.md](../../cheat-sheet/ontology.md)
 
 ## §8 踩坑日誌
 

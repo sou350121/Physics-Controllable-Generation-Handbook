@@ -6,11 +6,11 @@
 > Jiang, Xie, Mandlekar et al., **DexMimicGen: Automated Data Generation for Bimanual Dexterous Manipulation via Imitation Learning**, arXiv [2410.24185](https://arxiv.org/html/2410.24185v2) (Oct 2024)
 > 延伸：RoboCasa（[已有 foundation 解構](../../foundations/data-engine/robocasa.md)，本頁不重拆引擎）· [DemoGen](https://demo-generation.github.io/)
 >
-> **為什麼進名單**：robotics-data-gen overview 列三條 sub-route，其中「sim-augmented gen」是唯一**動作標籤自帶 ground-truth** 的一條——而 MimicGen 家族就是這條路的事實標準範式。它跟「生成影片」路線（[generative-video-as-data](./generative-video-as-data.md)）的根本差異在於：影片路線要事後用 inverse dynamics 倒推動作、賭標籤保真度；MimicGen 路線的動作從一開始就是 sim 內 replay 出來、用任務成功判定篩過的。任何想拿合成 demo 餵 [π0-class VLA](./physical-intelligence-pi0.md) 的人，第一個要評估的就是這家族擴出來的到底是什麼維度的多樣性。
+> **為什麼進名單**：robotics-data-gen overview 列三條子路線，其中「sim-augmented gen」是唯一**動作標籤自帶 ground-truth** 的一條——而 MimicGen 家族就是這條路的事實標準範式。它跟「生成影片」路線（[generative-video-as-data](./generative-video-as-data.md)）的根本差異在於：影片路線要事後用 inverse dynamics 倒推動作、賭標籤保真度；MimicGen 路線的動作從一開始就是 sim 內 replay 出來、用任務成功判定篩過的。任何想拿合成 demo 餵 [π0-class VLA](./physical-intelligence-pi0.md) 的人，第一個要評估的就是這家族擴出來的到底是什麼維度的多樣性。
 
 ---
 
-## 1. TL;DR
+## 1. 一句話總結
 
 **這家族的本質：在既有動作原語周圍生成新的場景配置，而不是生成新的行為。** MimicGen 拿 ~200 條人類遙操 demo，跨 18 個任務自動放大到 **50K+** 條（[2310.17596](https://arxiv.org/abs/2310.17596) 摘要原文 "over 50K demonstrations across 18 tasks ... from just ~200 human demonstrations"）。做法不是學一個生成模型，而是把每條 seed demo 切成 **物件中心（object-centric）的子任務段**，對每段施一個**保持「末端執行器↔目標物件相對位姿」不變的 SE(3) 剛體變換**，把同一套手部運動搬到新的物件擺位上，再 **開環 replay（open-loop）** 重放這串變換後的動作，最後**只保留整條軌跡通過任務 success 判定的**。
 
@@ -132,7 +132,7 @@ MimicGen 不訓練任何生成網絡。它是一條**確定性的軌跡變換管
 
 ## 6. 跨路線綜合（vs 生成影片路線；它的契約位置）
 
-把這家族放進 robotics-data-gen 三條 sub-route 的座標系（[overview](./overview.md)）：
+把這家族放進 robotics-data-gen 三條子路線的座標系（[overview](./overview.md)）：
 
 | 維度 | MimicGen 家族（本頁，sim-augment） | 生成影片路線（[generative-video-as-data](./generative-video-as-data.md)） |
 |---|---|---|
@@ -161,7 +161,7 @@ MimicGen 不訓練任何生成網絡。它是一條**確定性的軌跡變換管
 - SoftMimicGen：arXiv 2603.25725（**UNVERIFIED** 編號）
 - DynaMimicGen：arXiv 2511.16223（**UNVERIFIED** 編號）
 
-**本倉 cross-link**
+**本倉跨檔連結**
 - 下游消費者：[π0 / π0.5](./physical-intelligence-pi0.md)
 - 路線總覽：[robotics-data-gen overview](./overview.md)
 - 對照路線：[生成影片作為資料](./generative-video-as-data.md)

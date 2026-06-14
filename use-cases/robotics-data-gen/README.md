@@ -1,4 +1,4 @@
-# Use Case: Robotics Data Generation
+# 使用案例：機器人資料生成
 
 > 用生成 / 模擬補真實 demo 不足 —— VLA pre-training 最大的瓶頸就是**資料瓶頸**。但這個 use-case 把本手冊的命題逼到一個很尖的形式：**你能合成「機器人在哪、世界長什麼樣」，卻不能合成「機器人做了什麼」—— 除非物理（sim-GT）或真人（teleop）真的產生過那個動作。**
 
@@ -25,13 +25,13 @@ flowchart TD
 
 *圖：外觀能生成、動作 GT 不能；三條路線真正的分水嶺是動作從 sim-GT、回推、還是真人來*
 
-## 三條 sub-route（按動作來源切）
+## 三條子路線（按動作來源切）
 
 1. **自動示範生成（sim-GT 動作）** —— [MimicGen 家族](./autonomous-demo-gen.md)（MimicGen / DexMimicGen / RoboCasa / DemoGen）：把少數 human demo 用 SE(3) 物件中心變換 + 開環 replay + 成功篩選，擴成上萬條。動作是 **sim 物理裡的 ground-truth**，可信；它擴的是**空間/物件多樣性，不是行為新穎性**。
 2. **生成影片當資料（inferred 動作）** —— [生成影片路線](./generative-video-as-data.md)（DreamGen/GR00T-Dreams、Cosmos、UniSim、Genie）：生成像素，再用 IDM/LAPA **回推 pseudo-action**。真機已 VALIDATED（DreamGen），但瓶頸是**生成動力學的物理合理性**；最乾淨的勝場（Cosmos Transfer）正是**鎖 sim-GT 動作、只生成外觀**。
 3. **真實 teleop（native 動作，被擴增的基準）** —— Open X-Embodiment / DROID：動作保真度錨點，一切擴增都圍著它轉、不是取代它。
 
-## 資料契約（real vs sim vs generated）
+## 資料契約（真實 vs 模擬 vs 生成）
 
 | 來源 | 動作 label 來源 | 外觀保真 | 動力學/接觸保真 | 可擴展 | 主要 gap | 最佳角色 |
 |---|---|---|---|---|---|---|
@@ -69,13 +69,13 @@ flowchart TD
 - 純合成 / 合成+少量真實 / 純真實的 **Pareto** 與 co-train 比例
 - 生成影片路線額外要看 **physics-alignment**（DreamGen Bench：影片物理合理性才是瓶頸，不是回推頭）
 
-## 本區 Dissections
+## 本區解構
 
 - [Physical Intelligence π0 / π0.5](./physical-intelligence-pi0.md) — VLA flow model，這些合成資料的下游終點客戶
 - [自動示範生成 —— MimicGen 家族](./autonomous-demo-gen.md) — sim-GT 動作、擴空間多樣性；及其 static-scene/sim-to-real 邊界
 - [生成影片當機器人資料](./generative-video-as-data.md) — 像素生成、動作回推；DreamGen 的 VALIDATED 證據與物理保真度瓶頸
 
-## 與 VLA-Handbook 的 bridge
+## 與 VLA-Handbook 的橋接
 
 生成端造資料、VLA 端消費資料的契約 —— 見 [`bridge-to-vla/generative-data-for-vla.md`](../../bridge-to-vla/generative-data-for-vla.md)。
 

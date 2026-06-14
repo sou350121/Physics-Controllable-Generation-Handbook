@@ -1,6 +1,6 @@
 <!-- ontology-5axis output=action-seq injection=data-only control=text|image-init temporal=streaming domain=robotics -->
 
-# Physical Intelligence π0 / π0.5 — Anchor Use-Case Dissection
+# Physical Intelligence π0 / π0.5 — 錨點 use-case 解構
 
 > Black et al., **π0: A Vision-Language-Action Flow Model for General Robot Control**, arXiv [2410.24164](https://arxiv.org/abs/2410.24164) (Oct 2024)
 > Physical Intelligence + 35 authors, **π0.5: a Vision-Language-Action Model with Open-World Generalization**, arXiv [2504.16054](https://arxiv.org/abs/2504.16054) (Apr 2025)
@@ -10,9 +10,9 @@
 
 ---
 
-## 1. TL;DR
+## 1. 一句話總結
 
-**PI 的 bet**：跨 embodiment 真實遙操資料 + VLM backbone + flow-matching action head → 一個 50Hz 連續控制的 generalist policy。π0 (2024-10) 在 7 種 robot 平台、超過 10,000 小時遙操資料上訓練，從 PaliGemma 3B VLM 初始化，用 flow matching 出 50Hz action chunk，把 OpenVLA-style autoregressive token VLA 在 dexterous task（疊衣、整理桌面、組裝紙盒）上甩開一個量級。π0.5 (2025-04) 在 π0 之上加 **異質 co-training**——多機器人 demo + web data + 高層 semantic prediction + object detection——第一次把端到端 learning system 跑到「整理沒見過的家庭廚房 / 臥室」這個 open-world generalization 等級。
+**PI 的賭注**：跨 embodiment 真實遙操資料 + VLM backbone + flow-matching action head → 一個 50Hz 連續控制的 generalist policy。π0 (2024-10) 在 7 種 robot 平台、超過 10,000 小時遙操資料上訓練，從 PaliGemma 3B VLM 初始化，用 flow matching 出 50Hz action chunk，把 OpenVLA-style autoregressive token VLA 在 dexterous task（疊衣、整理桌面、組裝紙盒）上甩開一個量級。π0.5 (2025-04) 在 π0 之上加 **異質 co-training**——多機器人 demo + web data + 高層 semantic prediction + object detection——第一次把端到端 learning system 跑到「整理沒見過的家庭廚房 / 臥室」這個 open-world generalization 等級。
 
 **為什麼這篇是 physics-gen handbook 的關鍵**：本倉所有 robotics-data-gen 路線（pixel-video / latent-WM / sim-augment）最終都要回答**「合成資料能不能讓 π0-class policy 在真機 success rate 上漲？」**——這是唯一不會自欺欺人的 metric。PI 的工程細節（action chunk 規格、normalization 規約、camera layout）反過來變成所有合成資料 generator 的硬規格約束（[openpi #872](https://github.com/Physical-Intelligence/openpi/issues/872)、[#449](https://github.com/Physical-Intelligence/openpi/issues/449)）。
 
@@ -32,7 +32,7 @@ flowchart LR
 
 ---
 
-## 2. Core mechanism
+## 2. 核心機制
 
 ### π0：VLM backbone + flow-matching action expert
 
@@ -68,7 +68,7 @@ flowchart LR
 
 ## 3. 五軸定位 + 同軸對手
 
-| Axis | π0 / π0.5 | 註 |
+| 軸 | π0 / π0.5 | 註 |
 |---|---|---|
 | 1. Output | `action-seq` | 50Hz action chunk（H=50）；不出像素、不出 3D |
 | 2. Injection | `data-only` | 物理隱式從 10k+ hr 真實遙操 + web data 學會；無 sim、無 PDE、無 hard constraint |
@@ -89,16 +89,16 @@ flowchart LR
 
 ---
 
-## 4. ⚡ shines / ❌ breaks
+## 4. ⚡ 強在哪 / ❌ 崩在哪
 
-### ⚡ 真正領先的 regime
+### ⚡ 真正領先的情形
 
 - **Dexterous long-horizon 任務**：疊衣服（90 sec+）、組裝紙盒、清桌面——OpenVLA / RT-2 在這些任務上幾乎是 0%，π0 報 60-90%。
 - **跨 embodiment scale**：同一份 weights 在單臂、雙臂、移動底盤都能 fine-tune，是目前公開模型中最 "broad" 的 generalist policy。
 - **學習速度**：PI 內部報「100h 新任務遙操 → 上線」級別的 fine-tune 速度；π0.5 進一步把這個門檻拉低（部分新家庭僅靠 high-level data + 少量 demo）。
 - **連續高頻控制**：50Hz 是 dexterous bimanual 的 viable 下限，autoregressive VLA 達不到。
 
-### ❌ Known failure modes
+### ❌ 已知失效模式
 
 [Penn PAL Lab 第三方 in-the-wild 評估](https://penn-pal-lab.github.io/Pi0-Experiment-in-the-Wild/) 把 failure 落地到具體百分比：
 
@@ -110,7 +110,7 @@ flowchart LR
 
 ---
 
-## 5. Reproduction notes
+## 5. 復現
 
 - **openpi repo**：[github.com/Physical-Intelligence/openpi](https://github.com/Physical-Intelligence/openpi)，2024-09 release，223+ open issues（截 2026-05）。
 - **GPU 預算**：fine-tune 一個下游 task：8× A100 80GB 一晚（~1B params total），LoRA 變體 ([#944](https://github.com/Physical-Intelligence/openpi/issues/944)) 可降到 2-4× A100。從頭訓 ([#436](https://github.com/Physical-Intelligence/openpi/issues/436)) 需要 PI 級別資料（10,000h+）+ 64+ A100 數週——基本不可複現。
@@ -122,7 +122,7 @@ flowchart LR
 
 ---
 
-## 6. Cross-line synthesis
+## 6. 跨路線綜合
 
 PI 是本 handbook 4 條技術路線的**下游消費端**，不是 producer：
 
@@ -134,11 +134,11 @@ PI 是本 handbook 4 條技術路線的**下游消費端**，不是 producer：
 **跨 handbook 引用**：
 - VLA-Handbook 把 π0/π0.5 列為 VLA architecture 章的旗艦案例（action-output 端權威）。
 - 本倉視角：π0 是**驗證合成資料 ROI 的 ground truth**——任何 robotics-data-gen 路線的成敗在「PI policy success rate 提升 N%」這個數字上見真章。
-- Bridge：[`/bridge-to-vla/generative-data-for-vla.md`](../../bridge-to-vla/overview.md)。
+- 橋接：[`/bridge-to-vla/generative-data-for-vla.md`](../../bridge-to-vla/overview.md)。
 
 ---
 
-## 7. References
+## 7. 參考
 
 **Canonical**
 - π0: Black, Brown, Driess, Esmail et al., arXiv [2410.24164](https://arxiv.org/abs/2410.24164), Oct 2024
@@ -146,44 +146,44 @@ PI 是本 handbook 4 條技術路線的**下游消費端**，不是 producer：
 - π0 blog: [physicalintelligence.company/blog/pi0](https://physicalintelligence.company/blog/pi0)
 - π0.5 paper PDF: [pi.website/download/pi05.pdf](https://www.pi.website/download/pi05.pdf)
 
-**Secondary / wild eval**
+**次要 / in-the-wild 評估**
 - [GRASP Lab "Evaluating π0 in the Wild"](https://penn-pal-lab.github.io/Pi0-Experiment-in-the-Wild/) — 第三方 OOD failure 量化
 - [Cloderic notes on π0](https://www.cloderic.com/content/2025-02-27-notes-on-pi0)
 - [openpi repo issues / discussions](https://github.com/Physical-Intelligence/openpi/issues)
 
 ---
 
-## §8 Pitfall log
+## §8 踩坑日誌
 
-> Severity 標尺：🔴 blocker · 🟠 major · 🟡 minor。
+> 嚴重度標尺：🔴 blocker · 🟠 major · 🟡 minor。
 
 ### §8.1 🔴 Cross-embodiment 不是自動的（[#449](https://github.com/Physical-Intelligence/openpi/issues/449), [#872](https://github.com/Physical-Intelligence/openpi/issues/872), [Discussion #740](https://github.com/Physical-Intelligence/openpi/discussions/740))
 
-Action dim 在 `src/openpi/training/config.py` 是 7/8（Franka）hardcode。換 12-DoF mobile arm 要自己改 config + normalization stats，並且 shared projection vs separate encoder 沒 canonical 答案。**Workaround**：先 LoRA fine-tune 在新 embodiment 的 200+ demo 上；不要期待 zero-shot。社區共識：「π0 是 multi-embodiment trained，不等於 cross-embodiment generalizing」。
+Action dim 在 `src/openpi/training/config.py` 是 7/8（Franka）hardcode。換 12-DoF mobile arm 要自己改 config + normalization stats，並且 shared projection vs separate encoder 沒 canonical 答案。**繞法**：先 LoRA fine-tune 在新 embodiment 的 200+ demo 上；不要期待 zero-shot。社區共識：「π0 是 multi-embodiment trained，不等於 cross-embodiment generalizing」。
 
 ### §8.2 🔴 OOD 物件直接崩到 0%（[Penn PAL eval](https://penn-pal-lab.github.io/Pi0-Experiment-in-the-Wild/))
 
-玻璃茶壺 / 玩具櫃 / 咖啡機 success rate **0%**。**根因**：PaliGemma 沒看過該物件 + 沒有 LLM-style commonsense fallback。**Workaround**：先用 detection prompt（π0.5 引入 object detection 條件）強制 grounding；OOD task 不要直接上 π0，先收 100+ demo fine-tune。**對 physics-gen handbook 的啟示**：合成 video 補 OOD 物件覆蓋率是有明確 ROI 的方向（如果 transfer 真的成立）。
+玻璃茶壺 / 玩具櫃 / 咖啡機 success rate **0%**。**根因**：PaliGemma 沒看過該物件 + 沒有 LLM-style commonsense fallback。**繞法**：先用 detection prompt（π0.5 引入 object detection 條件）強制 grounding；OOD task 不要直接上 π0，先收 100+ demo fine-tune。**對 physics-gen handbook 的啟示**：合成 video 補 OOD 物件覆蓋率是有明確 ROI 的方向（如果 transfer 真的成立）。
 
 ### §8.3 🟠 Prompt 措辭極度敏感（[Penn PAL eval](https://penn-pal-lab.github.io/Pi0-Experiment-in-the-Wild/))
 
-"Close the toilet" → 0%；"Close the white lid for the toilet" → 100%。Nonsense input 退化到 training-dominant 物件。**Workaround**：production deployment 必須加一層 LLM rewriter normalize 指令；不要把使用者原話直接喂 policy。
+"Close the toilet" → 0%；"Close the white lid for the toilet" → 100%。Nonsense input 退化到 training-dominant 物件。**繞法**：production deployment 必須加一層 LLM rewriter normalize 指令；不要把使用者原話直接喂 policy。
 
 ### §8.4 🟠 Memory-less freeze + 腕部遮擋崩潰（[Penn PAL eval](https://penn-pal-lab.github.io/Pi0-Experiment-in-the-Wild/))
 
-架構無 cross-chunk memory，手放在把手上時視覺像 idle scene → policy 凍結。腕部相機完全遮擋 → 0% 進度，無 active search。**Workaround**：上層加 task-state FSM 強制推進；外部 retry / nudge 邏輯；硬體上保證 wrist cam 不被衣物完全擋住。
+架構無 cross-chunk memory，手放在把手上時視覺像 idle scene → policy 凍結。腕部相機完全遮擋 → 0% 進度，無 active search。**繞法**：上層加 task-state FSM 強制推進；外部 retry / nudge 邏輯；硬體上保證 wrist cam 不被衣物完全擋住。
 
 ### §8.5 🟠 π0.5 SigLIP positional embedding 失衡（[#947](https://github.com/Physical-Intelligence/openpi/issues/947))
 
-官方 π0.5 checkpoint 載入後 SigLIP 學到的 posemb 在 patch grid 上 L2 norm 有極端不均。Downstream finetune 在某些 spatial region 收斂異常。**Workaround**：先 audit posemb norm；考慮重新初始化或 LoRA 只在 action expert 而不碰 vision tower。
+官方 π0.5 checkpoint 載入後 SigLIP 學到的 posemb 在 patch grid 上 L2 norm 有極端不均。Downstream finetune 在某些 spatial region 收斂異常。**繞法**：先 audit posemb norm；考慮重新初始化或 LoRA 只在 action expert 而不碰 vision tower。
 
 ### §8.6 🟡 從頭訓不可複現 / LIBERO 推理暗坑（[#436](https://github.com/Physical-Intelligence/openpi/issues/436), [#936](https://github.com/Physical-Intelligence/openpi/issues/936))
 
-從頭訓需要 PI 級別 10,000h+ 資料 + 64+ A100 數週——基本上只能用發布的 checkpoint。LIBERO benchmark 上推理結果與論文對不齊，目前 issue 未閉。**Workaround**：用 LoRA fine-tune ([#944](https://github.com/Physical-Intelligence/openpi/issues/944)) 路線；reproduce LIBERO 數字前對齊 action chunk 規格 + normalization stats。
+從頭訓需要 PI 級別 10,000h+ 資料 + 64+ A100 數週——基本上只能用發布的 checkpoint。LIBERO benchmark 上推理結果與論文對不齊，目前 issue 未閉。**繞法**：用 LoRA fine-tune ([#944](https://github.com/Physical-Intelligence/openpi/issues/944)) 路線；reproduce LIBERO 數字前對齊 action chunk 規格 + normalization stats。
 
 ### §8.7 🟡 Force / contact-rich 任務無 tactile（[Penn PAL eval](https://penn-pal-lab.github.io/Pi0-Experiment-in-the-Wild/))
 
-純視覺輸入無法估計握力強度，捏細物太用力 / 抓重物太鬆。**Workaround**：硬體加 tactile sensor 並在 fine-tune 加 force 通道（[Force Prompting](../../foundations/physics-conditioning/force-prompting.md) 路線的下游應用點）；或限制部署任務避開 force-critical 場景。
+純視覺輸入無法估計握力強度，捏細物太用力 / 抓重物太鬆。**繞法**：硬體加 tactile sensor 並在 fine-tune 加 force 通道（[Force Prompting](../../foundations/physics-conditioning/force-prompting.md) 路線的下游應用點）；或限制部署任務避開 force-critical 場景。
 
 ---
 
