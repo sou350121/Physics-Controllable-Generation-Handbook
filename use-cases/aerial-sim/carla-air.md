@@ -4,7 +4,7 @@
 
 > Tianle Zeng、Yanci Wen、Hong Zhang。arXiv [2603.28032](https://arxiv.org/abs/2603.28032)（v1 2026-03-30 / v2 2026-04-22；cs.RO·cs.AI·cs.CV·cs.HC）。程式碼 [github.com/louiszengCN/CarlaAir](https://github.com/louiszengCN/CarlaAir)（2026-03-19 建立，約 991★，維護中）。專案站 [carla-air.com](https://www.carla-air.com/)。
 >
-> **為什麼值得收進 aerial-sim 名單**：前面七套 aerial sim（[對比見此](./aerial-sim-stack.md)）拼的是「動力學精度 × 並行吞吐 × 畫面真實感」這個三角；CARLA-Air 不在這個三角裡比，它補的是**所有純空中模擬器都缺的一塊**——把無人機放進一個**有規則車流、有社會化行人、城市級像素級真實感**的世界，而且**空中與地面共用同一個物理 tick、同一個渲染器**。對「低空經濟 / 城市空域 / 空地協同 / 跨視角感知 / 具身導航（VLN-VLA）」這些題目，它是目前最對口的公開模擬基座。它在 ontology 上唯一同時佔住 `domain=robotics`（空中）與 `domain=driving`（地面）兩格——這就是它的真正座標。
+> **為什麼值得收進 aerial-sim 名單**：前面七套 aerial sim（[對比見此](./aerial-sim-stack.md)）拼的是「動力學精度 × 並行吞吐 × 畫面真實感」這個三角；CARLA-Air 不在這個三角裡比，它補的是**所有純空中模擬器都缺的一塊**——把無人機放進一個**有規則車流、有社會化行人、城市級像素級真實感**的世界，而且**空中與地面共用同一個物理 tick、同一個渲染器**。對「低空經濟 / 城市空域 / 空地協同 / 跨視角感知 / 具身導航（VLN-VLA）」這些題目，它是目前最對口的公開**單引擎**基座（空地統一另有 TranSimHub / AirSimAG 等耦合式別解，見 §五軸定位）。它在 ontology 上唯一同時佔住 `domain=robotics`（空中）與 `domain=driving`（地面）兩格——這就是它的真正座標。
 
 ## 一句話總結
 
@@ -54,11 +54,34 @@ flowchart LR
 - **單一 tick 共模擬，而非橋接（bridge）**：很多空地系統用 ROS bridge 把兩個獨立模擬器串起來，代價是同步開銷與時序漂移。CARLA-Air 把無人機直接放進 CARLA 的 Unreal 場景，**省掉跨進程同步**，換來嚴格的空地時空一致——這對「無人機看著地面車流做決策」這類跨視角任務是硬需求。
 - **城市真實感免費繼承**：因為渲染器就是 CARLA 的，無人機視角直接拿到 CARLA 的像素級真實感城市（測過 Town01–05、Town10HD 等 13 張城市圖、14 種天氣預設）。這是它相對純空中模擬器最大的單點優勢。
 
+## 拿它做什麼：空地協同的五條工作流
+
+CARLA-Air 的價值不在「又一個無人機 sim」，而在**它讓你做的事**。論文把方向收成四條（air-ground cooperation／embodied navigation + VLN-VLA／multi-modal perception + dataset／RL），用五個工作流（W1–W5，皆 Town10HD / RTX A4000）示範：
+
+```mermaid
+flowchart TD
+    CA["CARLA-Air：空地一體<br/>單一引擎 ＋ 單一 tick"]
+    CA --> D1["① 空地協同<br/>W1 降到移動車頂（誤差 0.5m 內）"]
+    CA --> D2["② 具身導航 + VLN-VLA<br/>W2 空中 oracle 視角 + CoT 標註"]
+    CA --> D3["③ 多模態感知 + 資料集<br/>W3 12 路同步 · W4 跨視角共配準"]
+    CA --> D4["④ RL 策略訓練<br/>W5 動作＝3D 速度（SB3 / RLlib）"]
+    D3 -.->|"同款資料現多靠 CARLA+AirSim 硬橋接"| REAL["Griffin · AirV2X（空地協同感知）<br/>University-1652（跨視角定位）"]
+    D2 -.-> VLN["AerialVLN · CityNav（城市空中 VLN）"]
+```
+*圖：CARLA-Air 的應用層——四方向 / 五工作流，及它們餵向的真實任務。關鍵：W3/W4 那類「空地協同感知」資料，現在的公開資料集（Griffin / AirV2X）多半是**把 CARLA 硬橋接 AirSim** 做的——這正是 CARLA-Air（單一引擎、免橋接）的存在理由。*
+
+- **① 空地協同（W1 精準降落）**：無人機降到一台**移動中**的車頂，終端水平誤差 **0.5 m 內**（起始偏 ~6 m / 高 ~12 m、~20 s、三段控制器）。「空中看著地面動態做閉環」最乾淨的小範例。
+- **② 具身導航 + VLN-VLA（W2，capability 非 benchmark）**：同場景出**空中 ＋ 地面**配對的 RGB/depth/semseg、車道級航點、加空中「oracle 俯視」+ chain-of-thought 標註——這是純地面或純空中平台給不了的**跨視角 grounding**，對口 [AerialVLN](https://arxiv.org/abs/2308.06735) / [CityNav](https://arxiv.org/abs/2406.14240)。
+- **③ 多模態感知 + 資料集（W3/W4）**：W3 一次出 **12 路同步流（8 地面 ＋ 4 空中）**、用**共用 tick index 對齊**（≤1 tick、無時間戳內插）；W4 出 **500 對空拍-depth ↔ 地面-seg 共配準**、14/14 天氣過光照一致性檢查。這正是 [Griffin](https://arxiv.org/abs/2503.06983)（AAAI 2026）/ [AirV2X](https://arxiv.org/abs/2506.19283) 那類**空地協同感知**資料集在解的事——而它們**現在是 CARLA 橋接 AirSim 拼出來的**，所以 CARLA-Air 的免橋接單 tick 直接對口；跨視角定位接 University-1652。
+- **④ RL 策略訓練（W5）**：Gym 式同步步進（Stable-Baselines3 / RLlib），動作＝3D 速度命令，穩定性由 **357 次 reset / 3 小時零崩潰**背書。但**單環境 ~20 FPS、無 GPU 並行萬級環境**——大規模 RL 仍回 [Aerial Gym](./aerial-sim-stack.md)。
+
+> **驅動力（論文原話）**：低空經濟（低空经济，已入中國 2024 政府工作報告、2025 市場 ~1.5 兆人民幣）、城市空域、空地協同——都要「在同一個物理一致的世界裡同時模空中與地面」，正是它的命題。
+
 ## 五軸定位與同類對手
 
 | 系統 | output | injection | control | temporal | domain | 一句話差異 |
 |---|---|---|---|---|---|---|
-| **CARLA-Air** | N/A | sim-in-loop-train | action·trajectory·camera | streaming | **robotics + driving** | 唯一空地同 tick + 城市像素級真實感 |
+| **CARLA-Air** | N/A | sim-in-loop-train | action·trajectory·camera | streaming | **robotics + driving** | **首個單一引擎 / 單一 tick** 空地共模 + 城市像素級真實感 |
 | AirSim（單獨） | N/A | sim-in-loop-train | action·trajectory·camera | streaming | robotics | 有無人機像素級真實感，但無豐富地面車流生態 |
 | Flightmare | N/A | sim-in-loop-train | action·trajectory | streaming | robotics | Unity 像素級真實感空中，無地面交通 |
 | Isaac-Pegasus | N/A | sim-in-loop-train | action·trajectory·param | streaming | robotics | Omniverse RTX + PX4，像素級真實感但無城市駕駛生態 |
@@ -66,7 +89,7 @@ flowchart LR
 
 > **Cross-axis 必要說明**（呼應 ontology Check 9b/9c）：CARLA-Air 是模擬器，故 `output=N/A`；它在 `domain` 軸上同時標 `robotics|driving`，是因為它真的把兩個 domain 放進同一場景共模擬——這不是含糊其辭，而是它存在的理由。它沒有用到 `generalist`（非白名單），因此不觸發 Check 9c。
 
-它真正的對手其實不是別的 aerial sim，而是「**任何想同時要城市車流生態 + 空中視角**」的需求方案：要嘛接受 ROS bridge 串兩個模擬器的同步開銷，要嘛用 CARLA-Air 的單 tick 共模擬。
+它真正的對手其實不是別的 aerial sim，而是「**任何想同時要城市車流生態 + 空中視角**」的需求方案：要嘛接受 **ROS bridge 串兩個模擬器**（[Griffin](https://arxiv.org/abs/2503.06983) / [AirV2X](https://arxiv.org/abs/2506.19283) 資料集即把 CARLA 橋接 AirSim；[TranSimHub](https://arxiv.org/abs/2510.15365) 用 SUMO+Blender 耦合；[AirSimAG](https://arxiv.org/abs/2603.23079) 客製 AirSim），要嘛用 CARLA-Air 的單 tick 共模擬。**所以它的差異化不是「唯一空地統一」（那有別解），而是「首個把無人機與 CARLA 駕駛世界塞進單一引擎、單一 tick、免橋接」**——這條才站得住。
 
 ## 強在哪 / 崩在哪
 
@@ -74,7 +97,7 @@ flowchart LR
 
 - **空地統一、單一物理 tick**：無橋接同步開銷，空中與地面嚴格時空一致——做空地協同、跨視角（cross-view）感知、車-機協作這類任務的首選公開基座。
 - **城市級像素級真實感免費繼承**：13 城市圖 × 14 天氣，無人機俯視/斜視城市場景的畫面真實感遠勝純空中模擬器。
-- **18 種同步多模態感測**：一個場景同時出 RGB/depth/分割/LiDAR/radar/IMU/GNSS… 對「建多模態資料集、餵感知或具身模型」極友善（搭 [generative-aerial-data](./generative-aerial-data.md) 看資料用途）。
+- **多模態同步感測（宣稱最多 18；README 具名 10、論文 demo 實際 12 路 = 8 地面 + 4 空中）**：一個場景同時出 RGB/depth/分割/LiDAR/radar/IMU/GNSS… 對「建多模態資料集、餵感知或具身模型」極友善（搭 [generative-aerial-data](./generative-aerial-data.md) 看資料用途）。
 - **零改動復用既有生態**：CARLA + AirSim 雙 Python API + ROS2 全保留，舊程式碼搬遷成本低。
 - **讓已封存的 AirSim 飛控續命**：AirSim 上游 2022 已封存，CARLA-Air 把它的飛控接到一個仍在維護的環境裡——對還在用 AirSim 資產的團隊是一條延壽路。
 
@@ -127,7 +150,20 @@ CARLA-Air 的外觀來自 CARLA 的 Unreal render——城市夠豐富，但**�
 
 ## 自救：如何補強 / 繞過鎖死
 
-§4 兩個侷限（**AirSim 剛體空氣動力學** 與 **已封存版本鎖死**）**都能自己解**。以下路徑均經內嵌源碼核對（檔案路徑見 §參考）。
+§4 兩個侷限（**AirSim 剛體空氣動力學** 與 **已封存版本鎖死**）**都能自己解**。以下路徑均經內嵌源碼核對（檔案路徑見 §參考）。先用決策樹定位你該走哪條：
+
+```mermaid
+flowchart TD
+    Q{"你卡在哪？"}
+    Q -->|"動力學不夠真<br/>（要 rotor aero / 風場）"| A2["A2：ExternalPhysicsEngine + RotorPy<br/>純 Python、不重編、最划算（推薦）"]
+    Q -->|"只要均勻風擾"| AW["A1：simSetWind()<br/>RPC 現成、最省力"]
+    Q -->|"要任意殘差力<br/>（地效 / 自訂 wrench）"| AP["A1：改源碼加 external_wrench<br/>＋ 重編 fork"]
+    Q -->|"要真 autopilot<br/>＋ 高保真動力學"| PX["PX4 + RotorPy + AirSim<br/>自寫 MAVLink HIL shim（DIY）"]
+    Q -->|"版本鎖死 / 要現代化"| B["B：多數人接受凍結 + A2<br/>真升級＝重整合（CARLA0.10 / Cosys / Project AirSim）"]
+    classDef rec fill:#e6f4ea,stroke:#34a853,color:#202124
+    class A2 rec
+```
+*圖：§自救 決策樹——按你卡的點選路；絕大多數情況是「接受凍結 ＋ A2（RotorPy）」。*
 
 ### A. 把飛行動力學做高保真
 
