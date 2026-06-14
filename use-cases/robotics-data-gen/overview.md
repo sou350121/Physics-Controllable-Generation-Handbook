@@ -19,6 +19,10 @@
 - [ ] V-JEPA-2 action-cond 對 VLA pre-train 的提升實測
 - [ ] RoboCasa-style 合成 vs 真實 demo 的 Pareto
 
+## 本區 Dissections
+
+- [Physical Intelligence π0 / π0.5](./physical-intelligence-pi0.md) — VLA flow model，robotics 合成資料的下游終點客戶
+
 ## 與 VLA-Handbook bridge
 
 詳見 [`/bridge-to-vla/generative-data-for-vla.md`](../../bridge-to-vla/overview.md)

@@ -31,6 +31,10 @@ ControlNet 在 image diffusion 取得成功 → 同套思路向 video / physics 
 - [ ] Cosmos-Drive trajectory conditioning 工程
 - [ ] ForceGen / ContactGen 對比
 
+## 本區 Dissections
+
+- [AnimateDiff](./animatediff.md) — frozen T2I 上掛 temporal motion module 的 sidecar 範式
+
 ## §8 共通 pitfall
 
 - Multi-conditioning 互相干擾 —— text 蓋住 trajectory 的常見現象

@@ -20,4 +20,4 @@ Spatial structure 作為 conditioning — occupancy / depth / pose / BEV / 6-DoF
 
 - [`/foundations/controllability-mechanisms/overview.md`](../foundations/controllability-mechanisms/overview.md)
 - [`/foundations/video-world-models/gaia-2.md`](../foundations/video-world-models/gaia-2.md)
-- Spatial-Handbook：`foundations/feed-forward-3d/`、`embodiments/driving/`
+- Spatial-Handbook：[`foundations/feed-forward-3d/`](https://github.com/sou350121/Spatial-Intelligence-Handbook/tree/main/foundations/feed-forward-3d)、[`embodiments/driving/`](https://github.com/sou350121/Spatial-Intelligence-Handbook/tree/main/embodiments/driving)

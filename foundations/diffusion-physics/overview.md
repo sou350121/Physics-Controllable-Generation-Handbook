@@ -25,6 +25,10 @@
 - [ ] Force/Contact conditioning 在 diffusion 中的設計（與 controllability-mechanisms 互鏈）
 - [ ] Score-conditioned 與 aux-loss 的 Pareto 比較
 
+## 本區 Dissections
+
+- [ContactGen](./contactgen.md) — contact-guided diffusion 生 human-human 互動（AAAI 2024）
+
 ## §8 共通 pitfall
 
 - Guidance scale 過大 → 採樣崩塌；過小 → 物理失效

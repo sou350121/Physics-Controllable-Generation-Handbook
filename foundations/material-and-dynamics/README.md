@@ -26,6 +26,10 @@
 - [ ] Rigid contact discontinuity 處理
 - [ ] Cross-material 統一架構（Genesis-NN）
 
+## 本區 Dissections
+
+- [NeuralMPM](./neural-mpm.md) — MPM grid-particle 雙重表徵搬進 neural emulator（含 GNS）
+
 ## §8 共通 pitfall
 
 - Cross-material generalization 幾乎不存在

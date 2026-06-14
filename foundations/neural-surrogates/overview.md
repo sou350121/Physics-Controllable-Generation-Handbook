@@ -37,6 +37,14 @@
 - [ ] NeuralMPM 在 fluid/granular 的 sim2real
 - [ ] Pangu / GenCast 與 GraphCast 對比
 
+## 本區 Dissections
+
+- [GraphCast](./graphcast.md) — icosahedral GNN 中期天氣預報，已入 ECMWF prod
+- [GenCast](./gencast.md) — conditional diffusion 機率性 ensemble 天氣預報（Nature 2024）
+- [Pangu-Weather](./pangu-weather.md) — 3D Earth-Specific Transformer 天氣預報（Nature 2023）
+- [FNO + PDE-Refiner](./fno.md) — Fourier neural operator，spectral function-to-function PDE 映射
+- [MeshGraphNet](./meshgraphnet.md) — mesh-based physics surrogate 鼻祖，encode-process-decode GNN
+
 ## §8 共通 pitfall
 
 - Long-rollout drift —— 自迴歸 surrogate 累積誤差，PDE-Refiner 嘗試解

@@ -39,6 +39,11 @@
 - [ ] DreamFusion → Magic3D → 後續 text-to-3D 演化
 - [ ] Generative Gaussian Splatting (2503.13272) — v2 spec 列為 `3d-explicit` canonical anchor
 
+## 本區 Dissections
+
+- [Generative Gaussian Splatting](./generative-gaussian-splatting.md) — 3DGS 當 video diffusion 中間 bottleneck 保 3D 一致
+- [World Labs Marble](./world-labs.md) — 從 image/text 生 explorable 3D scene（closed product）
+
 ## §8 共通 pitfall
 
 - Multi-view consistency 仍脆

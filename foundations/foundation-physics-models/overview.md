@@ -26,6 +26,10 @@
 - [ ] FM-for-physics 與 LLM-FM 的 layered combo
 - [ ] (未來) 跨 domain transfer 實測
 
+## 本區 Dissections
+
+- [NVIDIA Cosmos WFM](./cosmos-wfm.md) — open-weight generalist 多模 conditioning video FM stack
+
 ## §8 共通 pitfall
 
 - 「FM」名詞被 hype 推高，實質單 domain 居多

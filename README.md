@@ -4,9 +4,9 @@
 >
 > **从 Sora 到 Genesis，从 GraphCast 到 GAIA** — 影片生成圈不讀 PDE solver 圈，diff-sim 圈不讀 latent WM 圈，自駕 closed-loop 圈和神經 surrogate 圈各自閉門造 conditioning。**本 handbook 做一件事：把這 5 條技術路線各自如何「把物理灌進生成」攤在桌上橫向對比，並標註誰違反守恆律、誰能 closed-loop、誰能拿 force 當輸入。**
 
-[![Docs Live](https://img.shields.io/badge/docs-Mintlify_Phase_2-lightgrey?style=for-the-badge&logo=readme&logoColor=white)](#status)
+[![Read on GitHub](https://img.shields.io/badge/Phase_1-✅_35_dissections-9d4edd?style=for-the-badge&logo=readme&logoColor=white)](./foundations/overview.md)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue)](./LICENSE)
-[![Pages](https://img.shields.io/badge/pages-128-orange)](./cheat-sheet/functional_map.md)
+[![Pages](https://img.shields.io/badge/markdown_pages-150-orange)](./cheat-sheet/functional_map.md)
 [![Dissections](https://img.shields.io/badge/dissections-35_anchor-purple)](./foundations/overview.md)
 [![Ontology](https://img.shields.io/badge/5--axis_ontology-v2.0-red)](./cheat-sheet/ontology.md)
 [![Audit](https://img.shields.io/badge/audit-19%2F19_v2_migrated-success)](./AUDIT_2026-05-26-v2.md)
@@ -33,7 +33,7 @@
 
 &nbsp;
 
-## 三句话说清楚这个 Handbook 的价值
+## 💡 三句话说清楚这个 Handbook 的价值
 
 1. **不只是综述**：每篇 dissection 頂帶 5-axis ontology header（output × injection × controllability × temporal × domain），列 2-3 個同軸對手，並附 §8 GitHub-validated pitfall log —— "讀懂論文" 和 "踩過坑" 之間的距離被顯式標出來。
 2. **跨 5 條技術路線橫切**：pixel-video（Sora/Veo）· latent WM（Genie/V-JEPA）· diff-sim（Genesis/MJX）· neural surrogate（GraphCast/FNO）· 3D-aware gen —— 市場上所有 generative-physics 綜述都是單一路線閉門寫，本倉是第一本把這 5 條路線上的 physics injection 機制橫向對比的。
@@ -114,7 +114,7 @@ graph TD
 
 &nbsp;
 
-## 🏛️ 11 顶层目录
+## 🏛️ 顶层目录导览
 
 &nbsp;
 
@@ -505,24 +505,24 @@ foundations/overview.md
 
 &nbsp;
 
-## 🏆 Achievements
+<details>
+<summary><h2>🏆 Achievements &amp; Boss Monsters（读完一篇就解锁，点开看）</h2></summary>
 
-读完一篇就算解锁。看看你能拿几个？
+**成就 — 看看你能拿几个？**
 
 | | 成就 | 解锁条件 |
 |:---:|------|---------|
-| 🥉 | **First Blood** | 读完任意 1 篇 dissection |
-| 🎓 | **Pixel + Latent + Sim** | 读完 Sora + V-JEPA-2 + Genesis 三篇 |
-| 🌍 | **Cross-Line Tour** | 跨 5 條主路線（video-WM · latent-WM · diff-sim · neural-surrogate · 3D-aware-gen）各讀 ≥ 1 篇 |
-| 🧠 | **Injection Atlas Master** | 讀完 physics-conditioning 5 篇 anchor（PINN · HNN/LNN · PhysDiff · PhysGen · Force Prompting）+ overview 的 anti-pattern atlas |
-| 🔭 | **USP Hunter** | 读完 5 个 crossing wedge overview |
-| 🐉 | **Boss Hunter** | 读完 boss monsters 中的 3 篇（见下表） |
-| ⚡ | **Speed Runner** | 完成任意一条 Speed Run |
-| 🧮 | **Ontology Master** | 读 ontology v1 + v1.1 review + 从 5 轴各取 ≥ 1 篇代表作 |
-| 👑 | **Handbook Master** | 11 个顶层目录（foundations / crossing / use-cases / companies / benchmarks / cheat-sheet / bridge-to-vla / bridge-to-spatial / deployment / reports / docs）各读 ≥ 1 篇 + 完成 ≥ 3 条 Speed Run |
+| 🥉 | First Blood | 读完任意 1 篇 dissection |
+| 🎓 | Pixel + Latent + Sim | 读完 Sora + V-JEPA-2 + Genesis 三篇 |
+| 🌍 | Cross-Line Tour | 跨 5 條主路線（video-WM · latent-WM · diff-sim · neural-surrogate · 3D-aware-gen）各讀 ≥ 1 篇 |
+| 🧠 | Injection Atlas Master | 讀完 physics-conditioning 5 篇 anchor（PINN · HNN/LNN · PhysDiff · PhysGen · Force Prompting）+ overview 的 anti-pattern atlas |
+| 🔭 | USP Hunter | 读完 5 个 crossing wedge overview |
+| 🐉 | Boss Hunter | 读完下方 boss monsters 中的 3 篇 |
+| ⚡ | Speed Runner | 完成任意一条 Speed Run |
+| 🧮 | Ontology Master | 读 ontology v1 + v1.1 review + 从 5 轴各取 ≥ 1 篇代表作 |
+| 👑 | Handbook Master | 12 个顶层目录（foundations / crossing / use-cases / companies / benchmarks / cheat-sheet / bridge-to-vla / bridge-to-spatial / deployment / reports / docs / scripts）各读 ≥ 1 篇 + 完成 ≥ 3 条 Speed Run |
 
-<details>
-<summary>🐉 Boss Monsters（整本 handbook 最难的 5 篇）</summary>
+**🐉 Boss Monsters（整本 handbook 最难的几篇）**
 
 | 文章 | Why It's Hard |
 |------|---------------|
@@ -542,7 +542,7 @@ foundations/overview.md
 
 &nbsp;
 
-## 三册一体（VLA · Spatial · Physics-Gen 的分工）
+## 🌉 三册一体（VLA · Spatial · Physics-Gen 的分工）
 
 三本 handbook 各自独立，但互引——同一条 paper 在不同册里读出的结论不一样。穿越时走对应 `bridge-to-*` 目录。
 
@@ -564,7 +564,7 @@ foundations/overview.md
 
 &nbsp;
 
-## 许可证与贡献
+## ⚖️ 许可证与贡献
 
 Apache 2.0 · 欢迎 Issue 和 PR：补 dissection · WFM 实测 · benchmark 复现 · crossing wedge 新单元格
 

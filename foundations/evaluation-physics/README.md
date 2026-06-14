@@ -34,6 +34,11 @@
 - [ ] downstream-task evaluation（生成資料 → VLA success 提升）
 - [ ] 守恆律違反 metrics 的可重現 implementation
 
+## 本區 Dissections
+
+- [VBench / VBench-2.0 / PhysBench](./vbench-physics.md) — eval suite landscape，三家 benchmark 分工
+- [PhysBench](./physbench.md) — 考 VLM 自己懂不懂物理（ICLR 2025）
+
 ## §8 共通 pitfall
 
 - Benchmark Goodhart —— 高分模型在新場景仍崩

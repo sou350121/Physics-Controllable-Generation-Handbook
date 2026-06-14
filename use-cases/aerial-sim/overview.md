@@ -51,6 +51,10 @@
 
 詳見 [`/bridge-to-spatial/aerial-embodiment.md`](../../bridge-to-spatial/overview.md)（待寫）。
 
+## 本區 Dissections
+
+- [Swift — Champion-Level Drone Racing](./champion-level-drone-racing.md) — 首個實體比賽擊敗人類冠軍的自主無人機（Nature 2023）
+
 ## Dissection wishlist (3-4 篇)
 
 - [ ] Aerial Gym Simulator —— GPU 並行 + geometric controller + ray-cast rendering 工程拆解（與 Isaac Lab aerial 對比）

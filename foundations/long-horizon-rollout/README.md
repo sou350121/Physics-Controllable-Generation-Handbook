@@ -21,6 +21,10 @@
 - [ ] Cosmos-Reason+Predict hierarchical 路線
 - [ ] PDE-Refiner 的迭代精修在 video WM 的可遷移性
 
+## 本區 Dissections
+
+- [TECO](./teco.md) — hierarchical latent rollout，conditioned 36 幀預測 300 幀
+
 ## §8 共通 pitfall
 
 - Joint rollout 把長度寫死，跨 clip 銜接靠 image-init 不穩

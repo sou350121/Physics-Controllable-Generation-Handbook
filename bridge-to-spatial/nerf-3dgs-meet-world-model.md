@@ -19,4 +19,4 @@
 - [`/foundations/3d-aware-generation/overview.md`](../foundations/3d-aware-generation/overview.md)
 - [`/foundations/video-world-models/overview.md`](../foundations/video-world-models/overview.md)
 - [`/foundations/latent-world-models/overview.md`](../foundations/latent-world-models/overview.md)
-- Spatial-Handbook：`foundations/world-model/`
+- Spatial-Handbook：[`foundations/world-model/`](https://github.com/sou350121/Spatial-Intelligence-Handbook/tree/main/foundations/world-model)

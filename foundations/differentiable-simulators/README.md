@@ -37,6 +37,14 @@
 - [ ] NVIDIA Omniverse → Cosmos 資料管道
 - [ ] DiffTaichi → 神經 PDE 的學術橋
 
+## 本區 Dissections
+
+- [MuJoCo MJX](./mujoco-mjx.md) — MuJoCo 移植 JAX/XLA，contact-rich rigid GPU 並行
+- [Genesis](./genesis.md) — rigid+soft+fluid 統一 Taichi-backed Python 引擎
+- [NVIDIA Warp](./nvidia-warp.md) — Python-first GPU sim，NVIDIA Physical-AI stack 黏合層
+- [DiffTaichi](./difftaichi.md) — 可微物理 sim 學術錨點，Genesis 直接父代
+- [Aerial Gym](./aerial-gym.md) — drone-only thousand-env GPU sim（Isaac Gym backbone）
+
 ## §8 共通 pitfall
 
 - Contact discontinuity 仍是 differentiability 弱點 —— 梯度估計噪聲

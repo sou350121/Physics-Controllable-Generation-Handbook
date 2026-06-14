@@ -21,5 +21,5 @@
 
 ## 跟 VLA-Handbook 同步
 
-- VLA-Handbook 也有 `theory/03-engineering/` 與 `embodiments/` 等視角會引用 generation 線
+- VLA-Handbook 也有 [`theory/03-engineering/`](https://github.com/sou350121/VLA-Handbook/tree/main/theory/03-engineering) 與 [`embodiments/`](https://github.com/sou350121/VLA-Handbook/tree/main/embodiments) 等視角會引用 generation 線
 - 建議互開 PR，bridge 文件兩邊各放一份 mirror（或 cross-link）

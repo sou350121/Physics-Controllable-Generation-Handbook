@@ -14,10 +14,10 @@
 
 | 本倉 | Spatial-Handbook 對應 |
 |---|---|
-| `foundations/3d-aware-generation/` | `foundations/3dgs-family/`, `foundations/feed-forward-3d/` |
-| `foundations/video-world-models/` | `foundations/world-model/` |
-| `use-cases/autonomous-driving-sim/` | `embodiments/driving/` |
-| `companies/wayve.md` | `companies/wayve_world_model.md` |
+| `foundations/3d-aware-generation/` | [`foundations/3dgs-family/`](https://github.com/sou350121/Spatial-Intelligence-Handbook/tree/main/foundations/3dgs-family), [`foundations/feed-forward-3d/`](https://github.com/sou350121/Spatial-Intelligence-Handbook/tree/main/foundations/feed-forward-3d) |
+| `foundations/video-world-models/` | [`foundations/world-model/`](https://github.com/sou350121/Spatial-Intelligence-Handbook/tree/main/foundations/world-model) |
+| `use-cases/autonomous-driving-sim/` | [`embodiments/driving/`](https://github.com/sou350121/Spatial-Intelligence-Handbook/tree/main/embodiments/driving) |
+| `companies/wayve.md` | [`companies/wayve_world_model.md`](https://github.com/sou350121/Spatial-Intelligence-Handbook/tree/main/companies/wayve_world_model.md) |
 
 ## 寫作 rule
 

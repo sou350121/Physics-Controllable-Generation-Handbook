@@ -37,6 +37,13 @@
 - [ ] TECO hierarchical
 - [ ] latent vs pixel WM 在 agent control 的實測對比（指向 crossing/pixel-vs-latent-physics）
 
+## 本區 Dissections
+
+- [DreamerV3 → DreamerV4](./dreamer-v4.md) — RSSM → block-causal transformer latent WM 主線
+- [V-JEPA 2](./v-jepa-2.md) — self-supervised latent video model + action conditioning
+- [Genie 2](./genie-2.md) — action-conditioned interactive 3D world model（DeepMind）
+- [Decart Oasis](./decart-oasis.md) — real-time playable AI-generated Minecraft world
+
 ## §8 共通 pitfall
 
 - latent dynamics 收斂到 trivial 解（mode collapse） — V-JEPA 的著名挑戰

@@ -23,6 +23,10 @@
 - [ ] RoboCasa 合成場景設計
 - [ ] Real-Gen-Real 閉環的成功與失敗案例
 
+## 本區 Dissections
+
+- [RoboCasa](./robocasa.md) — sim→demo→policy 廚房 long-tail data engine（RSS 2024）
+
 ## §8 共通 pitfall
 
 - 資料 quality > quantity，但 curation 成本爆

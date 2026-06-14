@@ -9,15 +9,22 @@ ref=../../cheat-sheet/ontology.md
 
 # NVIDIA Cosmos World Foundation Model 解構（Cosmos WFM Dissection）
 
-> **發布時間**：2025-01 · arXiv [2501.03575](https://arxiv.org/abs/2501.03575)（Predict1）· 後續 [2503.15558](https://arxiv.org/abs/2503.15558)（Reason1, 2025-03）· [2601.16163](https://arxiv.org/abs/2601.16163)（Policy, 2026-01）
-> **論文**：*Cosmos World Foundation Model Platform for Physical AI*
-> **作者**：NVIDIA Cosmos team（含 Sanja Fidler 組 + Toronto AI Lab + NVIDIA Research Robotics / AV）
-> **核心定位**：第一個 **open-weight、generalist 預訓練、顯式支援多模 conditioning（text / image / video / trajectory / action / depth+seg）、配套 Reason-VLM + Tokenizer + Transfer multi-controlnet** 的 video FM stack。在 v2 ontology 上 anchor `output=pixel-video × injection=data-only|sim-in-loop-infer × control=multi-modal × temporal=clip-parallel|hierarchical × domain=generalist`。
+> **論文** *Cosmos World Foundation Model Platform for Physical AI* · NVIDIA Cosmos team（Sanja Fidler 組 + Toronto AI Lab + NVIDIA Research Robotics / AV）
+> **arXiv** [2501.03575](https://arxiv.org/abs/2501.03575)（Predict1, 2025-01）· [2503.15558](https://arxiv.org/abs/2503.15558)（Reason1, 2025-03）· [2601.16163](https://arxiv.org/abs/2601.16163)（Policy, 2026-01）
+> **核心定位** 第一個 **open-weight、generalist 預訓練、顯式支援多模 conditioning（text / image / video / trajectory / action / depth+seg）、配套 Reason-VLM + Tokenizer + Transfer multi-controlnet** 的 video FM stack。在 v2 ontology 上 anchor `output=pixel-video × injection=data-only|sim-in-loop-infer × control=multi-modal × temporal=clip-parallel|hierarchical × domain=generalist`。
+> **狀態** v0.5 — 基於 Predict1 paper 摘要 + 官方 release notes + 社群 reproduction + NVIDIA blog；Predict2 / Predict2.5 / Cosmos-Drive-Dreams 的 arxiv ID 與部分 benchmark 數字待升 v1 補。
 
-**Status:** v0.5 — 解構基於 Predict1 paper 摘要、後續官方 release notes、社群 reproduction 報告與 NVIDIA blog。Predict2 / Predict2.5 / Cosmos-Drive-Dreams 的 arxiv ID 與部分 benchmark 數字待維護者升 v1 時補。
 **TL;DR:** Cosmos 把 video FM 的天價 pre-training cost（**10K H100 × 3 個月**、**~20M 小時 video → ~10^8 clips**）一次燒掉，下游 robotics / driving 團隊只要幾百到幾千 GPU-hour 做 post-train 就能拿到一個可掛 prompt + image + trajectory + action conditioning 的 world simulator。它的 USP 不在「比 Sora 更會做夢」，而在 **(a) open weight + (b) 顯式 control axes + (c) 配套 Reason1 reasoning VLM + Transfer multi-controlnet + Tokenize1**。最關鍵實證：**Cosmos-Policy 從 Predict2-2B 單階段 post-train 即在 LIBERO / RoboCasa 超越從零訓的 diffusion policy 與 VLA baseline**，且論文明說「無架構修改」是 unlock。
 
-**X-Ray.** Cosmos 在 v2 ontology 上佔據 `pixel-video × data-only|sim-in-loop-infer × multi-control × generalist` 這個 **anchor 格子**——它不是「另一個 Sora」，是 NVIDIA 把 Sora 路線變成 **physical-AI 開發者可組裝的 pipeline**。它解掉了三個結構性 prior gap：(a) Sora / Veo 是 closed-weight 且不收 action / trajectory conditioning；(b) GAIA-1/2 是 Wayve 內部 driving-only；(c) V-JEPA-2 是 latent representation 不出 pixel —— 沒有一條能直接餵 VLA 訓練或做 photoreal 數據增廣。Cosmos 用「**tokenizer + 兩個 base model（Diffusion-7B/14B + AR-4B/12B）+ 一系列 multi-variant post-train**」這套 modular 設計把上述空缺一次填滿，並把 Reason1 + Predict 拆成 slow-plan / fast-rollout 的 hierarchical stack。**它打不開的 envelope 也很明確**：contact-rich physics（force / 接觸不可微）、>8s long-horizon drift（重力違反 / object morph）、3D consistency（環繞鏡頭物件 morph）—— 這三條是 pixel-video 路線的結構性 break，不會因 scale up 自動解。對 physics-gen handbook 讀者意義：**Cosmos 是 anchor，不是 ceiling**——理解它在五軸上的位置，才能判斷你的下游任務該直接 fine-tune Cosmos、還是接 diff-sim 補 axis 2、還是換 latent-WM 補 long-horizon。
+**X-Ray.** Cosmos 在 v2 ontology 上佔據 `pixel-video × data-only|sim-in-loop-infer × multi-control × generalist` 這個 **anchor 格子**——它不是「另一個 Sora」，是 NVIDIA 把 Sora 路線變成 **physical-AI 開發者可組裝的 pipeline**。它解掉了三個結構性 prior gap：(a) Sora / Veo 是 closed-weight 且不收 action / trajectory conditioning；(b) GAIA-1/2 是 Wayve 內部 driving-only；(c) V-JEPA-2 是 latent representation 不出 pixel —— 沒有一條能直接餵 VLA 訓練或做 photoreal 數據增廣。Cosmos 用「**tokenizer + 兩個 base model（Diffusion-7B/14B + AR-4B/12B）+ 一系列 multi-variant post-train**」這套 modular 設計把上述空缺一次填滿，並把 Reason1 + Predict 拆成 slow-plan / fast-rollout 的 hierarchical stack。
+
+**它打不開的 envelope 也很明確** —— 以下三條是 pixel-video 路線的結構性 break，不會因 scale up 自動解：
+
+- **contact-rich physics**：force / 接觸不可微
+- **>8s long-horizon drift**：重力違反 / object morph
+- **3D consistency**：環繞鏡頭物件 morph
+
+對 physics-gen handbook 讀者意義：**Cosmos 是 anchor，不是 ceiling**——理解它在五軸上的位置，才能判斷你的下游任務該直接 fine-tune Cosmos、還是接 diff-sim 補 axis 2、還是換 latent-WM 補 long-horizon。
 
 ## 📍 研究全景時間線
 
@@ -113,7 +120,7 @@ Predict2.5（2025-10）把 T2W / I2W / V2W 三條合成單一 flow-based 主幹�
 
 ## §2 · 數學層
 
-### 📌 Napkin Formula
+### 2.1 📌 Napkin Formula
 
 ```
    Cosmos-Tokenize1 (DV path):
@@ -133,9 +140,9 @@ Predict2.5（2025-10）把 T2W / I2W / V2W 三條合成單一 flow-based 主幹�
       8× A100/H100 × ~1 night  ≈  100-200 GPU-hours      ← 5 orders of mag less
 ```
 
-**直覺**：壓縮比 2048× 是 trick 所在 —— 把 raw video 壓到 token-level 後，diffusion 與 AR 兩條 branch 才跑得起 long sequence。但這也是 **8.9 (Tokenize1 在 DV8x16x16 細紋丟失) 的根因**：壓越狠，下游細節恢復越難，texture detail 不可逆。Pre-train vs post-train 的 5 orders-of-magnitude cost gap 就是「foundation × specialization」decoupling 賭注的算術依據。
+**直覺**：壓縮比 2048× 是 trick 所在 —— 把 raw video 壓到 token-level 後，diffusion 與 AR 兩條 branch 才跑得起 long sequence。但這也是 **§9.9 (Tokenize1 在 DV8x16x16 細紋丟失) 的根因**：壓越狠，下游細節恢復越難，texture detail 不可逆。Pre-train vs post-train 的 5 orders-of-magnitude cost gap 就是「foundation × specialization」decoupling 賭注的算術依據。
 
-### 2.x Loss / 訓練細節
+### 2.2 Loss / 訓練細節
 
 - **Diffusion branch**：latent diffusion + DiT，prompt-upsampler 12B 改寫 caption 增強 spatial relation；Predict1 是這條的主力。
 - **AR branch**：Llama3-style GPT，token 來自 DV tokenizer；輸出需經 `Cosmos-1.0-Diffusion-7B-Decoder-DV8x16x16ToCV8x8x8` 後處理才能拿到「乾淨」pixel（社群常忘這步）。
@@ -208,9 +215,9 @@ Predict2.5（2025-10）把 T2W / I2W / V2W 三條合成單一 flow-based 主幹�
 - **Single-stage Policy SFT 無需架構修改**：paper 強調是 unlock，但這意味著 **action 是 text-like token**，連續控制可能受限
 - **Open weight 不等於 reproducibility**：pre-train 數據 curation pipeline 未公開，社群無法從零復現
 
-### 6.3 GitHub / community-validated 失敗模式（§8 pitfall log 摘要）
+### 6.3 GitHub / community-validated 失敗模式（§9 pitfall log 摘要）
 
-完整 pitfall log 見下方 §8。重點：8.1（long-horizon drift）/ 8.2（contact-rich silent failure）/ 8.3（3D inconsistency）是**結構性 break**，不會因 scale up 自動解；8.5-8.8 是 ops 工程坑可繞過。
+完整 pitfall log 見下方 §9。重點：9.1（long-horizon drift）/ 9.2（contact-rich silent failure）/ 9.3（3D inconsistency）是**結構性 break**，不會因 scale up 自動解；9.5-9.8 是 ops 工程坑可繞過。
 
 **Maintainer 響應度**：NVIDIA Cosmos 系列 repo 活躍維護（Predict1 → Predict2 → Predict2.5 連續 release，2025-01 → 2025-10 不到一年三代），社群 issue 多在 1-2 週內有 staff 回應。**這是與 Meta FAIR 「release 但不維護」路線的顯著差異** —— Cosmos 走的是 NVIDIA SDK 路線，更接近 production support。
 
@@ -231,15 +238,15 @@ Predict2.5（2025-10）把 T2W / I2W / V2W 三條合成單一 flow-based 主幹�
 
 ### 7.1 Falsifiable predictions
 
-1. **2026-12 前**：第一篇「Cosmos-Predict × diff-sim contact label co-training」會出現 —— 把 Genesis / MJX 的 force 信號當 auxiliary loss 餵 Cosmos post-train，補 §8.2 contact-rich silent failure。理由：production 已經在做 Genesis → Transfer2.5 兩段式 pipeline，下一步就是 end-to-end co-train。
-2. **2027-06 前**：Cosmos-Predict3 會加 3D-aware conditioning（3DGS / NeRF prior 或 multi-view consistency loss），收 §8.3 環繞鏡頭 morph 問題。理由：GAIA-2 已證明 multi-view consistency 是 closed-loop 必須，NVIDIA 內部 Isaac/Omniverse 有完整 3D 資產可接。
+1. **2026-12 前**：第一篇「Cosmos-Predict × diff-sim contact label co-training」會出現 —— 把 Genesis / MJX 的 force 信號當 auxiliary loss 餵 Cosmos post-train，補 §9.2 contact-rich silent failure。理由：production 已經在做 Genesis → Transfer2.5 兩段式 pipeline，下一步就是 end-to-end co-train。
+2. **2027-06 前**：Cosmos-Predict3 會加 3D-aware conditioning（3DGS / NeRF prior 或 multi-view consistency loss），收 §9.3 環繞鏡頭 morph 問題。理由：GAIA-2 已證明 multi-view consistency 是 closed-loop 必須，NVIDIA 內部 Isaac/Omniverse 有完整 3D 資產可接。
 3. **2027-12 前不會發生**：Cosmos 系列成為 closed-loop drone / 高速車控制器的 in-loop simulator —— 即使 long-horizon drift 用 hierarchical 解了一半，contact-rich + force-fidelity 仍是 pixel-video 路線結構性 break，10ms 級 closed-loop 仍要 diff-sim。
 
 ---
 
 ## §8 · For the Reader（按 persona 分流）
 
-- **VLA / robot policy 工程師** —— Cosmos-Policy 是 first clean evidence「video FM 直接當 policy backbone」。從 Predict2-2B 單階段 SFT，8× A100/H100 一晚跑通；**不要加 action head / diffusion head**（paper §method ablation 明列退化）。grasp / 接觸 task 不要單獨用 Cosmos rollout 當訓練資料 —— §8.2 silent failure 已被多筆社群 reproduction 報告。
+- **VLA / robot policy 工程師** —— Cosmos-Policy 是 first clean evidence「video FM 直接當 policy backbone」。從 Predict2-2B 單階段 SFT，8× A100/H100 一晚跑通；**不要加 action head / diffusion head**（paper §method ablation 明列退化）。grasp / 接觸 task 不要單獨用 Cosmos rollout 當訓練資料 —— §9.2 silent failure 已被多筆社群 reproduction 報告。
 - **自駕 closed-loop 工程師** —— 用 **Cosmos-Drive-Dreams + Transfer2.5** 做 long-tail 資料增廣（遮擋行人、異常車輛），是 Wayve / NVIDIA Isaac 採用的 production pattern。但**不要拿來當 in-loop simulator 跑 PID/MPC** —— long-horizon drift + 3D inconsistency 會讓控制環學歪。Cosmos-Drive 是 **out-of-loop data engine**，不是 in-loop sim。
 - **影片生成工程師** —— 如果只追 prompt fidelity / 視覺品質，Sora 2 / Veo 3 仍領先。Cosmos 的價值在 **open weight + multi-controlnet (Transfer2.5)** —— RGB+depth+seg+edge 同時 condition，是 production data engine 用法。Predict2.5 用 Reason1 當 text encoder 後 spatial relation 大幅改善，值得從 Predict1 升上去。
 - **神經 PDE / surrogate 研究者** —— Cosmos 與 GraphCast / FNO 不直接對接（一邊是 pixel，一邊是 field）。組合方式只在 scientific viz：surrogate 算流場 → renderer → Cosmos refine 視覺。**不要把 Cosmos 當作流體 / 接觸 surrogate** —— implicit physics 在這層完全失效。
@@ -248,7 +255,7 @@ Predict2.5（2025-10）把 T2W / I2W / V2W 三條合成單一 flow-based 主幹�
 
 ---
 
-## §9 · §8 Pitfall log（GitHub / community-validated 失敗模式）
+## §9 · Pitfall log（GitHub / community-validated 失敗模式）
 
 | # | Severity | Issue | Source | Workaround |
 |---|---|---|---|---|

@@ -39,6 +39,13 @@
 - [ ] DiT vs U-Net 在 video 的取捨
 - [ ] Joint vs AR rollout 實測對比
 
+## 本區 Dissections
+
+- [OpenAI Sora](./sora.md) — DiT + spacetime patches，data-only scale-pilled reference point
+- [Google Veo](./veo.md) — Veo 1/2/3，latent diffusion transformer + native audio-video joint
+- [Wayve GAIA-1 / GAIA-2](./gaia-2.md) — driving-domain 專用 video world model
+- [Stable Video Diffusion](./stable-video-diffusion.md) — 首個 open-weight image-to-video baseline
+
 ## §8 共通 pitfall（zone 級）
 
 - Long-shot consistency 依然脆 — clip 切換、相機運動劇烈時 object identity 漏
