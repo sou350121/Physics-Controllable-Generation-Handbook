@@ -8,20 +8,20 @@
 
 ## 一句話總結
 
-**CARLA-Air 不是新模擬器、也不是 CARLA 的 fork——它是一層「組合膠水」：把 Microsoft AirSim 的多旋翼飛控塞進 CARLA 的 Unreal Engine 世界，只改了上游 3 個檔案、約 35 行（`CARLAAirGameMode` 一邊繼承 CARLA、一邊組合 AirSim），讓無人機與地面車輛在同一進程、同一物理 tick、同一渲染器裡被嚴格時空一致地共模擬。** 它的賣點**不是**空氣動力學、**也不是**吞吐，而是**城市真實感 + 空地統一**。
+**CARLA-Air 不是從頭寫的新模擬器——它是一層「組合」：把 Microsoft AirSim 的多旋翼飛控組合進 CARLA 的 Unreal Engine 世界，讓無人機與地面車輛在同一進程、同一物理 tick、同一渲染器裡被嚴格時空一致地共模擬。** 它的賣點**不是**空氣動力學、**也不是**吞吐，而是**城市真實感 + 空地統一**。（⚠ 它**以完整 vendored fork 形式發佈**——README 自稱「只改 3 檔 ~35 行」與 repo 內容不符，這件事對「能不能輕鬆換版本」很關鍵，見 [§自救 B](#自救如何補強--繞過鎖死)。）
 
 但有一顆必須講清楚的星號：**它的飛行動力學就是 AirSim 原封不動的剛體 6-DoF**——論文只說「aerodynamically consistent multirotor dynamics」，**沒有**記載任何 rotor/blade-element 模型、馬達動態、阻力係數、地面效應或風擾建模。所以拿它練「貼地高速、強風、螺旋槳尾流」這類靠空氣動力學的科目，會跟單獨用 AirSim 一樣不夠（見 [generative-aerial-data](./generative-aerial-data.md) 與 [Swift 殘差法](./champion-level-drone-racing.md) 的對照）。它的吞吐也只有 **~20 FPS 單環境**，沒有 GPU 並行多環境、不可微、也沒有任何 sim-to-real 真機實證。把這顆星號看懂，才知道該拿它做什麼、不該拿它做什麼。
 
 ## 怎麼運作（架構）
 
-核心是「**兩套物理引擎、一個 Unreal 進程**」：CARLA 用 PhysX 管地面車輛與行人，AirSim 用 FastPhysics 管無人機，兩者掛在同一個 Unreal Engine 4.26 渲染迴圈裡。關鍵工程點是**時間與座標的嚴格對齊**——無人機物理跑在獨立 CPU 執行緒約 1000 Hz，渲染 tick 約 20 Hz（等於每出一幀畫面、無人機物理已經走了約 50 個 substep），而 CARLA 的左手座標系與 AirSim 的 NED 座標系被對齊到**誤差 0.0000 m**。
+核心是「**兩套物理引擎、一個 Unreal 進程**」：CARLA 用 PhysX 管地面車輛與行人，AirSim 用 FastPhysics 管無人機，兩者掛在同一個 Unreal Engine 4.26 渲染迴圈裡。關鍵工程點是**時間與座標的嚴格對齊**——無人機物理跑在獨立 async 執行緒，**預設 ~333 Hz（3 ms；源碼 `SimModeWorldBase.h` 預設值，README 稱 ~1000 Hz 但 vendored 的 `settings.json` 未覆寫）**，渲染約 20 Hz（每出一幀、物理約走 16 步），而 CARLA 左手座標系與 AirSim 的 NED 座標系對齊（README 宣稱 0 m 誤差，`UNVERIFIED`）。
 
 ```
    ┌──────────── 單一 Unreal Engine 4.26 進程（渲染 tick ~20 Hz）────────────┐
    │                                                                          │
    │   CARLA 0.9.16 (PhysX)                AirSim 1.8.1 (FastPhysics)         │
    │   ├ 地面車輛 / 行人 / 交通規則         ├ 多旋翼剛體 6-DoF 飛控            │
-   │   └ 隨渲染 tick 同步                   └ 無人機物理 ~1000 Hz（獨立執行緒）│
+   │   └ 隨渲染 tick 同步                   └ 無人機物理 ~333 Hz（獨立 async 執行緒）│
    │            └────── 座標對齊：CARLA 左手系 ↔ AirSim NED（誤差 0 m）──────┘ │
    │                              │                                            │
    │                     共用渲染器 + 共用時間軸                               │
@@ -31,12 +31,12 @@
    │                              │                                            │
    │   對外：CARLA Python API（89/89 測試過）+ AirSim Python API + ROS2（63 topic）│
    └──────────────────────────────────────────────────────────────────────────┘
-        只改上游 3 檔、~35 行：CARLAAirGameMode「繼承 CARLA、組合 AirSim」
+        把 AirSim 飛控組合進 CARLA 世界（實作為完整 vendored fork，非 README 稱的薄 patch）
 ```
 
 三個設計選擇決定了它的性格：
 
-- **「組合」而非「重寫」**：它不另造物理、不 fork CARLA，而是把兩個成熟堆疊接起來。好處是**兩邊的原生 Python API 與 ROS2 都零改動可用**（CARLA 89/89 API 測試通過、ROS2 跑 63 個 topic），既有 CARLA 自駕程式碼幾乎能直接搬上來、再加一架無人機；壞處是**它繼承了兩邊的所有侷限**，尤其 AirSim 的剛體飛行模型與「上游已封存（archived）」的版本鎖死問題。
+- **「組合」而非「重寫」**：它不另造物理、不 fork CARLA，而是把兩個成熟堆疊接起來。好處是**兩邊的原生 Python API 與 ROS2 都零改動可用**（CARLA 89/89 API 測試通過、ROS2 跑 63 個 topic），既有 CARLA 自駕程式碼幾乎能直接搬上來、再加一架無人機；壞處是**它繼承了兩邊的所有侷限**，尤其 AirSim 的剛體飛行模型與「上游已封存（archived）」的版本鎖死問題（**這兩個都能自己補強 / 繞過，見下方 [§自救](#自救如何補強--繞過鎖死)**）。
 - **單一 tick 共模擬，而非橋接（bridge）**：很多空地系統用 ROS bridge 把兩個獨立模擬器串起來，代價是同步開銷與時序漂移。CARLA-Air 把無人機直接放進 CARLA 的 Unreal 場景，**省掉跨進程同步**，換來嚴格的空地時空一致——這對「無人機看著地面車流做決策」這類跨視角任務是硬需求。
 - **城市真實感免費繼承**：因為渲染器就是 CARLA 的，無人機視角直接拿到 CARLA 的 photoreal 城市（測過 Town01–05、Town10HD 等 13 張城市圖、14 種天氣預設）。這是它相對純空中模擬器最大的單點優勢。
 
@@ -89,6 +89,45 @@
 - 對 **空地具身 / VLN-VLA**：規則車流 + 社會化行人當無人機的動態背景，是「無人機在城市裡看著人車做決策」這類任務難得的公開資料源。
 - 跨冊：它生成的城市空地資料，最終要餵給 Spatial-Handbook 的感知端消費——對齊問題（尤其 IMU 噪聲模型與 camera-IMU extrinsic）見 [Bridge: Aerial Embodiment](../../bridge-to-spatial/aerial-embodiment.md)；它和純空中七套的取捨見 [Aerial Sim Stack 對比](./aerial-sim-stack.md)。
 
+## 自救：如何補強 / 繞過鎖死
+
+§4 兩個侷限（**AirSim 剛體 aero** 與 **archived 版本鎖死**）**都能自己解**。以下路徑均經 vendored 源碼核對（檔案路徑見 §參考）。
+
+### A. 把飛行動力學做高保真
+
+**A2 —— 外掛動力學（★ 最推薦：純 Python、不改 C++、不重編，保真度最高）**
+
+CARLA-Air vendored 的 AirSim 裡**就帶 `ExternalPhysicsEngine` 模式**（`.../physics/ExternalPhysicsEngine.hpp`，它的 `update()` 不做任何積分、只 `updateKinematics()`）。做法四步：
+
+1. `settings.json` 設 `"PhysicsEngineName": "ExternalPhysicsEngine"`；
+2. 飛行動力學改跑**你自己的高保真模型**——首選 [RotorPy](./aerial-sim-stack.md)（有 rotor drag / blade flapping / induced drag / 空間風場），或你自己的 6-DoF 積分器、甚至 PX4 SITL HIL；
+3. 每個 tick 用 **`simSetKinematics(state, …)`** 把「pose + 線/角速度 + 加速度」推進去——**用這個、別只用 `simSetVehiclePose`**（後者只設 pose，IMU/GNSS/速度 ground-truth 會不一致）；
+4. AirSim + CARLA 在那個 pose 出 frame-aligned 的影像 / LiDAR / IMU。
+
+這是 AirSim **官方支援的 FDM 接法**（upstream PR #3626 加入 `ExternalPhysicsEngine`、#4066 加 `simSetKinematics`；官方 **GazeboDrone** 就是用它把 Gazebo 當 FDM、AirSim 只出感測）。把 RotorPy 換成 PX4 SITL 也是同一個接口。
+
+> **三個坑**：① **積分節奏由你掌握**——你的 RotorPy step → `simSetKinematics` 的頻率**就是**無人機更新率，務必開 CARLA **同步模式**（`fixed_delta_seconds` + `world.tick()`），CARLA-Air **預設 async**，不然空地會漂移；② 你**接管了飛控**（`moveByXXX` / simple_flight / PX4 不再飛它，RotorPy 要自己閉環）；③ **座標**：RotorPy 是 ENU/FLU、AirSim 是 NED、CARLA 左手系（關係 `AirSim NED z = −CARLA z`），推進去前要轉。
+>
+> **為什麼這條最划算**：一個 `settings.json` 開關 + 一段 Python，動力學保真度直接拉到 RotorPy 級，外觀/場景照用 CARLA——這正是本手冊「**動力學靠物理、外觀靠渲染**」的字面落地。
+
+**A1 —— 殘差注入（保留 AirSim 當 nominal、加你的力）**
+
+- **最省力：`simSetWind()`**（RPC 已有，`RpcLibClientBase.hpp:163`）。FastPhysics 原生支援風（風從 quadratic drag 項進去）。**但只給空間均勻的風擾**，不是任意 wrench、也不是 per-rotor gust——做得了均勻風 / 亂流，做不了 ground effect 或 rotor-drag。
+- **要真正的殘差力：必須改源碼。** FastPhysics 把淨 wrench 在 `FastPhysicsEngine.hpp` 第 ~359 行組好（`next_wrench = body_wrench + drag_wrench`，drag 是純 `v²`、源碼註明線性項 b≪c 故丟棄），而**全 vendored AirLib 沒有對外施力的 RPC**（grep 過，無 `simAddVehicleWrench` / `applyExternalForce` 之類；`PhysicsBody::setWrench()` 每 tick 被覆寫、外部塞不進去）。加一行 `next_wrench += external_wrench_`（再開一個 RPC 餵它）即可，但要：物理在**獨立 async 執行緒**跑、預設 **~333 Hz**、setter 要 thread-safe，且**得重編這個 fork**（官方 BUILD_GUIDE 自承「极为复杂」：UE4.26 + CARLA ue4-dev + 32 GB RAM + 3–4 h）。
+- **真機殘差**：要上真機就走 Swift 式從真飛辨識殘差，見 [sim-to-real-contract](./sim-to-real-contract.md)。
+
+### B. 繞過 archived / 版本鎖死
+
+**先認清一個被 README 掩蓋的事實**：CARLA-Air 的 repo **不是**「3 檔 / 35 行薄整合」——實測它是**完整 vendored fork**（整套 CARLA 源 + 內嵌完整 AirSim plugin，約 2,357 檔，全樹找不到 `CARLAAirGameMode`、`MODIFICATIONS.md` 或任何 diff）。所以「換新版本」是對一個**完整 fork** 動刀、不是套 patch。`UNVERIFIED`：README 的 3-檔/35-行/~1000 Hz/0.0000 m 等說法與 repo 內容不符或無法從源碼證實——引用前自行核。
+
+選項：
+
+- **接受凍結**：研究 / 復現多半 OK，整套能跑、可重現。
+- **搬到 UE5 維護中的繼承者**：飛控側選 **Cosys-AirSim**（UE 5.5、MIT、加 ROS2 + GPU-LiDAR；但自承「as-is、不主動更新」）或 **Project AirSim**（UE 5.2/5.7、MIT、前 MS AirSim 團隊**主動維護**，但 API 變了、要照它的 migration guide——CARLA-Air「AirSim 腳本零改動」的賣點會破）；場景側配 **CARLA 0.10.0（= UE 5.5）**。但 CARLA 0.10.0 **還不成熟**：只有 Town10、無 SUMO/Chrono 共模擬、無 V2X、無 OSM/OpenDRIVE 匯入、~24–25 FPS。**等於把兩個 UE5 大型 codebase 重整合，是一個工程專案、不是 port。**
+- **走 A2 解耦後就少依賴 AirSim**，版本鎖的痛跟著小——這也是為什麼 A2 同時是 A 和 B 的解。
+
+**一句話分流**：要真 aero → **先試 A2**（RotorPy + `ExternalPhysicsEngine`，純 Python 最划算）；要徹底現代化 → **CARLA 0.10/UE5 + Cosys/Project AirSim**，但這是大重構。
+
 ## 參考
 
 - **CARLA-Air**（本篇主體）—— arXiv [2603.28032](https://arxiv.org/abs/2603.28032) · [github.com/louiszengCN/CarlaAir](https://github.com/louiszengCN/CarlaAir) · [carla-air.com](https://www.carla-air.com/) · [HuggingFace papers](https://huggingface.co/papers/2603.28032)
@@ -107,3 +146,4 @@
 | 8.6 | **不可微** | 🟡 Low | 論文無可微分宣稱 | 需梯度走 crazyflow（JAX）等可微基座 |
 | 8.7 | **License 自動偵測 NOASSERTION**（README 稱 MIT+CC-BY） | 🟡 Low | GitHub API vs README 不一致 | 商用前以實際 LICENSE 檔為準 `UNVERIFIED` |
 | 8.8 | 署名單位與「peer-reviewed」**未公開查證** | 🟡 Low | arXiv 技術報告 | 引用時標 `UNVERIFIED`，勿當已發表期刊 |
+| 8.9 | **README 數字與 repo 源碼不符**：自稱「3 檔/35 行薄整合 + CARLAAirGameMode」但實為完整 vendored fork（無該檔/diff）；「~1000 Hz」實為 ~333 Hz（`SimModeWorldBase.h` 預設 3 ms）；「0.0000 m/89-89/18 模態」皆論文/README 宣稱 | 🟠 Medium（影響「能否輕鬆換版本」判斷） | clone repo 全樹核對（見 [§自救 B](#自救如何補強--繞過鎖死)） | 以源碼為準；重接新版本是對完整 fork 動刀、非套 patch |
