@@ -191,7 +191,10 @@
           {
             "group": "Autonomous Driving Sim",
             "pages": [
-              "use-cases/autonomous-driving-sim/overview.md"
+              "use-cases/autonomous-driving-sim/overview.md",
+              "use-cases/autonomous-driving-sim/closed-loop-or-bust.md",
+              "use-cases/autonomous-driving-sim/driving-world-models.md",
+              "use-cases/autonomous-driving-sim/neural-reconstruction-sim.md"
             ]
           },
           {
@@ -216,6 +219,8 @@
             "group": "Robotics Data Gen",
             "pages": [
               "use-cases/robotics-data-gen/overview.md",
+              "use-cases/robotics-data-gen/autonomous-demo-gen.md",
+              "use-cases/robotics-data-gen/generative-video-as-data.md",
               "use-cases/robotics-data-gen/physical-intelligence-pi0.md"
             ]
           },
