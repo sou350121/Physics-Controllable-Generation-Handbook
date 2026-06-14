@@ -67,23 +67,25 @@ Aerial 是「外觀靠生成、動力學靠物理」這條分界最乾淨的案�
 把這些錨點系統放回定調圖的兩條邊上，就看得出各自定位：
 
 ```mermaid
-flowchart TD
-    O(["外觀邊：渲染 / 生成觀測"])
-    S(["動力學邊：算轉移（必須物理）"])
-    GENL["生成資料線<br/>Cosmos / NeRF / 3DGS"] -->|"生成外觀"| O
-    CA["CARLA-Air<br/>城市 photoreal + 空地一體"] -->|"渲染（強）"| O
-    SS["Aerial sim 七套對比<br/>三選二：吞吐 × aero × photoreal"] -->|"Flightmare / AirSim / Pegasus 也渲染"| O
-    SS -->|"各家不同動力學保真度"| S
-    AG["Aerial Gym<br/>GPU 並行剛體（無 wake/wind）"] -->|"高吞吐動力學"| S
-    RP["RotorPy / gym-pybullet<br/>最細 per-rotor aero"] -->|"高保真動力學"| S
-    SW["Swift<br/>物理 + 殘差"] -->|"唯一真機落地"| S
-    CA -.->|"自身動力學僅 AirSim 剛體（弱）<br/>要換 RotorPy + ExternalPhysicsEngine"| S
-    DTF["Dream to Fly<br/>兩條邊都想學進 latent（風險）"] -.-> O
+flowchart LR
+    O(["外觀邊<br/>渲染 / 生成"])
+    S(["動力學邊<br/>必須物理"])
+    GENL["生成資料線<br/>Cosmos · NeRF · 3DGS"] --> O
+    CA["CARLA-Air<br/>城市 photoreal + 空地一體"] --> O
+    SS["Aerial sim 七套<br/>三選二（跨兩邊）"] --> O
+    SS --> S
+    AG["Aerial Gym<br/>剛體 + 萬級並行"] --> S
+    RP["RotorPy / gym-pybullet<br/>高保真 aero"] --> S
+    SW["Swift<br/>物理 + 殘差 → 落地"] --> S
+    CA -.->|"動力學弱 → 換 RotorPy"| S
+    DTF["Dream to Fly<br/>兩邊想學進 latent"] -.-> O
     DTF -.-> S
     classDef appear fill:#e8f0fe,stroke:#4285f4,color:#202124
     classDef phys fill:#fff4e5,stroke:#f9ab00,color:#202124
-    class O appear
-    class S phys
+    classDef span fill:#eef0f2,stroke:#9aa0a6,color:#202124
+    class O,GENL,CA appear
+    class S,AG,RP,SW phys
+    class SS,DTF span
 ```
 *圖：7 個錨點系統的定位 —— **CARLA-Air** 在外觀邊（城市 photoreal + 空地一體）強、動力學邊弱（AirSim 剛體，要換 FDM）；**Aerial sim 七套** 跨兩邊（部分能渲染 + 各家動力學保真度不同）；Swift 靠動力學邊落地，生成資料線只供外觀，Dream to Fly 想把兩條邊都學進 latent。*
 
