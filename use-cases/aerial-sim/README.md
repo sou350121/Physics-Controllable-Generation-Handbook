@@ -3,6 +3,25 @@
 > 物理可控生成給無人機自主：6-DoF 自由運動 + 螺旋槳尾流 + 風擾 —— 比 driving 多兩個自由度，比 manipulation 多了「掉下來就壞」的硬性約束。Aerial 是把本 handbook 核心命題逼到極限的 use-case：**外觀可以生成，動力學不能。**
 
 ```mermaid
+flowchart TB
+    P["命題：訓一個會飛的 policy = 閉環的兩條邊<br/>外觀邊（render）· 動力學邊（transition）"]
+    P --> APP["外觀邊 · 可生成<br/>供材：生成資料線 / CARLA-Air / 引擎渲染"]
+    P --> DYN["動力學邊 · 必須物理（全篇主軸）<br/>供材：Aerial Gym / RotorPy / 七套 sim"]
+    APP --> R["三種打法（怎麼處理動力學邊）<br/>(1) 不碰 → 只感知 · (2) 學進 latent → 卡 raw-camera · (3) 交給物理 → 落地（Swift）"]
+    DYN --> R
+    R --> K["落地關鍵：動力學邊『什麼必須真』<br/>thrust map + 延遲必須真 · aero / 參數可學（契約）"]
+    K --> B["交付 → Spatial-Handbook<br/>生成端造資料 → 感知端消費（VIO / 避障）"]
+    PIQ["Physics-IQ r=-0.46<br/>視覺真度 ≠ 物理理解 → 兩邊不可混"] -.-> P
+    classDef appear fill:#e8f0fe,stroke:#4285f4,color:#202124
+    classDef phys fill:#fff4e5,stroke:#f9ab00,color:#202124
+    classDef why fill:#f1f3f4,stroke:#9aa0a6,color:#202124
+    class APP appear
+    class DYN phys
+    class PIQ why
+```
+*圖（全境）：aerial-sim 一張看完 —— 命題拆成兩條邊（外觀可生成、動力學必須物理）→ 各自供材（錨點系統）→ 三種打法（只有「交給物理」落地）→ 落地契約（動力學邊什麼必須真）→ 交付給 Spatial-Handbook；Physics-IQ 是「兩邊不可混」的根據。下面三張圖各放大其中一塊：**定調圖**＝兩條邊的閉環機制、**定位圖**＝7 套錨點各站哪邊、**子路線圖**＝怎麼處理動力學邊。*
+
+```mermaid
 flowchart TD
     subgraph LOOP["訓練 / 推論閉環（policy 在 sim 裡）"]
         direction LR
