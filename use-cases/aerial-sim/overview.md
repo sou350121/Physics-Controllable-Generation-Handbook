@@ -23,7 +23,7 @@ Aerial 是「generation for **appearance**, physics for **dynamics**」這條分
 | 系統 | 重點 | 解構 / 來源 |
 |---|---|---|
 | Aerial Gym Simulator | Isaac Gym backend，GPU 並行數萬 env（4.43M SPS @65k），ray-cast depth/seg；**非可微、無 wake/wind** | [foundation 解構](../../foundations/differentiable-simulators/aerial-gym.md) · NTNU ARL 2503.01471 |
-| Flightmare / PX4-SITL / RotorPy / Isaac | 三方權衡：GPU throughput × aero fidelity × photorealism —— **沒有一套全贏** | [Aerial Sim Stack 對比](./aerial-sim-stack.md) |
+| Aerial sim 七套對比 | Flightmare · PX4-SITL · Isaac-Pegasus · RotorPy · gym-pybullet · **AirSim**（已 archived → Cosys/Project AirSim）；三方權衡 GPU throughput × aero fidelity × photoreal —— **三選二、全員不可微** | [Aerial Sim Stack 對比](./aerial-sim-stack.md) |
 | Swift (Champion-Level Drone Racing) | Sim-trained RL，真機擊敗人類冠軍；GP perception residual + kNN dynamics residual（~1 分鐘 mocap 數據） | [解構](./champion-level-drone-racing.md) · Nature 2023 |
 | Dream to Fly | DreamerV3 latent WM，raw pixel → CTBR，sim-only 訓練；**「真機」是 HIL + rendered frames**（誠實 caveat） | [解構](./dream-to-fly.md) · UZH RPG 2501.14377 |
 | 生成資料線 | Cosmos FPV（demo）/ NeRF·3DGS（UAV-Sim +55.85% mAP50）/ 合成偵測資料 | [Generative Aerial Data](./generative-aerial-data.md) |
