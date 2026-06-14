@@ -12,6 +12,20 @@
 
 但有一顆必須講清楚的星號：**它的飛行動力學就是 AirSim 原封不動的剛體 6-DoF**——論文只說「aerodynamically consistent multirotor dynamics」，**沒有**記載任何 rotor/blade-element 模型、馬達動態、阻力係數、地面效應或風擾建模。所以拿它練「貼地高速、強風、螺旋槳尾流」這類靠空氣動力學的科目，會跟單獨用 AirSim 一樣不夠（見 [generative-aerial-data](./generative-aerial-data.md) 與 [Swift 殘差法](./champion-level-drone-racing.md) 的對照）。它的吞吐也只有 **~20 FPS 單環境**，沒有 GPU 並行多環境、不可微、也沒有任何 sim-to-real 真機實證。把這顆星號看懂，才知道該拿它做什麼、不該拿它做什麼。
 
+```mermaid
+flowchart LR
+    subgraph UE["單一 Unreal Engine 4.26 進程"]
+        GROUND["CARLA 城市（PhysX）<br/>photoreal 地面 / 車流 / 行人"]
+        AIR["AirSim 飛控（FastPhysics）<br/>多旋翼剛體 6-DoF"]
+        GROUND --- TICK(("共用 physics tick<br/>+ 共用渲染器"))
+        AIR --- TICK
+    end
+    TICK -->|"嚴格時空一致"| UNIFY["空地一體<br/>（無 bridge 同步開銷）"]
+    UNIFY --> SENSE["18 模態同步感測<br/>RGB / depth / 分割 / LiDAR …"]
+    AIR -.->|"天花板：剛體級，無 rotor aero / 風擾"| LIMIT["靠空氣動力學的科目撐不住<br/>（見 §自救 A2）"]
+```
+*圖：CARLA-Air 的核心 —— 地面 photoreal 與剛體飛控共用一個 tick，換來空地一體；但飛行動力學止於 AirSim 剛體級。*
+
 ## 怎麼運作（架構）
 
 核心是「**兩套物理引擎、一個 Unreal 進程**」：CARLA 用 PhysX 管地面車輛與行人，AirSim 用 FastPhysics 管無人機，兩者掛在同一個 Unreal Engine 4.26 渲染迴圈裡。關鍵工程點是**時間與座標的嚴格對齊**——無人機物理跑在獨立 async 執行緒，**預設 ~333 Hz（3 ms；源碼 `SimModeWorldBase.h` 預設值，README 稱 ~1000 Hz 但 vendored 的 `settings.json` 未覆寫）**，渲染約 20 Hz（每出一幀、物理約走 16 步），而 CARLA 左手座標系與 AirSim 的 NED 座標系對齊（README 宣稱 0 m 誤差，`UNVERIFIED`）。
@@ -105,6 +119,17 @@ CARLA-Air vendored 的 AirSim 裡**就帶 `ExternalPhysicsEngine` 模式**（`..
 4. AirSim + CARLA 在那個 pose 出 frame-aligned 的影像 / LiDAR / IMU。
 
 這是 AirSim **官方支援的 FDM 接法**（upstream PR #3626 加入 `ExternalPhysicsEngine`、#4066 加 `simSetKinematics`；官方 **GazeboDrone** 就是用它把 Gazebo 當 FDM、AirSim 只出感測）。把 RotorPy 換成 PX4 SITL 也是同一個接口。
+
+```mermaid
+flowchart LR
+    CFG["settings.json 設<br/>PhysicsEngineName =<br/>ExternalPhysicsEngine"] --> RP["RotorPy 當 FDM<br/>（rotor drag / blade flapping / 風場）"]
+    RP --> CONV["座標轉換<br/>ENU/FLU → NED → CARLA 左手系<br/>（NED z = −CARLA z）"]
+    CONV --> PUSH["每 tick simSetKinematics<br/>推 pose + 線/角速度 + 加速度<br/>（別只用 simSetVehiclePose）"]
+    PUSH --> FRAME["AirSim + CARLA 出<br/>frame-aligned 影像 / LiDAR / IMU"]
+    FRAME -->|"閉環回 RotorPy"| RP
+    SYNC["CARLA 同步模式<br/>fixed_delta_seconds + world.tick()<br/>（預設 async 會漂移）"] -.-> PUSH
+```
+*圖：§自救 A2 —— ExternalPhysicsEngine 把 RotorPy 當 FDM，每 tick 經座標轉換推 state，CARLA 同步模式防漂移。*
 
 > **三個坑**：① **積分節奏由你掌握**——你的 RotorPy step → `simSetKinematics` 的頻率**就是**無人機更新率，務必開 CARLA **同步模式**（`fixed_delta_seconds` + `world.tick()`），CARLA-Air **預設 async**，不然空地會漂移；② 你**接管了飛控**（`moveByXXX` / simple_flight / PX4 不再飛它，RotorPy 要自己閉環）；③ **座標**：RotorPy 是 ENU/FLU、AirSim 是 NED、CARLA 左手系（關係 `AirSim NED z = −CARLA z`），推進去前要轉。
 >

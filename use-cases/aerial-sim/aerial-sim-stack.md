@@ -4,6 +4,25 @@
 
 > 你已經 ship 過 drone autonomy 或 RL policy，知道「sim 訓得漂亮、上機就掉」是常態。這篇不講 feature list，講**三角拉扯**：**GPU-parallel RL throughput × per-rotor aerodynamic fidelity × photorealism — 沒有一套 aerial sim 三項全拿**。Aerial Gym 用幾何（不是像素）換 4.43M samples/s，RotorPy 用單機 CPU 換最細的 per-rotor aero，PX4-SITL 用「跑真實 autopilot」換最慢的時鐘，Flightmare/AirSim/Pegasus 用 Unity/Unreal 換 photoreal 但 aero 退回 rigid-body。**七套裡沒有一套可微**，所以 first-order policy gradient / diff-MPC 這條全員出局 —— escape hatch 是 crazyflow（JAX）。**為什麼進 aerial-sim anchor 名單**：因為這七套定義了「dynamics 物理層」的可選空間，而本 handbook 的 generative appearance layer（Cosmos / video-WM）正是要疊在這層之上 —— 不先把 substrate 的取捨講清楚，appearance 疊在哪都說不準。
 
+```mermaid
+flowchart TD
+    A(["極 A：GPU 並行吞吐<br/>4.43M steps/s"])
+    B(["極 B：per-rotor aero<br/>wake / wind / ground"])
+    C(["極 C：photorealism<br/>PBR / HDR / 小目標"])
+    AG["Aerial Gym"] --- A
+    RP["RotorPy"] --- B
+    PB["gym-pybullet-drones"] --- B
+    FM["Flightmare"] --- C
+    AS["AirSim（已 archive）"] --- C
+    PG["Pegasus"] --- C
+    A --- B
+    B --- C
+    C --- A
+    PX["PX4-SITL：第四種忠實<br/>跑真 autopilot，時鐘最慢、不並行"]
+    DIFF["可微性：七套全缺<br/>逃生口 crazyflow（JAX）"]
+```
+*圖：三選二的物理根源 —— 每套 sim 靠近它換取的那一極；可微與 controller-path 是三角外的另兩種忠實*
+
 ---
 
 ## 1. TL;DR — the "pick two of three" law

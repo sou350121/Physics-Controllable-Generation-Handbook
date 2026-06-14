@@ -18,6 +18,21 @@
 
 > **本篇的核心斷言**：把同一個 neural surrogate 從天氣搬到「長氣候 / 湍流激波 / 新材料合成」，崩的不是模型，是**它賴以可信的四個條件少了一個以上**。所以判斷一個 surrogate 宣稱該不該信，**先檢查四條件，再看 benchmark 數字**。
 
+```mermaid
+flowchart TD
+    SRC(["neural surrogate 宣稱"]) --> TRUST["可信（四條件齊備）"]
+    SRC --> BREAK["會崩（離開四條件）"]
+    TRUST --> T1["業務中程天氣<br/>（AIFS 上線 / GenCast SOTA）"]
+    TRUST --> T2["in-distribution PDE solve<br/>（FNO ~1000×）"]
+    TRUST --> T3["DFT 級能量<br/>（MLIP，~100 參考即可）"]
+    TRUST --> T4["短中程近地面極端"]
+    BREAK --> B1["A 長程不穩<br/>（blow-up / drift / 失季節性）"]
+    BREAK --> B2["B 守恆律違反<br/>（跳步違反質量守恆）"]
+    BREAK --> B3["C OOD / 極端低估<br/>（壓低尾巴）"]
+    BREAK --> B4["D 模糊回歸氣候態<br/>（MSE double-penalty）"]
+```
+*圖：神經代理的信任契約 —— 左半可信都有金標準裁判，右半會崩都源於 autoregressive-from-data 的結構性後果。*
+
 ---
 
 ## 2. 哪裡崩：四個系統性失效模式
@@ -59,6 +74,21 @@
 ## 4. 材料發現：surrogate 取代 solver（MLIP，乾淨）vs 發現宣稱虛胖（GNoME，爭議）
 
 材料域同時上演契約的**最乾淨案例**與**最虛胖案例**，正好把「快 / 對 / 真新」三件事拆開。
+
+```mermaid
+flowchart TD
+    MAT["材料域 surrogate"] --> CLEAN["MLIP（乾淨）"]
+    MAT --> BLOAT["GNoME（虛胖）"]
+    CLEAN -->|"只宣稱算得準且快"| C1["③ force / energy MAE 是公認 metric"]
+    CLEAN --> C2["④ DFT 可 head-to-head 並行驗證"]
+    C1 --> CLEANOK["快且對，誠實不碰真新"]
+    C2 --> CLEANOK
+    BLOAT -->|"宣稱發現 381k 新材料"| B1["③ 缺：新穎 / 有用無公認 metric"]
+    BLOAT --> B2["④ 缺：無 solver 能裁定可合成性"]
+    B1 --> BLOATBAD["宣稱無法被反駁<br/>（736 合成 vs 381k 差三個量級）"]
+    B2 --> BLOATBAD
+```
+*圖：同一材料域，MLIP 滿足契約 ③④ 故乾淨，GNoME 缺 ③④ 故虛胖 —— 差別不在模型強弱，在域與評測。*
 
 ### 4a. MLIP：本倉最乾淨的「surrogate 取代昂貴 solver」案 ⚡
 

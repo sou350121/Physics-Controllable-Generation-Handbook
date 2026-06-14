@@ -8,7 +8,31 @@
 
 ## 1. One-paragraph TL;DR
 
-Swift 是 **第一個在實體頭對頭比賽中擊敗人類世界冠軍的自主無人機系統**（Kaufmann, Bauersfeld, Loquercio, Müller, Koltun, Scaramuzza, _Nature_ **620**, 982-987, 2023 年 8 月 30 日, DOI [10.1038/s41586-023-06419-4](https://doi.org/10.1038/s41586-023-06419-4)）。它不是又一個 academic benchmark — 是把「sim-only RL policy 飛到能在真實 4×4 m 賽道上、贏 Alex Vanover (Drone Racing League 2019 champ)、Thomas Bitmatta (MultiGP champ)、Marvin Schaepper」三位世界冠軍級飛手的 **end-to-end 證據**。prior gap 很具體：(a) 之前 UZH 自家 2019 AlphaPilot/sim2real_drone_racing 線是 zero-shot sim→real 但只飛固定路徑、無對抗；(b) Lockheed AlphaPilot 是 mocap-assisted，不算「機載自主」；(c) classical MPC racing 路線（Foehn et al. 2021, Time-Optimal Planning）能算出 minimum-time trajectory 但要 ground-truth state、不能跑機載；Swift 把這三個缺口一次填平。對本 handbook 的意義：Swift 是 **`sim-in-loop` × `streaming` × `action-seq` × `robotics`** 這個座標點目前最乾淨的 anchor — 它是 aerial-sim 路線「能 close-loop 出真實 super-human policy」的 existence proof。
+Swift 是 **第一個在實體頭對頭比賽中擊敗人類世界冠軍的自主無人機系統**（Kaufmann, Bauersfeld, Loquercio, Müller, Koltun, Scaramuzza, _Nature_ **620**, 982-987, 2023 年 8 月 30 日, DOI [10.1038/s41586-023-06419-4](https://doi.org/10.1038/s41586-023-06419-4)）。
+
+```mermaid
+flowchart LR
+    subgraph SIM["SIM 訓練（Flightmare-style）"]
+        S1["剛體動力學 + 馬達延遲模型"]
+        S2["9D GP 殘差噪聲<br/>（從真機 log fit 回 sim）"]
+        S3["PPO 訓 MLP policy<br/>reward: progress + perception-aware"]
+        S1 --> S3
+        S2 --> S3
+    end
+    subgraph REAL["DEPLOY 真機（全機載 Jetson）"]
+        R1["FPV camera --> gate-corner CNN"]
+        R2["IMU 1 kHz + VIO"]
+        R3["PnP 3D gate pose"]
+        R4["Kalman 融合 --> state obs"]
+        R5["MLP policy --> CTBR 約 100 Hz --> ESC"]
+        R1 --> R3 --> R4
+        R2 --> R4 --> R5
+    end
+    S3 -->|"fine-tune（policy 權重轉移）"| R5
+    REALLOG["真機飛幾圈 + mocap GT"] -->|"比對 residual"| S2
+```
+*圖：sim↔real 的接縫 —— policy 在 sim 訓，靠「真機殘差 fit 回 GP 噪聲」補 gap，部署全跑機載*
+它不是又一個 academic benchmark — 是把「sim-only RL policy 飛到能在真實 4×4 m 賽道上、贏 Alex Vanover (Drone Racing League 2019 champ)、Thomas Bitmatta (MultiGP champ)、Marvin Schaepper」三位世界冠軍級飛手的 **end-to-end 證據**。prior gap 很具體：(a) 之前 UZH 自家 2019 AlphaPilot/sim2real_drone_racing 線是 zero-shot sim→real 但只飛固定路徑、無對抗；(b) Lockheed AlphaPilot 是 mocap-assisted，不算「機載自主」；(c) classical MPC racing 路線（Foehn et al. 2021, Time-Optimal Planning）能算出 minimum-time trajectory 但要 ground-truth state、不能跑機載；Swift 把這三個缺口一次填平。對本 handbook 的意義：Swift 是 **`sim-in-loop` × `streaming` × `action-seq` × `robotics`** 這個座標點目前最乾淨的 anchor — 它是 aerial-sim 路線「能 close-loop 出真實 super-human policy」的 existence proof。
 
 ## 2. Core mechanism
 

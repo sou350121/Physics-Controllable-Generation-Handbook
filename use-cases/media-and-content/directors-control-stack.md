@@ -37,6 +37,31 @@
 
 **讀法**：①②⑤ 是「**生成內容的內部控制**」（角色/端點/構圖）；③④ 是「**朝向 VFX pipeline 的兩根桿**」——③ 想控相機、④ 想編輯已有素材。但**③ 的相機是學習式的、④ 的編輯不輸出 metric 幾何**——這正是 §4 那道牆的兩個入口。
 
+```mermaid
+flowchart LR
+    subgraph LEV["導演的五根桿（learned / relative）"]
+        L1["① reference / identity<br/>image-init"]
+        L2["② first-last-frame<br/>image-init ×2"]
+        L5["⑤ structure / VACE<br/>layout / pose / depth"]
+        L3["③ camera / Plücker<br/>camera"]
+        L4["④ in-context-edit / Aleph<br/>image-init（video-in）"]
+    end
+    L1 --> INT["生成內容的內部控制<br/>（角色/端點/構圖）"]
+    L2 --> INT
+    L5 --> INT
+    L3 --> TOW["朝向 VFX pipeline 的兩根桿"]
+    L4 --> TOW
+    INT --> PREVIZ["previz / standalone<br/>已成熟（綠燈）"]
+    TOW --> WALL{"輸出校準的<br/>metric 相機解嗎"}
+    WALL -->|"否（學習式位姿/重繪）"| PREVIZ
+    WALL -.->|"缺一根 metric 控制軸（牆）"| FINAL["final-frame 合成<br/>與真實 plate 對齊（紅燈）"]
+    style WALL fill:#f9d5d5,stroke:#c0392b,stroke-width:3px
+    style PREVIZ fill:#d5f5d5,stroke:#27ae60
+    style FINAL fill:#f5b7b1,stroke:#c0392b,stroke-width:2px
+```
+
+*圖：五根桿全落在 learned/relative 半邊；缺一根 metric 控制軸，正是 previz↔final-frame 的牆*
+
 > **與引擎章的分工**：本篇**不重拆** Sora / AnimateDiff 引擎本身（連 [sora.md](../../foundations/video-world-models/sora.md) · [animatediff.md](../../foundations/controllability-mechanisms/animatediff.md)）。這裡只談**控制面**——同一個 `data-only` 引擎，導演透過上面五根桿子去**操作**它。
 
 ---

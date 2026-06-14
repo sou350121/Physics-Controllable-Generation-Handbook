@@ -23,6 +23,21 @@
 
 **核心論點：閉環之所以重要，是因為 `compounding error` / `covariate shift`——open-loop 永遠把你拉回真實軌跡附近，閉環才會讓你的小誤差自己滾大。而「反應性」本身是一條獨立的保真度軸，不是預設給定的。** 一句話：**Closed-loop, or bust——而且 reactive closed-loop, or still bust.**
 
+```mermaid
+flowchart TD
+    Q["評估 driving policy"] --> OL["開環 open-loop"]
+    Q --> CL["閉環 closed-loop"]
+    OL --> OL1["每步重置回 ground-truth"]
+    OL1 --> OL2["可被純 ego-status MLP 外插刷穿"]
+    OL2 --> TRAP1["陷阱一：量的是模仿、不是駕駛"]
+    CL --> CL1["ego 動作回灌世界（covariate shift）"]
+    CL1 --> AGENT{"背景車怎麼動"}
+    AGENT -->|"log-replay / IDM（太被動）"| TRAP2["陷阱二：非反應式高估 planner"]
+    AGENT -->|"學習式反應 agent（SMART / diffusion）"| PASS["真實互動壓力、NeuroNCAP 安全驗收"]
+```
+
+*圖：兩層陷阱 — 開環被 ego-status 刷穿，閉環但非反應式仍高估 planner，只有反應式閉環才算數*
+
 | | 第一層陷阱 | 第二層陷阱 |
 |---|---|---|
 | 騙術 | open-loop metric 被 **ego-status 外插** 刷穿 | 閉環但 **agent 非反應式（log-replay / IDM）** 高估 planner |
@@ -91,6 +106,22 @@ metric 是 **at-fault collision / drivable-area compliance / comfort / progress 
 - **真閉環**：agent 的動作回到 Traffic Manager，改變下一步的 layout 與生成畫面。用 **PDMS / ADS** 評 **UniAD**。
 
 **NeuroNCAP（重建）與 DriveArena（生成）是同一枚硬幣的兩面**：前者把真實 log 重建成可閉環的感測流，後者把交通生成成可閉環的感測流。兩條路線都同意——**閉環 + 反應 + photoreal 三者缺一，這個 sim 的動力學那一半就沒驗收。**
+
+```mermaid
+flowchart LR
+    subgraph NCAP["NeuroNCAP（重建路線）"]
+        N1["NeuRAD 重建 photoreal 感測"] --> N2["Euro-NCAP 物理碰撞情境"]
+    end
+    subgraph ARENA["DriveArena（生成路線）"]
+        A1["Traffic Manager（OSM + LimSim 反應式）"] --> A2["World Dreamer 自回歸多視角生成"]
+    end
+    N2 --> POL["被測 driving agent"]
+    A2 --> POL
+    POL -->|"轉向 / 加速度回灌"| N1
+    POL -->|"動作回 Traffic Manager"| A1
+```
+
+*圖：同一枚硬幣兩面 — 重建（NeuroNCAP）與生成（DriveArena）各自把外觀接成「閉環＋反應＋photoreal」的感測流*
 
 > ⚠️ DriveArena 對 **VAD** 的評估數字 `UNVERIFIED`（本輪只確認對 UniAD 的評估鏈路 + PDMS/ADS 指標）。
 

@@ -16,6 +16,23 @@
 
 **一句話的承重契約**：WM-as-policy 的本質是「**把昂貴的真實互動，換成廉價的想像 rollout**」。這筆交換不是免費的 —— 它的代價就是 §5 那三件**必須對**：**reward head、continue（episode-end）head、以及資料分布附近的短程動力學**。錯了其中任何一件，actor 就會去最大化一個「夢裡很高、真實不認」的回報（model exploitation）。DayDreamer 維持誠實的辦法很樸素：**持續把真實資料餵回去**，把 model-exploitation 迴圈閉掉。
 
+```mermaid
+flowchart LR
+    WM["學到的 world model<br/>（RSSM＋reward／continue head）"]
+    IMG["想像 latent rollout<br/>（T=16，純 latent，不碰真實）"]
+    ACT["actor 取動作<br/>（最大化想像回報）"]
+    EXE["真環境執行<br/>（採 o,a,r 填 replay buffer）"]
+    EXP["model exploitation：<br/>policy 鑽 reward head 不真實處"]
+    WM -->|"prior 想像"| IMG
+    IMG --> ACT
+    ACT -->|"在夢裡 backprop 學策略"| WM
+    ACT -.->|"OOD／長 horizon 失準"| EXP
+    EXE -->|"真資料校準＝閉掉 exploitation 迴圈"| WM
+    ACT --> EXE
+```
+
+*圖：imagine→act 在夢裡學策略，真資料回灌補破綻；exploitation 即 policy 鑽 WM 不忠實處*
+
 ## 2. 核心機制（RSSM + imagination horizon T=16 + 三個 head）
 
 Dreamer 由**三個網路**構成：(1) **world model**（RSSM：encoder 把觀察壓成 latent；recurrent 部分維持 deterministic 狀態）、(2) **actor**、(3) **critic**。世界模型的 RSSM 把高維觀察壓成 latent state `s_t = (h_t, z_t)`：`h_t` 是 deterministic recurrent 狀態（攜帶 history），`z_t` 是 discrete latent（捕捉當下不確定性，posterior 由 encoder 給、prior 由 dynamics 給）。世界模型掛**三個 head**：**reward predictor + continuation(episode-end) predictor + decoder（重建觀察）**。

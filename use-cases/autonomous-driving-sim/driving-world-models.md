@@ -16,6 +16,17 @@
 - **物理錨定程度決定可信度**。Cosmos-Drive 用 **HDMap + LiDAR-depth** 把幾何物理錨定，生成模型只補外觀 → 本手冊命題最乾淨的 VALIDATED-增廣案。純 `data-only`（GAIA / GenAD）在分布外（罕見物體、劇烈轉向）就崩。
 - **NO-DUP**：**GAIA-2 內部架構已有 foundation 解構** → [`../../foundations/video-world-models/gaia-2.md`](../../foundations/video-world-models/gaia-2.md)；**Cosmos 引擎內部** → [`../../foundations/foundation-physics-models/cosmos-wfm.md`](../../foundations/foundation-physics-models/cosmos-wfm.md)。本篇是 **use-case 橫向視角**：控制契約收斂 + VALIDATED/DEMO 切分，不重拆它們的內部。
 
+```mermaid
+flowchart TD
+    COND["條件輸入：3D-box / HDMap / ego-action / text（天氣時間）"] --> WM["生成式駕駛 WM<br/>GAIA-2 / Cosmos-Drive（appearance only）"]
+    WM --> ROLL["自回歸 rollout"] --> OUT["多視角 RGB 影片（+ LiDAR 選配）"]
+    OUT --> STRONG["強：VALIDATED 資料增廣下游漲點（mAP / F-score）"]
+    OUT --> WEAK["弱：DEMO 閉環安全驗證（碰撞是畫的非算的）"]
+    GEO["幾何由 HDMap / LiDAR 物理錨定"] -.->|"鎖住幾何、只讓生成變外觀"| WM
+```
+
+*圖：GAIA-2 式像素端駕駛 WM — 強在外觀與長尾增廣（VALIDATED），弱在動力學閉環驗證（DEMO）*
+
 ---
 
 ## 2. 控制契約（這領域已收斂的條件）

@@ -32,6 +32,32 @@ survey 2504.13159 的 taxonomy（appearance-only → hybrid → physics-integrat
 | **L2 動力學（dynamics）** | 它**會怎麼動**？ | mass/density/friction、articulation(joints/DOF)、**獨立 collision geometry**、material、組織生物力學(FEA/deformable) | 2504.13159（physics-integrated）；手術 survey FEA/bioheat |
 | **L3 即時狀態同步（live sync）** | 它**現在**是什麼狀態？ | dynamic state 隨真實系統實時更新；intraop 隨組織形變更新 | DT-fidelity 文獻（sync 是定義性的）；手術 intraop |
 
+```mermaid
+flowchart TD
+    subgraph stack["三層保真 stack"]
+        direction TB
+        L1["L1 幾何<br/>它長什麼樣？<br/>外觀可近似 ／ metric-scale 必須忠實"]
+        L2["L2 動力學<br/>它會怎麼動？<br/>質量摩擦可估（標不確定度）／ articulation 必須忠實"]
+        L3["L3 即時狀態同步<br/>它現在是什麼狀態？<br/>dynamic state 必須忠實，離線即退回 L1"]
+        L1 --> L2 --> L3
+    end
+    VT["視覺孿生<br/>= 只到 L1"]
+    PT["可預測孿生<br/>= L1 + L2 + L3"]
+    L1 -.->|"appearance-only 止步於此"| VT
+    L3 -.->|"三層全開"| PT
+    classDef l1 fill:#e8f0fe,stroke:#4285f4,color:#202124
+    classDef l2 fill:#fef7e0,stroke:#fbbc04,color:#202124
+    classDef l3 fill:#fce8e6,stroke:#ea4335,color:#202124,stroke-width:2px
+    classDef vt fill:#f1f3f4,stroke:#9aa0a6,color:#202124
+    classDef pt fill:#e6f4ea,stroke:#34a853,color:#202124
+    class L1 l1
+    class L2 l2
+    class L3 l3
+    class VT vt
+    class PT pt
+```
+*圖：三層保真 stack —— 視覺孿生止步 L1，可預測孿生要 L2 動力學 + L3 同步全開*
+
 **契約表**——哪些**必須忠實**（faithful，不能近似），哪些**可生成 / 近似**（generated / approximated）：
 
 | 維度 | 必須忠實（faithful） | 可生成 / 近似（generated / approx） |
@@ -61,6 +87,22 @@ survey 2504.13159 的 taxonomy（appearance-only → hybrid → physics-integrat
 **所以**：工業孿生今天賣的，**主要是 L1（幾何/外觀）+ sim-only 的 L2（在 sim 裡跑物理）**。真正的 **L3 live-sync（真實 robot fleet 的狀態實時灌回孿生）**，公開證據裡**基本是空的**。
 
 > ★ **McKinsey 2024 的硬數據把這個縫量出來了**：**86% 製造商視 digital twin 為 mission-critical，但只有 14% 已經接到 live robot fleet。** 換句話說——**契約裡 L1+L2 大家都在做，唯獨 L3（live-sync）這一條，幾乎沒人關上。** 這個 86/14 落差不是工程進度問題，它**就是本篇契約的實證**：缺的那層永遠是同步，不是外觀。
+
+```mermaid
+flowchart LR
+    L1L2["L1 幾何 + L2 sim-only 物理<br/>（Omniverse / OpenUSD / Sensor RTX）<br/>已產品化、可買"]
+    L3["L3 live-sync<br/>真實 robot fleet 狀態實時灌回孿生"]
+    WANT["86% 視為 mission-critical"]
+    DONE["僅 14% 已接 live fleet"]
+    L1L2 -->|"做到了"| WANT
+    L3 -->|"幾乎沒人關上"| DONE
+    WANT -. "86 / 14 落差<br/>= 缺的那層永遠是同步" .-> DONE
+    classDef done fill:#e6f4ea,stroke:#34a853,color:#202124
+    classDef gap fill:#fce8e6,stroke:#ea4335,color:#202124,stroke-width:2px
+    class L1L2,WANT done
+    class L3,DONE gap
+```
+*圖：工業孿生的 live-sync 落差 —— 86% 想要、僅 14% 真接 live fleet（L3 那條縫沒人關上）*
 
 > ⚠️ 常被引用的「BMW 30% greenfield 工廠先建數字孿生」這個數字，在兩個 NVIDIA 官方頁面上**都查不到出處** → 標 `UNVERIFIED`，不採用為論據。
 

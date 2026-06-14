@@ -12,6 +12,19 @@
 
 但「最小 sim-to-real gap」這句話有一個**誠實的星號**：所謂「real-world」部署是 **hardware-in-the-loop (HIL)** —— 無人機物理上在飛，但它**看到的影像是模擬器渲染的 frame**，不是真實相機。**因此 sim↔real 視覺輸入幾乎相同，視覺 domain gap 被旁路掉了；真正困難的視覺 gap（真實相機、光度、運動模糊）與 aero/latency 動力學 gap，本文並未證明跨越，作者自己列為 future work。** 把這顆星號看懂，才看得懂這篇的貢獻邊界。
 
+```mermaid
+flowchart LR
+    O["o_k：64x64 RGB"] --> E["CNN encoder --> z_k"]
+    E --> RSSM["RSSM 世界模型<br/>s_k = (h_k, z_k)"]
+    RSSM -->|"imagine T=16 步（純 latent）"| IMG["想像 rollout：s --> s'"]
+    IMG --> AC["actor-critic<br/>（梯度只在夢境上 backprop）"]
+    AC --> ACT["a_k = CTBR [推力, wx, wy, wz]"]
+    ACT -->|"真實 env step 蒐集 latent 起點"| RSSM
+    ACT --> DEP["部署：HIL"]
+    CAVEAT["誠實星號：HIL 的相機看到的是<br/>模擬器渲染 frame，非真實相機<br/>真實視覺 + 高速氣動 gap 未跨越"] -.->|"視覺 gap 被旁路"| DEP
+```
+*圖：DreamerV3 想像迴路 —— actor-critic 全在 latent 夢境學；紅框標出「真機=HIL+渲染幀」的貢獻邊界*
+
 ## 2. Core mechanism
 
 DreamerV3 的核心是 **RSSM（Recurrent State-Space Model）**：把高維像素壓成一個 latent state `s_k = (h_k, z_k)` —— `h_k` 是 deterministic recurrent 狀態（GRU 攜帶的 history），`z_k` 是 stochastic categorical latent（捕捉當下不確定性）。world model 學會在 latent 空間裡「想像」未來，**actor/critic 從不碰真實影像、只在 imagined latent rollout（horizon T=16）上訓練** —— 這就是「dream」的字面意思。

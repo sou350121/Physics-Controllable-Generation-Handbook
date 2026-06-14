@@ -28,6 +28,26 @@
 
 > **一句話契約**：**在 WM 裡規劃，信任隨 horizon 線性退化、出分布時因 exploitation 災難性崩；latent 可抽掉外觀但不能抽掉 reward-相關變數。** 短程 + 分布內 + 模型忠實——**三者皆真，acting-in-a-WM 才可信。**
 
+```mermaid
+flowchart TD
+    PLAN["在學到的 WM 裡規劃／行動"]
+    C1["條款一：短有效 horizon"]
+    C2["條款二：分布內"]
+    C3["條款三：reward／termination／動力學忠實"]
+    T1["違約 → 線性退化<br/>（可量化、可預算；MBPO：gap ∝ horizon）"]
+    T2["違約 → 斷崖式崩<br/>（exploitation；value 排序可反轉）"]
+    T3["違約 → 隱蔽偏置<br/>（畫面對、目標錯，肉眼 debug 不出）"]
+    TRUST["三者皆真 → acting-in-a-WM 可信"]
+    PLAN --> C1 --> T1
+    PLAN --> C2 --> T2
+    PLAN --> C3 --> T3
+    C1 --> TRUST
+    C2 --> TRUST
+    C3 --> TRUST
+```
+
+*圖：三層契約條款，各對應一條不同的違約信任曲線；缺一即不可信*
+
 ## 2. 規劃-on-WM 的代表（TD-MPC2 / V-JEPA 2-AC）
 
 兩個極點：一個是**純 sim、把 latent 規劃做到極致**（TD-MPC2），一個是**真機零樣本、把契約推到野外**（V-JEPA 2-AC）。
@@ -45,6 +65,24 @@
 ## 3. 三個失效模式（契約的三條違約條款）
 
 **這是本篇的核心。** 三種翻車彼此獨立，要分開防。
+
+```mermaid
+flowchart LR
+    GOAL["目標／reward"]
+    SAMP["取樣候選動作序列<br/>（MPPI／CEM）"]
+    ROLL["在學到的 WM 裡 rollout 評估<br/>（短程展開＋value tail bootstrap）"]
+    PICK["擇優、執行第一步<br/>（receding-horizon 逐步重規劃）"]
+    A["A 模型利用：優化搜出 OOD exploit"]
+    B["B 複利誤差：逐步累積（gap ∝ horizon）"]
+    C["C 錯設：reward／termination 學歪"]
+    GOAL --> SAMP --> ROLL --> PICK
+    PICK -->|"下一步重規劃"| SAMP
+    ROLL -.->|"被優化推出分布"| A
+    ROLL -.->|"展開越長越失真"| B
+    ROLL -.->|"latent 對、目標錯"| C
+```
+
+*圖：planning-on-WM 迴路（取樣→rollout→擇優），三條虛線標出 A／B／C 三個失效注入點*
 
 **A · 模型利用 / 對抗策略（exploitation；出分布的災難性崩）。**
 agent 在 WM 上**優化**時，會把策略推向**模型自信但其實錯**的角落——也就是主動製造 OOD。這與監督學習的 OOD 根本不同：**規劃器不是被動遇到 OOD，而是被優化目標主動推進 OOD**——哪裡 WM 給的回報虛高，優化就往哪裡去。最經典示範：**World Models**（Ha & Schmidhuber）裡 agent 學會**讓夢中的怪物不開火**，在夢裡刷高分，回到真環境卻一塌糊塗。arXiv [2605.15960](https://arxiv.org/abs/2605.15960) 把這條形式化：「**在大策略集上 exploitation 本質不可避免**」，並給 **safe-horizon 界**——超過某個展開步數，**WM 內的 value 排序可能與真實環境反轉**（亦即「夢裡最優」可能是「現實最差」）。

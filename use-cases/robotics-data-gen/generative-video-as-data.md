@@ -23,6 +23,22 @@
 
 **一句話契約**：像素 (pixel) 可以放心生成；動作 (action) 的可信度取決於它是**被觀測 (sim-GT / 真人 native)** 還是**被推測 (IDM/LAPA)**。這條分界，就是本篇的智力核心。
 
+```mermaid
+flowchart TD
+    VID["生成 / 採集影片"] --> SRC{"動作 label 怎麼來？"}
+    SRC -->|"IDM / LAPA 事後回推"| INF["自由生成 → 回推<br/>（DreamGen）"]
+    SRC -->|"鎖在 sim、從沒離開"| LOCK["生成外觀 → 保留 sim-GT<br/>（Cosmos-Transfer）"]
+    SRC -->|"native 記錄當下真動作"| NAT["真人遙操 / 人類影片"]
+    INF --> R1["可信度：推測、誤差不可控<br/>能換無限新行為"]
+    LOCK --> R2["可信度：觀測級（鎖 sim）<br/>但變不出新行為"]
+    NAT --> R3["可信度：最高、無回推誤差<br/>但昂貴不擴展"]
+    R1 --> TENSION["多樣性 vs 動作可信度<br/>2026 仍是對立面"]
+    R2 --> TENSION
+    R3 --> TENSION
+```
+
+*圖：影片外觀都能生成，差別全在動作 label 是回推、鎖 sim-GT、還是真人 native；新行為與動作可信度互斥*
+
 ---
 
 ## 2. 核心機制（DreamGen 4 階段為主軸）
@@ -58,6 +74,19 @@ DreamGen 把「生成影片→回推動作→訓 policy」拆成四階段管線�
   ╳ 反證點：失敗主因落在 ②（影片物理崩），不是 ③（IDM 解錯）
             → DreamGen Bench 量的是 ② 的 Instruction Following + Physics Alignment
 ```
+
+```mermaid
+flowchart LR
+    TELE["teleop 真實軌跡<br/>（單一任務 / 環境）"] -->|"LoRA"| WM["① 影片世界模型<br/>（WAN2.1, pixel predictor）"]
+    WM --> GEN["② 生成合成影片<br/>22 新行為 / 10 未見環境"]
+    GEN --> IDM["③ IDM / LAPA 回推 pseudo-action<br/>= neural trajectories"]
+    IDM --> POL["④ 訓 visuomotor policy<br/>真機閉環一致上漲"]
+    GEN -.->|"物理崩：穿模 / 漂浮"| BOTTLE["瓶頸在生成端<br/>不在回推頭"]
+    BOTTLE -.->|"先過閘門"| GATE["DreamGen Bench /<br/>World Consistency Score"]
+    GATE -.-> IDM
+```
+
+*圖：生成影片到回推動作到訓 policy 的閉環；瓶頸在 ② 生成的物理合理性，回推頭升級救不了上游崩壞的像素*
 
 要點：
 

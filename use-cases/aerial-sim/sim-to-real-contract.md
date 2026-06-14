@@ -23,6 +23,21 @@
 
 外加一條獨立軸：**感知保真度是另一回事**，跟動力學脫鉤，常常才是真正的瓶頸。
 
+```mermaid
+flowchart TD
+    SIM["sim 訓練"] --> CONTRACT{"sim-to-real 契約"}
+    CONTRACT --> REAL["必須物理上真<br/>（量錯就掉）"]
+    CONTRACT --> LEARN["可以學 / 殘差化 / 隨機化"]
+    REAL --> R1["thrust↔throttle 映射<br/>（the key）"]
+    REAL --> R2["你這台的延遲<br/>（actuation + 感知 latency）"]
+    REAL --> R3["真實 low-level controller<br/>（CTBR 介面藏馬達/電壓）"]
+    LEARN --> L1["高保真 aero<br/>（一般不必建）"]
+    LEARN --> L2["量不準的參數<br/>（質量/慣量 → DR + 線上推）"]
+    LEARN --> L3["aero 殘差<br/>（擾動力包絡 / kNN / 線上自適應）"]
+    PERCEP["感知保真度<br/>（獨立軸，常是真瓶頸）"] -.->|"與動力學脫鉤"| CONTRACT
+```
+*圖：契約的中心線 —— 什麼必須真（thrust map + 你的延遲），什麼可以學（高保真 aero 不必）。*
+
 ## 1. 那篇最新的（2026-06）把契約講得最具體
 
 Fei Gao 組這篇做的是**端到端 sensorimotor policy**：機載相機（分割後的縫隙影像 320×256）+ 本體姿態（roll/pitch）**直接**映到 low-level 控制（collective thrust + body rates），讓四旋翼以 **5 cm 餘隙**穿過**傾斜到 90°** 的窄縫，**事先完全不知道縫的位置與朝向**，甚至能穿它沒訓練過的**移動縫**（3–5 m/s）。它把傳統「感知→估計→規劃→控制」整條 stack 換成一個學出來的策略。100% 在模擬裡訓（teacher–student：有特權資訊的 RL oracle 用 DAgger 蒸餾進 recurrent CNN→GRU→MLP 的 student），再加一個 model-based 規劃器做 **informed reset** 去引導 RL 探索窄縫（樣本效率 3×，沒有它 RL 卡在約 70%）。
@@ -77,6 +92,24 @@ RAPTOR 是這份契約裡**最重要的 nuance**。它把 **1000 個 RL teacher�
 - **但延遲仍要單獨處理**：對沒有 EKF 的板子，加一個加速度計積分濾波去打 10–30 ms 估計延遲。
 
 **和「小殘差」法怎麼調和？** —— **randomize 你『沒法逐台量』的參數（質量/慣量/TWR/馬達延遲），讓策略自己在線上推；但你『能量』的（thrust map、你自己的延遲）還是要實測釘死。** RAPTOR 沒推翻契約，它把契約裡「殘差」那一截從『離線手動辨識』換成『線上隱式辨識』，代價是要一個 in-context 自適應（recurrent）的策略 + 夠寬且結構化的隨機化。
+
+```mermaid
+flowchart LR
+    subgraph SW["Swift（per-drone system-ID）"]
+        direction TB
+        SW1["RL 在 sim 訓好"] --> SW2["幾趟真飛辨識殘差"]
+        SW2 --> SW3["感知殘差 → GP（隨機）<br/>動力學殘差 → kNN（確定）"]
+        SW3 --> SW4["離線釘死本台的 gap"]
+    end
+    subgraph RP["RAPTOR（寬 DR + recurrent）"]
+        direction TB
+        RP1["1000 teacher，寬隨機化<br/>TWR 1.5-5 / 質量 0.02-5 kg"] --> RP2["蒸餾進 2084 參數 GRU"]
+        RP2 --> RP3["線上隱式 system-ID<br/>（從 I/O 歷史自己推）"]
+        RP3 --> RP4["零樣本飛 10 台真機<br/>（仍須單獨打延遲）"]
+    end
+    SW4 -.->|"殘差：離線量 vs 線上推"| RP3
+```
+*圖：殘差那一截 —— Swift 離線逐台標定，RAPTOR 用寬 DR 讓策略線上自己推（省 per-drone system-ID）。*
 
 > 對照組（model-based 一端）：**SUPER**（HKU，>20 m/s、避 2.5 mm 細線）完全不學——靠**忠實的 LiDAR 幾何感知 + 顯式安全保證**。它提醒：當感知夠真、約束寫明確，安全層**可以完全不需要學習**。契約的兩端：一端純殘差學習，一端純模型保證。
 

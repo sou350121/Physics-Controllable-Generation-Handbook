@@ -61,6 +61,21 @@ The strongest single proof: **a 3DGS renderer and a quadrotor physics model wire
 
 以下三個是 *已驗證* 並且 **贏** 的系統。共同點：它們都明確把 appearance 與 dynamics 切開，而切開正是它們贏的原因。
 
+```mermaid
+flowchart TD
+    GEN["generation 只生 APPEARANCE"] --> SPLIT{"dynamics 從哪來？"}
+    SPLIT -->|"外包給物理模型 / 幾何回推"| VAL["VALIDATED（贏的系統）"]
+    SPLIT -->|"想讓 generation 自帶動力學"| DEMO["DEMO-only（無 vs-real）"]
+    VAL --> V1["SOUS VIDE / FiGS<br/>3DGS + 10-D quadrotor / 105 真飛"]
+    VAL --> V2["FlightDiffusion<br/>I2V + ORB-SLAM3 回推 pose"]
+    VAL --> V3["UAV-Sim<br/>NeRF labeled novel-view / +55.85% mAP50"]
+    DEMO --> D1["Cosmos-FPV<br/>OWL-ViT 自標，作者警告 expect misses"]
+    DEMO --> D2["ANWM<br/>Unreal-sim only，自承不建 rigid-body"]
+    V1 --> TRAP["metric-scale 陷阱<br/>monocular 只到任意尺度"]
+    TRAP -->|"gate 距離不可信 → 生成資料變負資產"| ANCHOR["須引入 metric anchor<br/>（LiDAR / metric-depth / stereo）"]
+```
+*圖：dynamics 外包就贏（VALIDATED）、自帶就只剩 DEMO；而 metric-scale 陷阱是把生成資料變負資產的坑。*
+
 ### 3.1 SOUS VIDE / FiGS — [VALIDATED, 最乾淨的證明]
 arXiv [2412.16346](https://arxiv.org/abs/2412.16346)
 - **架構切分**：flight dynamics = 10-D 半運動學四旋翼模型（ACADOS integrator）；visual obs = 3D Gaussian Splatting，渲染最高 **130 fps**。

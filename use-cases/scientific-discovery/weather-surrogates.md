@@ -14,6 +14,15 @@
 - **成熟的 surrogate 契約 = 並行、非取代**。ECMWF 反覆明說 AIFS 與物理 IFS 是 **complementary（互補）、不是 replacement**。AI 跑得快、能耗低（~1000× 降）、氣旋路徑更準（~20% 改善），但物理模型提供物理一致性錨點與已驗證的可信度基線。**兩者並行交叉驗證**，才是 surrogate 從「論文」走到「業務」的真正成熟形態。
 - 一句話總結整頁的論點：**天氣證明了 surrogate 可以上線——但只有在它「承認自己會 blur、用 ensemble 補上 tail、並接受與物理模型並行驗證」的前提下**。這三件事缺一不可，也正是其他 surrogate 子場還沒走完的路。
 
+```mermaid
+flowchart LR
+    DET["確定性世代<br/>GraphCast / Pangu / FourCastNet"] -->|"MSE point estimate<br/>double penalty"| BLUR["系統性 blur<br/>（極端強度被攤平、tail 失真）"]
+    BLUR -->|"換目標：建模條件分布"| DIFF["diffusion ensemble<br/>GenCast 50+ 成員"]
+    DIFF -->|"修 blur，恢復尖銳結構與機率尾"| WIN["勝 ENS 約 97%<br/>（極端熱冷 / 強風 / 氣旋路徑）"]
+    WIN -->|"收斂進業務管線"| DEPLOY["ECMWF AIFS operational<br/>與物理 IFS 並行、非取代"]
+```
+*圖：路線三段轉折 —— 確定性會 blur，diffusion 從根上修，最後以「並行驗證」上線。只動 injection 一軸就把 blur 修掉。*
+
 ---
 
 ## 2. 確定性世代（GraphCast / Pangu / FourCastNet）+ 為什麼會 blur

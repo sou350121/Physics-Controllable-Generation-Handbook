@@ -2,6 +2,24 @@
 
 > 工廠 / 手術 / 工業設備的 digital twin —— Sim + Gen 混合方案。但這個 use-case 的命題很尖：**一個 photoreal 的 3DGS 重建只是「視覺孿生」；要成為「可預測孿生」，得加上物理（動力學）+ 即時狀態同步。** 生成管外觀與場景，物理 + 同步管行為與「當下」。
 
+```mermaid
+flowchart LR
+    V["視覺孿生<br/>3DGS 外觀<br/>（appearance-only）"]
+    P["物理<br/>質量 / 摩擦 / articulation<br/>（動力學）"]
+    S["即時狀態同步<br/>當下 pose / state<br/>（live-sync）"]
+    T["可預測孿生<br/>sim rollout 能預測真機"]
+    V --> T
+    P -->|"缺口①"| T
+    S -->|"缺口②"| T
+    classDef have fill:#e6f4ea,stroke:#34a853,color:#202124
+    classDef gap fill:#fce8e6,stroke:#ea4335,color:#202124,stroke-width:2px
+    classDef out fill:#e8f0fe,stroke:#4285f4,color:#202124
+    class V have
+    class P,S gap
+    class T out
+```
+*圖：缺的永遠是中間兩塊（物理 + 同步），從來不是外觀*
+
 ## 核心命題：視覺孿生 vs 可預測孿生
 
 跨 robotics / 工業 / 手術，把重建變成孿生時，**缺的那一層一致是「動力學 + 同步」，從來不是外觀**。NeRF/3DGS/photogrammetry 都是 appearance-only：「a visual reconstruction can look photorealistic yet lack the physical grounding necessary for interactive simulation」（[survey 2504.13159](https://arxiv.org/pdf/2504.13159)）。要可用，得補：物理（mass/density/friction）+ articulation + collision + material + **即時 dynamic state**。
@@ -13,6 +31,27 @@
 | **幾何** | metric-scale 幾何、articulation/kinematics、collision body | 細紋理、非承重視覺細節 |
 | **動力學** | 接觸、質量/摩擦、形變/生物力學（任務由動力學主導時）；*RialTo 靠 quasistatic 繞過* | 材質外觀、sensor reflectivity（生成可補：material-GS） |
 | **即時狀態同步** | 特定真實系統的當下 pose/state，在任務相關延遲內（機器人 ~200ms、術中次幀） | 歷史/裝飾性狀態 |
+
+```mermaid
+flowchart TD
+    G["L1 幾何<br/>metric-scale / collision / articulation<br/>（視覺孿生只到這層）"]
+    D["L2 動力學<br/>接觸 / 質量摩擦 / 形變生物力學"]
+    Y["L3 即時狀態同步<br/>當下 pose / state 隨真實滾動"]
+    G --> D --> Y
+    R1["RialTo：quasistatic 繞過 L2"]
+    R2["Real-to-Sim Eval：補 L2 + 渲染"]
+    D -.->|"逃生口"| R1
+    D -.->|"補足"| R2
+    classDef l1 fill:#e8f0fe,stroke:#4285f4,color:#202124
+    classDef l2 fill:#fef7e0,stroke:#fbbc04,color:#202124
+    classDef l3 fill:#fce8e6,stroke:#ea4335,color:#202124,stroke-width:2px
+    classDef note fill:#f1f3f4,stroke:#9aa0a6,color:#202124
+    class G l1
+    class D l2
+    class Y l3
+    class R1,R2 note
+```
+*圖：三層保真 stack —— 缺口在 L2 動力學與 L3 同步*
 
 ## 兩條路
 

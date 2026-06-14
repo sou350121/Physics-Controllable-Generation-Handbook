@@ -15,6 +15,21 @@
 
 > 媒體讀者要記的不是「生成影片物理爛」（那太簡化），而是 **「外觀那一半被解耦出來、可以單獨拿走」** —— 這既是你的 superpower，也是你越界時的斷崖。
 
+```mermaid
+flowchart TD
+    PIQ["Physics-IQ：<br/>realism 與 physics 不相關<br/>（r ≈ −0.46，不顯著）"]
+    PIQ --> APP["外觀軸<br/>（光影/質感/風格）<br/>可單獨拿走"]
+    PIQ --> PHY["物理軸<br/>（守恆/碰撞/流體）<br/>生成器從未擁有"]
+    APP --> GOOD["① 好消息（許可證）<br/>人類門檻 = 可信非正確<br/>被允許跳過物理"]
+    PHY --> BAD["② 牆（許可證失效）<br/>真動力學 / 流體 / 接觸<br/>或與真實 plate 合成"]
+    GOOD --> REAL["媒體真正的失效<br/>時序一致性（temporal）<br/>flicker / identity drift / object permanence"]
+    style GOOD fill:#d5f5d5,stroke:#27ae60
+    style BAD fill:#f9d5d5,stroke:#c0392b,stroke-width:3px
+    style REAL fill:#fde9c8,stroke:#e67e22,stroke-width:2px
+```
+
+*圖：同一個解耦的雙面 —— 許可證讓你跳過物理，牆在合成時補繳；但真正會退件的是時序一致性*
+
 ## 2. Physics-IQ 的硬證據（realism 與 physics 不相關）
 
 Physics-IQ 是目前把「外觀 vs 物理」解耦量得最乾淨的證據，**設計就是為了拆開這兩個軸**：
@@ -83,6 +98,23 @@ Physics-IQ 是目前把「外觀 vs 物理」解耦量得最乾淨的證據，**
               ├─ 是 ──────────────────► B 層：plausible 即可，但挑 seed / 縮短可見時長 防露餡
               └─ 否 ──────────────────► A 層：establishing / b-roll / 氛圍 / 風格化 —— 放手用生成
 ```
+
+```mermaid
+flowchart TD
+    BRIEF["拿到一個 brief"] --> Q1{"要和實拍素材<br/>並置/合成嗎"}
+    Q1 -->|"是"| C["C 層 · 物理要(近)對/可量測<br/>幾何·相機·尺度全要量測<br/>→ match-move（→ directors-control-stack）"]
+    Q1 -->|"否"| Q2{"主體是布料/頭髮/煙/<br/>水花/人群（需物理感）嗎"}
+    Q2 -->|"是"| B["B 層 · 物理要可信不必正確<br/>plausible 即可<br/>挑 seed / 縮短可見時長 防露餡"]
+    Q2 -->|"否"| A["A 層 · looks-right 夠<br/>establishing / b-roll / 氛圍 / 風格化<br/>放手用生成"]
+    A -.->|"物理要求單調上升"| B -.-> C
+    C --> CLIFF["斷崖：外觀漂亮不夠<br/>幾何/相機/尺度任一對不上立刻穿幫"]
+    style A fill:#d5f5d5,stroke:#27ae60
+    style B fill:#fde9c8,stroke:#e67e22
+    style C fill:#f9d5d5,stroke:#c0392b,stroke-width:2px
+    style CLIFF fill:#f5b7b1,stroke:#c0392b,stroke-width:3px
+```
+
+*圖：A→B→C 物理要求單調上升，A/B 在許可證內、C 是斷崖（同一支 30 秒廣告常三層並存）*
 
 > 同一支 30 秒廣告常**三層並存**：開場航拍城市（A，放手生成）→ 主角風衣在風中（B，盯垂墜、多挑 seed）→ 產品擺在**真實**桌面合成（C，必須 match-move）。**錯誤是用同一把尺驗三層** —— 對 A 去查物理（白費力），或把 C 當 A（穿幫退件）。
 

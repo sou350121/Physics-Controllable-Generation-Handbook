@@ -11,6 +11,17 @@
 
 **一句話**：UniSim / NeuRAD 這類系統把**單條真實駕駛 log（多相機 + LiDAR）反演成一個顯式 3D 神經場**，可在**任意新視角 / 新軌跡**下重渲染出 metric-scale 的相機與 LiDAR 觀測，並支援**移動 SDV、增刪 / 重置 actor、反應式避讓**等閉環操作。**它強在感測保真**（NeuRAD 連 rolling shutter、ray-drop 都建模），這是它「被信任」的根本 —— 像素不是想像出來的，是真實量測的重投影。**它的硬限制同樣根本**：一切只在**原 log 觀測過的範圍內**成立；大幅改視角或挪走 actor，就會把渲染推進「沒被任何感測器看過」的外推區（UniSim 用一個 **CNN 補未見區**，就是這個外推本質的 tell）。**結論：重建的多樣性被 log 邊界鎖死 —— 這正是生成式 WM 要接手的縫。**
 
+```mermaid
+flowchart TD
+    LOG["真實 log（多相機 RGB + LiDAR + 位姿）"] -->|"反演 / 擬合"| FIELD["神經場（靜態背景 + per-actor 動態）"]
+    FIELD -->|"新視角 / 新軌跡"| RENDER["神經 renderer"]
+    RENDER --> GIVE["給得了：metric-scale 外觀 / 幾何 / 感測保真"]
+    RENDER --> NOGIVE["給不了：log 外的動力學 / 新 agent 反應 / 長尾"]
+    NOGIVE -.->|"交棒"| WM["生成式 WM（補長尾）"]
+```
+
+*圖：真實 log → 神經重建 → 可編輯 sim — 界線在「給得了外觀幾何」vs「給不了動力學反應」，後者交棒生成式 WM*
+
 ---
 
 ## 2. 核心機制（neural feature field + 靜 / 動分解 + 未見區補全；NeRF → 3DGS 的速度躍升）

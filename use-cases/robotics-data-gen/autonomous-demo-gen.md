@@ -16,6 +16,20 @@
 
 關鍵後果有三：(1) 動作是 **sim-GT** —— 在 sim 物理引擎裡 replay 出來、通過成功篩選，所以在 sim 物理範圍內可信，繼承的是 **sim-to-real gap 而不是標籤保真度問題**；(2) 它擴的是**空間 / 物件 / embodiment 多樣性**，機器人做的還是那個被 seed 的技能——**不造新的 contact dynamics**；(3) 整條 pipeline 的脆點集中在「物件位姿估計準不準」和「線性插值接合段會不會撞」。DexMimicGen 把它推到雙手 + 人形 + 靈巧手（21K demos from 60 human demos），RoboCasa 把它接到場景 / 資產生成（但生成進來的是場景不是動作），DemoGen 把場景變換從 sim 換成 3D 點雲編輯——四者共享同一個「開環 replay + 成功篩選」骨架，也共享同一條 caveat。
 
+```mermaid
+flowchart LR
+    SEED["少量人類 demo<br/>（約 200 條）"] --> SEG["object-centric 切段<br/>每段掛一個物件 frame"]
+    SEG --> SE3["SE(3) 剛體變換<br/>EE 與物件相對位姿不變"]
+    SE3 --> REPLAY["開環 replay 進 sim<br/>（不看觀測、無閉環）"]
+    REPLAY --> CHECK{"_check_success()？"}
+    CHECK -->|"成功"| KEEP["進資料集<br/>動作 = sim-GT"]
+    CHECK -->|"失敗"| DROP["丟棄"]
+    KEEP --> OUT["大量合成 demo<br/>（50K+）"]
+    OUT --> DIM["擴的是空間 / 物件 / embodiment<br/>不是行為新穎性"]
+```
+
+*圖：少量 demo 經 SE(3) 搬家加開環 replay 加成功篩選擴成上萬條；動作天生 sim-GT，但只擴空間多樣性*
+
 ---
 
 ## 2. 核心機制（MimicGen 的 SE(3) 物件中心變換 + 開環 replay + 成功篩選）

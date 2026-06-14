@@ -2,6 +2,20 @@
 
 > 全 7 個 use-case 已深度建設，共 **20 篇一手來源 dissection**。**🚁 aerial-sim 最深（6 篇）**，也是本倉接 Spatial-Handbook 最深 embodiment 的線。
 
+```mermaid
+flowchart TD
+    GEN["生成模型<br/>外觀 / 像素可生成"] --> SPLIT{"但每個下游<br/>都有一塊不能憑空生成"}
+    SPLIT --> A["robotics-data-gen<br/>動作 GT 要物理或真人"]
+    SPLIT --> B["autonomous-driving-sim<br/>動力學 / 反應要物理"]
+    SPLIT --> C["aerial-sim<br/>飛行動力學要物理"]
+    SPLIT --> D["embodied-policy-rollout<br/>世界模型要忠實才可信"]
+    SPLIT --> E["scientific-discovery<br/>要可驗證的物理基準"]
+    SPLIT --> F["digital-twin<br/>動力學加即時同步"]
+    SPLIT --> G["media-and-content<br/>碰真實素材才要 metric 相機"]
+```
+
+*圖：七個下游共用一條命題 —— 外觀可生成，但每個下游各有一塊「必須靠物理或真實」的硬核（這正是本倉按 use-case 而非 method 切的理由）。*
+
 | Use case | 主軸 | 深度 | 重要 zone |
 |---|---|---|---|
 | [aerial-sim](aerial-sim/) 🚁 ★ | 無人機 closed-loop sim + 合成 aerial footage | **6 篇（最深）** | diff-sim · long-horizon · data-engine |

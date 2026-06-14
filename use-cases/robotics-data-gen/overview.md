@@ -8,6 +8,23 @@
 
 對應到 ontology：這些方法在 **output 軸**上收斂（都產軌跡或影片），差異最大的是 **control 軸**——**動作從哪來：native（真人）/ sim-GT（replay）/ inferred（從生成像素回推）**。這條軸就是整個 use-case 的分水嶺。
 
+```mermaid
+flowchart TD
+    Q["想用生成資料替代真實 demo"] --> APP["外觀 / 場景<br/>（可生成、近乎免費擴）"]
+    Q --> ACT["動作 GT（action label）<br/>不可憑空生成"]
+    ACT --> SRC{"動作從哪來？"}
+    SRC -->|"sim 物理當 GT<br/>（replay + 成功篩選）"| M["MimicGen 家族<br/>擴空間 / 物件多樣性"]
+    SRC -->|"鎖 sim-GT<br/>只遷移外觀"| C["Cosmos-Transfer<br/>命題最純形態"]
+    SRC -->|"從生成像素回推<br/>（IDM / LAPA）"| D["DreamGen 路線<br/>擴行為新穎性"]
+    SRC -->|"native（真人遙操）"| T["OXE / DROID<br/>保真度錨點"]
+    M --> GAP1["gap：sim-to-real"]
+    C --> GAP2["gap：只剩動力學 sim-to-real"]
+    D --> GAP3["gap：動作保真 + 物理幻覺"]
+    T --> GAP4["gap：人力不擴展"]
+```
+
+*圖：外觀能生成、動作 GT 不能；三條路線真正的分水嶺是動作從 sim-GT、回推、還是真人來*
+
 ## 三條 sub-route（按動作來源切）
 
 1. **自動示範生成（sim-GT 動作）** —— [MimicGen 家族](./autonomous-demo-gen.md)（MimicGen / DexMimicGen / RoboCasa / DemoGen）：把少數 human demo 用 SE(3) 物件中心變換 + 開環 replay + 成功篩選，擴成上萬條。動作是 **sim 物理裡的 ground-truth**，可信；它擴的是**空間/物件多樣性，不是行為新穎性**。
@@ -29,6 +46,22 @@
 - **真實共訓 > sim 共訓**：接觸物理要緊時，純 sim 共訓「顯著較差」（[SIMPLER](https://simpler-env.github.io/)）。
 - **會傷**：可變形 / 接觸密集任務 sim 近似差，這些怎樣都要上千條真機。
 - **連評測都要先閉 gap**：SIMPLER 證明「在 sim 裡評真機 policy」也得先做 green-screen（視覺）+ SysID（控制）才相關。
+
+```mermaid
+flowchart TD
+    START["要不要上生成 / sim 資料？"] --> CONTACT{"任務接觸密集 /<br/>可變形 / 動態反應？"}
+    CONTACT -->|"是"| REAL["怎樣都要上千條真機<br/>（sim 近似差）"]
+    CONTACT -->|"否"| NEED{"缺的是哪種多樣性？"}
+    NEED -->|"空間 / 物件擺位"| MIMIC["MimicGen 擴增<br/>（動作 sim-GT 可信）"]
+    NEED -->|"視覺外觀 sim2real"| COSMOS["Cosmos-Transfer<br/>（鎖物理、生成外觀）"]
+    NEED -->|"新行為 / 長尾語義"| DREAM["DreamGen 回推<br/>（先過物理閘門）"]
+    MIMIC --> COTRAIN["共訓、別取代<br/>最後仍 fine-tune 真機"]
+    COSMOS --> COTRAIN
+    DREAM --> COTRAIN
+    REAL --> COTRAIN
+```
+
+*圖：接觸密集先排除生成路線；其餘按缺哪種多樣性選方法，但永遠共訓而非取代真實 demo*
 
 ## 關鍵指標
 

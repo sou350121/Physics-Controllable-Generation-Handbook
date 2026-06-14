@@ -2,6 +2,17 @@
 
 > 閉環駕駛模擬 —— 沒有它就沒有 long-tail 場景的安全驗證。而駕駛剛好把本手冊命題演成一套清楚的**三方分工**：**重建給外觀（sensor-faithful）、生成給長尾多樣性、物理+反應式 agent 給動力學**。三者各管一塊，誰越界誰出事。
 
+```mermaid
+flowchart TD
+    REC["神經重建<br/>UniSim / NeuRAD / Street Gaussians"] -->|"外觀 / 幾何（感測保真、metric-scale）"| SIM["閉環模擬<br/>closed-loop sim"]
+    GEN["生成式 WM<br/>GAIA-2 / Cosmos-Drive"] -->|"長尾 / 罕見場景（cut-in、VRU）"| SIM
+    PHY["物理 + 反應式 agents<br/>車輛動力學 / IDM / 學習式 agent"] -->|"動力學 / 互動（誤差累積）"| SIM
+    SIM -->|"ego-action 回灌觀測"| POL["policy / planner"]
+    POL -.->|"閉環反饋"| SIM
+```
+
+*圖：三方分工 — 重建給外觀、生成給長尾、物理與反應給動力學，三者匯入閉環模擬餵 policy*
+
 ## 核心命題：外觀靠重建、長尾靠生成、動力學靠物理與反應
 
 駕駛這個領域已經自己把「generation for appearance, physics for dynamics」分得很乾淨：

@@ -6,6 +6,27 @@
 
 把策略放進想像/規劃迴圈，省掉昂貴的真實互動——代價是**模型錯的地方會被優化器找出來利用**。所以這個 use-case 的全部張力在一條契約：**只在短有效 horizon、只在策略待在模型訓練分布內、且模型的 reward + termination + 任務相關動力學忠實時，行動才可信。** latent 可以抽掉外觀，但**永遠不能抽掉 reward-相關變數**。
 
+```mermaid
+flowchart TD
+    Q["要在這個學到的 WM 裡行動／規劃"]
+    G1{"有效 horizon 夠短？<br/>（誤差未複利失控）"}
+    G2{"策略待在訓練分布內？<br/>（沒被優化推去 OOD）"}
+    G3{"reward／termination／<br/>任務動力學忠實？"}
+    OK["可信：在 WM 裡行動<br/>（短程＋分布內＋忠實）"]
+    F1["複利誤差：想像漸進失真<br/>（拉長 horizon 幾乎總傷性能）"]
+    F2["model exploitation：<br/>policy 鑽 WM 破綻，夢裡高分真實不認"]
+    F3["優化錯的目標：<br/>畫面對、reward 錯，肉眼 debug 不出"]
+    Q --> G1
+    G1 -->|"yes"| G2
+    G1 -->|"no"| F1
+    G2 -->|"yes"| G3
+    G2 -->|"no"| F2
+    G3 -->|"yes"| OK
+    G3 -->|"no"| F3
+```
+
+*圖：三道閘全 yes 才可信在 WM 裡行動，任一 no 即落入對應失效模式*
+
 ## 兩條路
 
 1. **WM-as-policy（學策略）** —— [世界模型即策略](./world-model-as-policy.md)（DreamerV3 / DayDreamer）：actor-critic **純粹在想像的 latent rollout 上**學（horizon T=16），agent 只為填 replay buffer 碰真環境。**DayDreamer 真機驗證**：四足從零 ~1 小時學會走、無模擬器。

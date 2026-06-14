@@ -16,6 +16,20 @@
 
 **為什麼這篇是 physics-gen handbook 的關鍵**：本倉所有 robotics-data-gen 路線（pixel-video / latent-WM / sim-augment）最終都要回答**「合成資料能不能讓 π0-class policy 在真機 success rate 上漲？」**——這是唯一不會自欺欺人的 metric。PI 的工程細節（action chunk 規格、normalization 規約、camera layout）反過來變成所有合成資料 generator 的硬規格約束（[openpi #872](https://github.com/Physical-Intelligence/openpi/issues/872)、[#449](https://github.com/Physical-Intelligence/openpi/issues/449)）。
 
+```mermaid
+flowchart LR
+    REAL["真實遙操<br/>（10,000h+ 跨 embodiment）"] -->|"native 動作 GT"| POOL["π0 訓練池"]
+    WEB["web image-text<br/>+ object detection"] -->|"π0.5 異質 co-train"| POOL
+    PIX["pixel-WM<br/>（Cosmos-Predict）"] -.->|"動作回推、ROI 未證"| POOL
+    LAT["latent-WM<br/>（V-JEPA-2）"] -.->|"cross-pretrain 未做"| POOL
+    SIM["sim-augment<br/>（RoboCasa demo）"] -.->|"進池證據不足"| POOL
+    POOL --> TRAIN["VLM backbone<br/>+ flow-matching action expert"]
+    TRAIN --> POLICY["π0 / π0.5 policy<br/>50Hz 連續控制"]
+    POLICY --> GT["真機 success rate<br/>= 合成資料 ROI 的唯一裁判"]
+```
+
+*圖：π0 資料引擎——真實遙操是實線主幹 GT，三條合成路線（虛線）能否替代真機小時，全由下游真機 success rate 裁決*
+
 ---
 
 ## 2. Core mechanism

@@ -29,32 +29,29 @@ RialTo 不是一個生成模型，而是一條**「把真實場景反演成可�
 6. **RL + domain randomization 微調 state policy**：在孿生裡用 **RL + domain randomization** 訓練一個吃 **ground-truth state** 的 policy。DR 負責把「孿生 ≠ 真實」的 gap（物理近似、外觀差異、位姿不確定）隨機化掉，逼出穩健 policy。
 7. **teacher-student 蒸餾成 point-cloud(depth) policy → 零樣本部署**：把 state-policy（teacher）蒸餾成只吃 **point-cloud / depth** 觀測的 student policy，**零樣本（zero-shot）部署回真機**。選 depth/point-cloud 是因為它跨 sim-real 的 gap 比 RGB 小——但也正是 depth 的弱點（thin/transparent/reflective）成了部署失效源。
 
+```mermaid
+flowchart TD
+    R["真實場景"]
+    M["② textured mesh<br/>（視覺孿生本體：外觀+靜態幾何忠實）"]
+    U["④ USD / URDF 孿生<br/>（可動關節 + 物理近似）"]
+    RL["⑥ RL + domain randomization<br/>→ state policy（吃 GT state）"]
+    PC["⑦ point-cloud / depth policy"]
+    REAL["真機"]
+    ESC["quasistatic 逃生口<br/>「physics 參數不必精確識別」<br/>物理只需近似，不需保真"]
+    R -->|"① 掃描 Polycam / ARCode / NeRFStudio"| M
+    M -->|"③ GUI 手工切分 + 加關節 + 物理參數（近似）"| U
+    U -->|"⑤ 收幾條真 demo + inverse distillation（real→sim）"| RL
+    RL -->|"teacher-student 蒸餾"| PC
+    PC -->|"零樣本部署（sim→real）"| REAL
+    U -.->|"成立前提"| ESC
+    classDef twin fill:#e8f0fe,stroke:#4285f4,color:#202124
+    classDef esc fill:#fce8e6,stroke:#ea4335,color:#202124,stroke-width:2px
+    classDef real fill:#e6f4ea,stroke:#34a853,color:#202124
+    class M,U twin
+    class ESC esc
+    class R,REAL real
 ```
-        真實場景
-           │  ① 掃描 (Polycam / ARCode / NeRFStudio)
-           ▼
-   ┌──────────────────┐
-   │  textured mesh    │  ← ② 視覺孿生本體：外觀+靜態幾何忠實
-   └──────────────────┘
-           │  ③ GUI 手工切分 + 手工加關節/articulation + 物理參數(近似)
-           ▼                                ┌────────────────────────────┐
-   ┌──────────────────┐                     │ ★ quasistatic 逃生口:        │
-   │  USD / URDF 孿生  │  ← ④               │ 「physics 參數不必精確識別」 │
-   │  (可動關節 + 物理) │                     │ ⇒ 物理只需近似，不需保真     │
-   └──────────────────┘                     └────────────────────────────┘
-        ▲   │
-        │   │  ⑤ 收幾條真 demo ──inverse distillation──┐
-   real→sim│                                           │ 真 demo 偏置 RL 探索
-        │   ▼                                           ▼
-   ┌────────────────────────────────────────────────────────┐
-   │  ⑥ RL + domain randomization  →  state policy (吃 GT state)│
-   └────────────────────────────────────────────────────────┘
-           │  ⑦ teacher-student 蒸餾
-           ▼
-   ┌──────────────────────────┐
-   │ point-cloud / depth policy │ ──零樣本部署──► 真機  (sim→real)
-   └──────────────────────────┘
-```
+*圖：RialTo Real2Sim2Real 管線 —— quasistatic 逃生口是繞過動力學保真的成立前提*
 
 **兩個 load-bearing 設計選擇**：
 - **「手工加關節」不是工程偷懶，是 articulated-rigid 的硬約束**：RialTo 只處理 **articulated rigid**（可動但剛性的物件，如微波爐門、櫃門、碗架）。關節必須人手指定，因為自動關節估計在這個保真度要求下不可靠——這也圈死了「**無可變形 / 無液體**」（mesh + 剛性關節無法表達布料/流體）。
@@ -90,6 +87,26 @@ RialTo 的 headline 是**真機 transfer-back**，不是 sim 數字——所以�
 ## 4. 視覺孿生 vs 可預測孿生（Real-to-Sim Policy Eval：要 render + physics 兩者）
 
 把 RialTo 的逃生口反過來想：**如果任務不是 quasistatic，要怎麼讓孿生「可預測」？** 答案是不能只靠重建——得**同時補物理動力學 + photoreal 渲染**。這正是 **Real-to-Sim Policy Evaluation**（[2511.04665](https://arxiv.org/abs/2511.04665)）直面的問題：
+
+```mermaid
+flowchart TD
+    REC["掃描重建<br/>幾何 + 運動學 + 外觀"]
+    Q{"任務是<br/>quasistatic？"}
+    PATH1["RialTo：繞過動力學<br/>幾何+運動學忠實就夠<br/>→ 零樣本 transfer-back（VALIDATED）"]
+    PATH2["Real-to-Sim Eval：補足動力學<br/>physics-informed + deformation-aware render<br/>→ 要 render 與 physics 兩者，勝純物理 IsaacLab"]
+    REC --> Q
+    Q -->|"是（慢/近準靜態）"| PATH1
+    Q -->|"否（接觸/慣性/可變形）"| PATH2
+    classDef base fill:#e8f0fe,stroke:#4285f4,color:#202124
+    classDef dec fill:#fef7e0,stroke:#fbbc04,color:#202124
+    classDef p1 fill:#e6f4ea,stroke:#34a853,color:#202124
+    classDef p2 fill:#fce8e6,stroke:#ea4335,color:#202124,stroke-width:2px
+    class REC base
+    class Q dec
+    class PATH1 p1
+    class PATH2 p2
+```
+*圖：視覺孿生 → 可預測孿生的分叉 —— quasistatic 與否決定繞過或補足動力學*
 
 | 維度 | **視覺孿生**（RialTo 的 mesh / 一般掃描重建） | **可預測孿生**（Real-to-Sim Policy Eval, [2511.04665](https://arxiv.org/abs/2511.04665)） |
 |---|---|---|

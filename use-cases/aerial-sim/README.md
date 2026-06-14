@@ -2,6 +2,28 @@
 
 > 物理可控生成給無人機自主：6-DoF 自由運動 + 螺旋槳尾流 + 風擾 —— 比 driving 多兩個自由度，比 manipulation 多了「掉下來就壞」的硬性約束。Aerial 是把本 handbook 核心命題逼到極限的 use-case：**外觀可以生成，動力學不能。**
 
+```mermaid
+flowchart TD
+    subgraph APP["外觀供應線（可生成）"]
+        A1["Cosmos / Sora aerial 微調"]
+        A2["NeRF / 3DGS 重建真實航拍"]
+    end
+    subgraph DYN["動力學供應線（必須物理）"]
+        D1["thrust / drag / gravity"]
+        D2["prop-wake / ground effect / wind"]
+        D3["physics integrator（剛體 + 馬達）"]
+    end
+    A1 --> M["匯流：state + observation"]
+    A2 --> M
+    D1 --> D3
+    D2 --> D3
+    D3 --> M
+    M --> P["policy 訓練 / 感知 pre-train"]
+    P --> V["真機驗收（掉下來就壞）"]
+    G["Physics-IQ：r=-0.46<br/>視覺真度與物理理解不相關"] -.->|"所以兩線不能混"| M
+```
+*圖：外觀靠生成、動力學靠物理 —— 兩條供應線各自取材，只在 state 層匯流*
+
 ## 核心張力：外觀靠生成，動力學靠物理
 
 Aerial 是「generation for **appearance**, physics for **dynamics**」這條分界最乾淨的案例 —— 也是檢驗整本 handbook 命題的試金石。一個 video / 3DGS 模型可以合成像真的航拍**外觀**，但它**無法 enforce thrust / drag / gravity / prop-wake**；飛行**動力學**必須來自 physics integrator，不是生成模型。
@@ -37,6 +59,14 @@ Aerial 是「generation for **appearance**, physics for **dynamics**」這條分
 3. **Sim-augmented（動力學）** —— [Aerial Gym / Flightmare](./aerial-sim-stack.md) + domain randomization；[Swift](./champion-level-drone-racing.md) 是這條路唯一證明過 real-world champion-level 落地的。重點不是 photoreal，而是 **dynamics fidelity + 大規模 parallelization + 小殘差辨識**。
 
 > 三條路的真實關係：(3) sim-augmented 是當前**唯一**證過真機冠軍級落地的；(2) action-WM 是熱點但仍卡在 raw-camera gap；(1) pure gen 在「能不能生對外觀」之上，動力學一律外接物理。
+
+```mermaid
+flowchart LR
+    R1["(1) Pure gen 外觀<br/>Cosmos / NeRF / 3DGS"] -->|"視覺 augmentation 餵感知"| GAP1["卡點：metric-scale 不可信<br/>動力學一律外接物理"]
+    R2["(2) Action-WM latent<br/>Dream to Fly"] -->|"latent imagination 訓 policy"| GAP2["卡點：raw-camera gap<br/>真機=HIL+rendered"]
+    R3["(3) Sim-augmented 動力學<br/>Aerial Gym / Swift"] -->|"dynamics fidelity + DR + 殘差"| WIN["唯一證過真機冠軍級落地"]
+```
+*圖：三條 sub-route 的成熟度階梯 —— 只有 (3) 真正落地，(1)(2) 各卡一道 gap*
 
 ## Sim-to-real 契約：什麼必須真、什麼可以學
 

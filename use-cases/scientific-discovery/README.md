@@ -2,6 +2,16 @@
 
 > Neural surrogate / generative physics 用於科學模擬 —— 本倉與「純 AI」最遠的一角，卻是**唯一真正上線生產**的角落（天氣預報已在 ECMWF 業務運行）。這個 use-case 的問題很實際：**快，但是對嗎？什麼時候對、什麼時候崩？**
 
+```mermaid
+flowchart LR
+    A["確定性世代（2023）<br/>GraphCast / Pangu：GNN / Transformer<br/>MSE 訓練，勝 HRES 90%，但 blur 極端"]
+    B["機率世代（2024）<br/>GenCast：diffusion ensemble 50+ 成員<br/>修 blur，勝 ENS 約 97%"]
+    C["上線生產（2025）<br/>ECMWF AIFS：Single 02-25 / ENS 07-01<br/>與物理 IFS 並行驗證、非取代"]
+    A -->|"確定性會 blur"| B
+    B -->|"diffusion 修正"| C
+```
+*圖：唯一從 research 一路走到 24/7 業務管線的代理路線 —— 確定性會 blur，diffusion 修正，最後以「與物理並行」上線。*
+
 ## 核心命題：唯一上線生產的代理，但契約嚴格
 
 神經代理用「學出來的快速前向」換掉昂貴的數值 solver。它在**天氣**上已經成熟到上線——但成熟的形態是**與物理模型並行驗證、不是取代**（ECMWF AIFS 與 IFS complementary）。離開天氣那套「資料充足 + 有界混沌 + 清楚 metric + 可驗證物理基準」的舒適圈，代理就退化。**快不保證對，更不保證真新。**
@@ -24,6 +34,20 @@
 | 近地面 T/風的短中程極端 | **模糊回歸氣候態**（MSE double-penalty 驅動） |
 
 **為什麼天氣成功（可轉移的四條件）**：① 充足同質資料（數十年 ERA5）；② 有界混沌（~2 週可預測度）；③ 清楚一致的 skill metric（RMSE/ACC/CRPS）；④ 可信物理基準（IFS）可並行驗證。更難的域缺其一以上 → 停在研究階段。
+
+```mermaid
+flowchart TD
+    C1{"① 充足同質資料？"} -->|"是"| C2{"② 有界混沌？"}
+    C1 -->|"否"| RES["停在研究階段<br/>（當 prototype 看，別信其發現）"]
+    C2 -->|"是"| C3{"③ 清楚一致 metric？"}
+    C2 -->|"否"| RES
+    C3 -->|"是"| C4{"④ 可信物理基準可並行？"}
+    C3 -->|"否"| RES
+    C4 -->|"是"| PROD["可上線生產<br/>（天氣：AIFS 與 IFS 並行）"]
+    C4 -->|"否"| RES
+    RES -.->|"四條件互鎖，缺一即退"| NOTE["長氣候 / 湍流激波 / 新材料<br/>各缺其一以上"]
+```
+*圖：四條件轉移閘 —— 互鎖式 AND 閘，全綠才能上線；缺任一條就退回研究階段。*
 
 ## 本區 Dissections
 
