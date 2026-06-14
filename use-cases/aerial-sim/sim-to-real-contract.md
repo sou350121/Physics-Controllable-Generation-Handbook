@@ -124,6 +124,17 @@ flowchart LR
 
 → 這條軸對本手冊的「生成資料」很關鍵：見 [generative-aerial-data.md](./generative-aerial-data.md)（外觀可生成，但 metric scale 與某些感測模態要小心）。
 
+**那些 photoreal 模擬器（AirSim / CARLA-Air / Flightmare）落在這份契約的哪裡？**
+
+直接講結論：**它們是「感知軸」的工具，不是「動力學遷移」的工具。** 它們的賣點是 photoreal 渲染與場景（CARLA-Air 還多一塊空地一體的 `domain` 覆蓋），對應的是本節與 [aerial-sim-stack](./aerial-sim-stack.md) 三角的 **photoreal 那一極**；而它們的**飛行動力學是剛體 6-DoF、低保真**（AirSim 的 FastPhysics 無 rotor / blade-element / 馬達動態 / 風擾）——按本契約的 §2–§4，這正是**你最不該直接信、必須 system-ID、用 CTBR 藏起來、或乾脆換掉的那一塊**。所以它們**既不違反契約、也不滿足契約**：把「感知那一半」做好，「動力學那一半」留給你照 §2–§6 補。
+
+正規用法是**把這兩軸拆開**：
+
+- **感知 / 外觀**：用 AirSim / CARLA-Air / Flightmare 出 photoreal 影像 + 多模態 +（CARLA-Air）城市車流背景 —— 滿足 §5。
+- **動力學**：**別用它們內建的剛體飛控做 aggressive sim-to-real**。換成高保真 FDM —— 這正是 [carla-air.md §自救 A2](./carla-air.md#自救如何補強--繞過鎖死) 寫的：用 AirSim 的 `ExternalPhysicsEngine` 把 RotorPy（或你的模型）當 FDM、每 tick `simSetKinematics` 推 state，外觀照用 CARLA、動力學換成物理。**這就是本手冊「外觀靠渲染、動力學靠物理」的字面落地。**
+
+它們也都用 CTBR / 標準介面（§4），所以接得上。完整解構見 [CARLA-Air](./carla-air.md) 與 [七套 sim 對比](./aerial-sim-stack.md)。
+
 ## 6. 要不要 per-drone system-ID？—— 一條真實的張力
 
 這是整份契約裡**最重要的 nuance**，而且是一條公開的研究張力，不是定論。
@@ -227,3 +238,4 @@ flowchart TD
 | 8.6 | **照搬 RAPTOR 的『不用 system-ID』但漏了延遲** | 🟠 Medium | RAPTOR 仍加延遲濾波打 10–30 ms | in-context 自適應≠不管延遲；延遲仍要處理 |
 | 8.7 | **把 RAPTOR 的 TWR 1.5–5 當真機可飛上限** | 🟡 Low | 那是**訓練隨機化範圍**；部署平台 TWR 跨度約 1.75–12 | 區分「隨機化範圍」與「真機能力」 |
 | 8.8 | **把 arXiv / 新聞稿數字當定論**（如 Swift 峰值 ~5g、~100 km/h、MAVEN ±66.7% 質量） | 🟡 Low | 部分數字源於 press 或未 peer-review 預印本 | 引用精確數字標 `UNVERIFIED`/`DEMO`，以正文為準 |
+| 8.9 | **用 AirSim / CARLA-Air 內建的剛體飛控直接做 aggressive sim-to-real**（FastPhysics 無 rotor aero / 馬達動態 / 風擾） | 🟠 Medium | 見 [carla-air §自救](./carla-air.md#自救如何補強--繞過鎖死) | 兩軸拆開：渲染照用、動力學換 `ExternalPhysicsEngine` + RotorPy |
