@@ -13,10 +13,12 @@
 | Genesis Embodied | 統一可微 sim | diff-sim 新興 |
 | Runway / Pika / Kling / Hunyuan / Wan | 影片商業線 | media use-case |
 | ECMWF / DeepMind weather | Surrogate prod | scientific 旗艦 |
-| **Skydio** | aerial autonomy 教科書（VIO + on-board NN） | aerial-sim 旗艦 |
-| **DJI / Autel** | 消費級 + 工業級 drone sensor stack + 內部 sim | aerial-sim 工業參考 |
-| **UZH RPG** | Champion-Level Drone Racing (Nature 2023) — sim-to-real 範式 | aerial-sim 學術旗艦 |
-| **NTNU ARL** | Aerial Gym 開源 — GPU 並行 drone sim | diff-sim aerial |
+| **Skydio** | aerial autonomy 教科書（VIO + on-board NN） | [aerial-sim](../use-cases/aerial-sim/overview.md) 旗艦 |
+| **DJI / Autel** | 消費級 + 工業級 drone sensor stack + 內部 sim | [aerial-sim](../use-cases/aerial-sim/overview.md) 工業參考 |
+| **UZH RPG** | Champion-Level Drone Racing (Nature 2023) — sim-to-real 範式 | [aerial-sim](../use-cases/aerial-sim/champion-level-drone-racing.md) 學術旗艦 |
+| **NTNU ARL** | Aerial Gym 開源 — GPU 並行 drone sim | [diff-sim aerial](../foundations/differentiable-simulators/aerial-gym.md) |
+
+> 🚁 **無人機是本倉最深的下游線**：上述玩家的完整 sim / sim-to-real 解析集中在 [`use-cases/aerial-sim/`](../use-cases/aerial-sim/overview.md)（6 篇：Swift 競速 / Dream-to-Fly / sim stack 對比 / 生成航拍資料 / sim-to-real 契約 / CARLA-Air）。
 
 ## Dissection wishlist
 

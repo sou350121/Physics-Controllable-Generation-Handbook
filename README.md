@@ -4,20 +4,20 @@
 >
 > **从 Sora 到 Genesis，从 GraphCast 到 GAIA** — 影片生成圈不讀 PDE solver 圈，diff-sim 圈不讀 latent WM 圈，自駕 closed-loop 圈和神經 surrogate 圈各自閉門造 conditioning。**本 handbook 做一件事：把這 5 條技術路線各自如何「把物理灌進生成」攤在桌上橫向對比，並標註誰違反守恆律、誰能 closed-loop、誰能拿 force 當輸入。**
 
-[![Read on GitHub](https://img.shields.io/badge/Phase_1-✅_35_dissections-9d4edd?style=for-the-badge&logo=readme&logoColor=white)](./foundations/overview.md)
+[![Read on GitHub](https://img.shields.io/badge/✅-53_dissections_·_7_use--cases-9d4edd?style=for-the-badge&logo=readme&logoColor=white)](./foundations/overview.md)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue)](./LICENSE)
-[![Pages](https://img.shields.io/badge/markdown_pages-150-orange)](./cheat-sheet/functional_map.md)
-[![Dissections](https://img.shields.io/badge/dissections-35_anchor-purple)](./foundations/overview.md)
+[![Pages](https://img.shields.io/badge/nav_pages-117-orange)](./cheat-sheet/functional_map.md)
+[![Dissections](https://img.shields.io/badge/dissections-33_foundation_%2B_20_use--case-purple)](./foundations/overview.md)
 [![Ontology](https://img.shields.io/badge/5--axis_ontology-v2.0-red)](./cheat-sheet/ontology.md)
-[![Audit](https://img.shields.io/badge/audit-19%2F19_v2_migrated-success)](./AUDIT_2026-05-26-v2.md)
+[![Audit](https://img.shields.io/badge/audit-8--check_✅_green-success)](./scripts/handbook_audit.py)
 [![Sister Repos](https://img.shields.io/badge/sister-VLA_%2B_Spatial-2a9d8f)](#三册一体vla--spatial--physics-gen-的分工)
 
 | | |
 |---|---|
-| 📖 **讀線上版** | 🚧 Mintlify deploy 待 Phase 2 — 目前直接讀 repo markdown，所有內鏈 root-relative 已對齊 Mintlify schema |
+| 📖 **讀線上版** | 🚧 Mintlify deploy 待 Phase 3 — 目前直接讀 repo markdown，所有內鏈 root-relative 已對齊 Mintlify schema |
 | 🚪 **5 分鐘 onboarding** | [`ONBOARDING.md`](./ONBOARDING.md) — 5 條快速分流路徑（A.VLA · B.自駕 · C.影片 · D.PDE · E.landscape）； 細粒度 8-persona 表在下方 🎭 區 |
-| 🧭 **5-axis ontology v1** | [`cheat-sheet/ontology.md`](./cheat-sheet/ontology.md) — output × injection × controllability × temporal × domain（每篇 dissection header 強制 enforce） |
-| 🤖 **AI access via MCP** | 待 Mintlify Phase 2 部署後自帶 `/mcp` endpoint（與 [Spatial MCP](https://kensou.mintlify.app/mcp) 同 schema） |
+| 🧭 **5-axis ontology v2.0** | [`cheat-sheet/ontology.md`](./cheat-sheet/ontology.md) — output × injection × control × temporal × domain（每篇 dissection header 強制 enforce） |
+| 🤖 **AI access via MCP** | 待 Mintlify Phase 3 部署後自帶 `/mcp` endpoint（與 [Spatial MCP](https://kensou.mintlify.app/mcp) 同 schema） |
 | 🌉 **三冊一體 · 姊妹倉** | [VLA-Handbook](https://github.com/sou350121/VLA-Handbook)（action 端）· [Spatial-Intelligence-Handbook](https://github.com/sou350121/Spatial-Intelligence-Handbook)（perception 端，[live](https://kensou.mintlify.app)）· **本倉 = generation 端** |
 
 &nbsp;
@@ -27,15 +27,15 @@
 
 | Phase | 內容 | 狀態 |
 |---|---|---|
-| **Phase 1** — Skeleton + Anchor | 13 zones + **7 use-cases** + 5 USP wedges + **35 anchor dissections** + 5-axis Ontology **v2.0** | ✅ **完成 (2026-05-26)** — audit GREEN + aerial + physics-conditioning USP 5 + Wave 2 (4 empty zones filled) + **Wave 3: 8 more anchors** (SVD · GGS · ContactGen · AnimateDiff · GenCast · PhysBench · DiffTaichi · π0/π0.5) — **all 13 foundations zones + 1 use-case have anchors** |
-| **Phase 2** — Mintlify + Pulsar Daily | Mintlify Hobby tier 部署（live URL + /mcp）+ Pulsar 每日 arxiv 抓取 → qwen 評級 → `reports/physics-gen-daily/` | 🚧 規劃中 |
-| **Phase 3** — 30+ Dissection + Cross-handbook | 第二批 18 篇 dissection（PhysGen / ContactGen / Decart / DriveDreamer / PangU / NeuralMPM 等）+ 三冊 cross-handbook insight cron | ⏳ 待 Phase 2 完成後啟動 |
+| **Phase 1** — Foundations + Ontology | 13 foundations zones + 5 USP wedges + **33 foundation anchor dissections** + 5-axis Ontology **v2.0**（每篇 dissection header enforce） | ✅ **完成 (2026-05)** — audit GREEN，13 zones 全有 anchor |
+| **Phase 2** — Use-cases 深度建設 | **全 7 個 use-case 深度增強** — 每個 2-6 篇一手來源 dissection，共 **20 篇 use-case 解析**；**aerial-sim 🚁 最深（6 篇）**；Pulsar 每日 arxiv → qwen 評級管線上線（`reports/physics-gen-daily/`，GitHub Actions weekday 00:40 UTC） | ✅ **完成 (2026-06)** — audit 8-check GREEN，53 dissection header 全有效 |
+| **Phase 3** — Mintlify + Cross-handbook | Mintlify Hobby 部署（docs.json v3-tabs 已備好，**待 dashboard 連線**）+ 三冊 cross-handbook insight + 第二批 foundation dissection | 🚧 進行中 |
 
 &nbsp;
 
 ## 💡 三句话说清楚这个 Handbook 的价值
 
-1. **不只是综述**：每篇 dissection 頂帶 5-axis ontology header（output × injection × controllability × temporal × domain），列 2-3 個同軸對手，並附 §8 GitHub-validated pitfall log —— "讀懂論文" 和 "踩過坑" 之間的距離被顯式標出來。
+1. **不只是综述**：每篇 dissection 頂帶 5-axis ontology header（output × injection × control × temporal × domain），列 2-3 個同軸對手，並附 §8 GitHub-validated pitfall log —— "讀懂論文" 和 "踩過坑" 之間的距離被顯式標出來。
 2. **跨 5 條技術路線橫切**：pixel-video（Sora/Veo）· latent WM（Genie/V-JEPA）· diff-sim（Genesis/MJX）· neural surrogate（GraphCast/FNO）· 3D-aware gen —— 市場上所有 generative-physics 綜述都是單一路線閉門寫，本倉是第一本把這 5 條路線上的 physics injection 機制橫向對比的。
 3. **活的知识库**：Phase 2 起 Pulsar 自動每日抓 arxiv（cs.CV / cs.LG / cs.GR / cs.RO + physics.flu-dyn / cond-mat.soft）→ qwen 評 ⚡/🔧/📖/❌ → 每日落地到 `reports/physics-gen-daily/`，不是六個月沒人維護的靜態文檔。
 
@@ -53,7 +53,7 @@
 |:---:|------|---------|-----------|
 | 🤖 | **VLA / robot policy 工程師** | 想用合成資料替代真實 demo | → [Cosmos WFM](./foundations/foundation-physics-models/cosmos-wfm.md) + [V-JEPA-2](./foundations/latent-world-models/v-jepa-2.md) + [`crossing/sim-vs-gen-data/`](./crossing/sim-vs-gen-data/) |
 | 🚗 | **自駕 closed-loop sim 工程師** | GAIA / Cosmos-Drive / Wayve 線 | → [GAIA-2](./foundations/video-world-models/gaia-2.md) + [`foundations/long-horizon-rollout/`](./foundations/long-horizon-rollout/) + [`use-cases/autonomous-driving-sim/`](./use-cases/autonomous-driving-sim/) |
-| 🚁 | **無人機 autonomy 工程師** | Aerial Gym / Flightmare / Swift / Dream-to-Fly | → [`use-cases/aerial-sim/`](./use-cases/aerial-sim/) ★ + [Aerial Gym](./foundations/differentiable-simulators/aerial-gym.md) + [Champion-Level Drone Racing](./use-cases/aerial-sim/champion-level-drone-racing.md) + Spatial-Handbook `embodiments/aerial/` |
+| 🚁 | **無人機 autonomy 工程師** | sim stack · Swift · Dream-to-Fly · 生成資料 · sim-to-real 契約 · CARLA-Air | → **[`use-cases/aerial-sim/`](./use-cases/aerial-sim/) ★ 6 篇（最深）** + [Aerial Gym](./foundations/differentiable-simulators/aerial-gym.md) + 跨冊 [bridge-to-spatial/aerial-embodiment](./bridge-to-spatial/aerial-embodiment.md) + Spatial `embodiments/aerial/` |
 | 🎬 | **影片生成工程師** | Sora / Veo / Kling 路線 | → [Sora](./foundations/video-world-models/sora.md) + [Veo](./foundations/video-world-models/veo.md) + [`crossing/conservation-violation-atlas/`](./crossing/conservation-violation-atlas/) |
 | 🧠 | **物理 conditioning 研究者** | PINN · HNN/LNN · PhysDiff · Force Prompting 線 | → [`foundations/physics-conditioning/`](./foundations/physics-conditioning/) ★★ — 整 zone 5 篇 anchor 是本倉 USP 核心 |
 | 🌊 | **神經 PDE / surrogate 研究者** | GraphCast / FNO / 氣象 / 流體 | → [GraphCast](./foundations/neural-surrogates/graphcast.md) + [FNO](./foundations/neural-surrogates/fno.md) + [`use-cases/scientific-discovery/`](./use-cases/scientific-discovery/) |
@@ -85,12 +85,12 @@ graph TD
     CROSS --> BVLA["🌉 Bridge to VLA<br/>generation × action<br/>3 essays"]
     CROSS --> BSPA["🌉 Bridge to Spatial<br/>generation × perception<br/>3 essays"]
     CROSS --> COMP["🏢 Companies<br/>Cosmos / OpenAI / Google<br/>Meta / Wayve / WorldLabs"]
-    CROSS --> CHEAT["📋 Cheat Sheet<br/>ontology v1<br/>functional map<br/>timeline · controllability matrix"]
+    CROSS --> CHEAT["📋 Cheat Sheet<br/>ontology v2<br/>functional map<br/>timeline · controllability matrix"]
 
     USE --> BENCH["📊 Benchmarks<br/>VBench-Physics / PhysBench<br/>PDEBench / WeatherBench"]
     USE --> DEPLOY["🔧 Deployment<br/>calibration / compute<br/>inference / failure / safety"]
 
-    BENCH --> REP["📈 Reports<br/>Pulsar Phase 2 (待接)<br/>physics-gen-daily"]
+    BENCH --> REP["📈 Reports<br/>Pulsar daily ✅<br/>weekday 00:40 UTC"]
     DEPLOY --> REP
 
     style START fill:#e94560,stroke:#e94560,color:#fff
@@ -106,7 +106,7 @@ graph TD
     style REP fill:#533483,stroke:#533483,color:#fff
 ```
 
-> **读图方式**：`foundations/` 是 13 条技术路线的工具箱（任何 use-case / crossing wedge 都会回引用它）；`crossing/` 是把这 13 条线横切的 USP 视角（市面上没有的内容）；`use-cases/` 是下游应用 lane（不是 embodiments — physics-gen 是 upstream pipeline，同一套生成模型服务多个下游）；两条 `bridge-to-*/` 把本仓显式接到 sister handbook 的契约面；其余 5 个目录是支撑层。Pulsar daily reports 接在 benchmarks + deployment 下游，尚未上线。
+> **读图方式**：`foundations/` 是 13 条技术路线的工具箱（任何 use-case / crossing wedge 都会回引用它）；`crossing/` 是把这 13 条线横切的 USP 视角（市面上没有的内容）；`use-cases/` 是下游应用 lane（不是 embodiments — physics-gen 是 upstream pipeline，同一套生成模型服务多个下游）；两条 `bridge-to-*/` 把本仓显式接到 sister handbook 的契约面；其余 5 个目录是支撑层。Pulsar daily reports 接在 benchmarks + deployment 下游，已部署排程（GitHub Actions，weekday 00:40 UTC），首篇待第一个排程工作日。
 
 &nbsp;
 
@@ -150,17 +150,20 @@ graph TD
 
 **为什么这目录存在**：跟 Spatial-Handbook 按 *embodiment*（aerial / manipulation / marine）切不一样 — 物理可控生成是 **upstream pipeline**，下游可以是不同 embodiment、不同行业。同一套 video WM 既可以给 robotics 当数据引擎，也可以给 driving 当 closed-loop sim、还可以给 media 做镜头。按 use-case 切才能写清「这套生成模型在这个下游会遇到什么物理约束、什么验收指标」。
 
-| 子目录 | 主轴 | 关联 zone |
+| 子目录 | 主轴 | 深度 |
 |--------|------|------|
-| [`robotics-data-gen/`](./use-cases/robotics-data-gen/) | 生成 video/latent/sim 替代真实 demo | video-WM · latent-WM · diff-sim · data-engine |
-| [`autonomous-driving-sim/`](./use-cases/autonomous-driving-sim/) | Closed-loop driving WM | video-WM · long-horizon · controllability |
-| [`aerial-sim/`](./use-cases/aerial-sim/) ★ | 無人機 closed-loop sim + 合成 aerial footage | diff-sim · long-horizon · data-engine |
-| [`embodied-policy-rollout/`](./use-cases/embodied-policy-rollout/) | WM-as-policy / MPC-on-WM | latent-WM · long-horizon · evaluation |
-| [`scientific-discovery/`](./use-cases/scientific-discovery/) | Neural surrogate 替代 PDE solver | neural-surrogates · material-and-dynamics |
-| [`media-and-content/`](./use-cases/media-and-content/) | 影片 / 广告 / 电影 | video-WM · diffusion-physics · controllability |
-| [`digital-twin/`](./use-cases/digital-twin/) | 工厂 / 手术 / 工业 | diff-sim · 3d-aware · data-engine |
+| [`aerial-sim/`](./use-cases/aerial-sim/) 🚁 ★ | 無人機 closed-loop sim + 合成 aerial footage | **6 篇（最深）** |
+| [`robotics-data-gen/`](./use-cases/robotics-data-gen/) | 生成 video/latent/sim 替代真实 demo | 3 篇 |
+| [`autonomous-driving-sim/`](./use-cases/autonomous-driving-sim/) | Closed-loop driving WM | 3 篇 |
+| [`embodied-policy-rollout/`](./use-cases/embodied-policy-rollout/) | WM-as-policy / planning-on-WM + 信任契約 | 2 篇 |
+| [`scientific-discovery/`](./use-cases/scientific-discovery/) | Neural surrogate（唯一上線生產：天氣） | 2 篇 |
+| [`media-and-content/`](./use-cases/media-and-content/) | 影片 / 广告 / 电影 | 2 篇 |
+| [`digital-twin/`](./use-cases/digital-twin/) | 工厂 / 手术 / 工业 | 2 篇 |
 
 > 与 sister handbook 对应：`robotics-data-gen` / `embodied-policy-rollout` ↔ VLA-Handbook；`autonomous-driving-sim` ↔ Spatial-Handbook driving embodiment；**`aerial-sim` ↔ Spatial-Handbook `embodiments/aerial/` ★**（spatial 最深 embodiment）；`digital-twin` / `scientific-discovery` 是本仓独有下游。
+
+> 🚁 **無人機線是目前最深的 use-case（6 篇深度解析）**，也是本倉接 Spatial-Handbook 最深 embodiment 的線。完整閱讀路徑（即 canonical index）見 **[`use-cases/aerial-sim/overview.md`](./use-cases/aerial-sim/overview.md)**：
+> [Swift 冠軍級競速](./use-cases/aerial-sim/champion-level-drone-racing.md) → [Dream-to-Fly（DreamerV3 飛無人機）](./use-cases/aerial-sim/dream-to-fly.md) → [Aerial Sim Stack 七套對比](./use-cases/aerial-sim/aerial-sim-stack.md) → [生成航拍資料](./use-cases/aerial-sim/generative-aerial-data.md) → [Sim-to-Real 契約（讀 Science Robotics）](./use-cases/aerial-sim/sim-to-real-contract.md) → [CARLA-Air 空地一體](./use-cases/aerial-sim/carla-air.md)。foundation 工具 [Aerial Gym](./foundations/differentiable-simulators/aerial-gym.md)，跨冊資料契約 [bridge-to-spatial/aerial-embodiment](./bridge-to-spatial/aerial-embodiment.md)，產業玩家（Skydio / DJI / Autel / UZH RPG / NTNU）見 [companies](./companies/overview.md)。
 
 </details>
 
@@ -226,11 +229,11 @@ graph TD
 &nbsp;
 
 <details>
-<summary><h3>📋 6. <code>cheat-sheet/</code> — 30 分钟掌握全景 &nbsp;<code>ontology v1 + 3 速查表</code></h3></summary>
+<summary><h3>📋 6. <code>cheat-sheet/</code> — 30 分钟掌握全景 &nbsp;<code>ontology v2 + 3 速查表</code></h3></summary>
 
 **一句话**：四张表，从 5-axis ontology 到 controllability matrix，一条读完即懂 landscape。
 
-**为什么这目录存在**：13 zones × 6 use-cases × 5 wedges 的组合空间大，新读者需要一个「我有 X 需求 → 该看哪条路线」的入口。`ontology.md` 同时是每篇 dissection header 的标签来源 — 让全仓 30+ dissection 用同一组标签系统对齐。
+**为什么这目录存在**：13 zones × 7 use-cases × 5 wedges 的组合空间大，新读者需要一个「我有 X 需求 → 该看哪条路线」的入口。`ontology.md` 同时是每篇 dissection header 的标签来源 — 让全仓 30+ dissection 用同一组标签系统对齐。
 
 | 档 | 用途 |
 |---|---|
@@ -307,18 +310,19 @@ graph TD
 &nbsp;
 
 <details>
-<summary><h3>📈 10. <code>reports/physics-gen-daily/</code> — Pulsar 自动产出 &nbsp;<code>待接</code></h3></summary>
+<summary><h3>📈 10. <code>reports/physics-gen-daily/</code> — Pulsar 自动产出 &nbsp;<code>已部署 · 首篇待出</code></h3></summary>
 
-**一句话**：每个 weekday 的 arxiv keyword-filtered 拆评 — 由 [Pulsar pipeline](https://github.com/sou350121/Pulsar-KenVersion) Phase 2 部署后自动生成。
+**一句话**：每个 weekday 的 arxiv keyword-filtered 拆评 — 由 [Pulsar pipeline](https://github.com/sou350121/Pulsar-KenVersion) 自动生成（GitHub Actions，weekday 00:40 UTC，已部署排程）。
 
 **为什么这目录存在**：物理可控生成的 arxiv 流（cs.LG / CV / GR / RO + physics.flu-dyn + cond-mat.soft）每日有信号，但单看每篇没有路线维度。Pulsar 抓取 → LLM 评 ⚡/🔧/📖/❌ + 一句话 takeaway → 90 天 retention，让 zone-level 趋势可见。
 
 | 项目 | 状态 |
 |------|------|
-| `physics-gen-daily/YYYY-MM-DD.md` | **待接** — Phase 2 scripts 移植完成后开始 |
+| GitHub Actions workflow | ✅ **已部署** — `pulsar-physics-gen-daily.yml`（weekday 00:40 UTC）+ weekly，DASHSCOPE secret 已设 |
+| `physics-gen-daily/YYYY-MM-DD.md` | ⏳ 首篇待第一个排程工作日产出（arxiv 周末无新，周一起跑） |
 | 评级语义 | ⚡ 重大 / 🔧 工程有料 / 📖 值得知道 / ❌ 不收 |
 
-> 第一笔预计在 Pulsar Phase 2 部署后产出 — 目前不是 live。详见 [`reports/physics-gen-daily/README.md`](./reports/physics-gen-daily/README.md)。
+> 管线已部署并排程（也可在 Actions tab 手动 `workflow_dispatch` 触发）；首篇日报待第一个排程工作日 00:40 UTC 产出。详见 [`reports/physics-gen-daily/README.md`](./reports/physics-gen-daily/README.md)。
 
 </details>
 
