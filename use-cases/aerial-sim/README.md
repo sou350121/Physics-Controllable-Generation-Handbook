@@ -32,7 +32,7 @@ Aerial 是「generation for **appearance**, physics for **dynamics**」這條分
 
 ## 為什麼 aerial 自成一格
 
-不能直接套用 driving / manipulation sub-route：
+不能直接套用 driving / manipulation 子路線：
 
 - **6-DoF free motion** —— 沒有 lane / 沒有桌面，policy 失敗就是墜機；rollout drift 容忍度比 driving 低一個量級
 - **Sensor stack 不同** —— IMU + GNSS + optical flow + downward range，視覺只是其一；WM 需同時生視覺與 IMU 一致的軌跡（這是跨冊 [data contract](../../bridge-to-spatial/aerial-embodiment.md) 的命脈）
@@ -40,7 +40,7 @@ Aerial 是「generation for **appearance**, physics for **dynamics**」這條分
 - **Wind / turbulence** —— 外部擾動是 first-class 物理量，不是「噪聲」（[NeuroBEM](https://arxiv.org/abs/2106.08015)：高速下空氣動力學是**主導**模型誤差）
 - **HDR + 小目標** —— 天空到地面 14+ stops；其他無人機 / 電線 / 鳥是像素級小物件，photoreal 與否直接決定能否 train avoidance policy
 
-## Anchor 系統
+## 錨點系統
 
 | 系統 | 重點 | 解構 / 來源 |
 |---|---|---|
@@ -52,7 +52,7 @@ Aerial 是「generation for **appearance**, physics for **dynamics**」這條分
 | 生成資料線 | Cosmos FPV（demo）/ NeRF·3DGS（UAV-Sim +55.85% mAP50）/ 合成偵測資料 | [Generative Aerial Data](./generative-aerial-data.md) |
 | DJI / Skydio / Autel 內部 | Closed source；OEM 公開的只有 Skydio「synthetic+real」一句 + DJI Terra 3DGS 測繪 | UNVERIFIED（見 generative-aerial-data §6） |
 
-## 三條 sub-route（對齊 robotics-data-gen 切法）
+## 三條子路線（對齊 robotics-data-gen 切法）
 
 1. **Pure video / 3DGS gen（外觀）** —— Cosmos / Sora aerial fine-tune + NeRF/3DGS 重建真實航拍，生 FPV / overhead footage 給感知模型 pre-train。痛點：rotor wake、IMU 一致性、ground effect 不在訓練分布內，且 monocular 重建**scale-free**（gate/障礙距離不可信）。目前主要當「視覺 augmentation」，不驅動 control。→ [Generative Aerial Data](./generative-aerial-data.md)
 2. **Action-conditioned aerial WM（latent 路線）** —— [Dream to Fly](./dream-to-fly.md)（DreamerV3 on quadrotor）是最清楚的代表：raw pixel + CTBR token，latent imagination 訓 policy。**但其真機部署用 HIL + rendered frames**，尚未證明吃下 raw-camera 與 aero/latency 的 sim-to-real gap —— 這是研究熱點，不是已解問題。
@@ -66,7 +66,7 @@ flowchart LR
     R2["(2) Action-WM latent<br/>Dream to Fly"] -->|"latent imagination 訓 policy"| GAP2["卡點：raw-camera gap<br/>真機=HIL+rendered"]
     R3["(3) Sim-augmented 動力學<br/>Aerial Gym / Swift"] -->|"dynamics fidelity + DR + 殘差"| WIN["唯一證過真機冠軍級落地"]
 ```
-*圖：三條 sub-route 的成熟度階梯 —— 只有 (3) 真正落地，(1)(2) 各卡一道 gap*
+*圖：三條子路線的成熟度階梯 —— 只有 (3) 真正落地，(1)(2) 各卡一道 gap*
 
 ## Sim-to-real 契約：什麼必須真、什麼可以學
 
@@ -84,17 +84,17 @@ flowchart LR
 - **Dynamics fidelity** —— ground effect / rotor wake / IMU bias / wind gust 是否建模；多數 video WM 在這欄是 **0 分**（Physics-IQ 量化）
 - **Metric scale** —— monocular 生成/重建 scale-free，gate/障礙絕對距離需 LiDAR / metric-depth 對齊
 
-## 與 sister handbook 的 bridge
+## 與姊妹手冊的橋接
 
 這是本 handbook **第一個**直接餵到 [Spatial-Handbook `embodiments/aerial/`](https://github.com/sou350121/Spatial-Intelligence-Handbook/tree/main/embodiments/aerial) 的 use-case（aerial 是 Spatial 最深的 embodiment）。生成端是**資料生產者**，Spatial 是**消費者**（VIO / 動力學 / 避障）：
 
 - **6-DoF dynamics** —— Spatial 的 [`dynamics_and_control_primer.md`](https://github.com/sou350121/Spatial-Intelligence-Handbook/blob/main/embodiments/aerial/dynamics_and_control_primer.md) 提供四旋翼動力學/控制基礎；本側生成的軌跡必須符合那邊的約束（video model 無法 enforce）
 - **VIO ground truth** —— Spatial 的 [`vio/`](https://github.com/sou350121/Spatial-Intelligence-Handbook/tree/main/embodiments/aerial/vio) 是消費端；aerial WM（本側）是 VIO 訓練/驗證資料的生成端 —— **兩邊必須對齊同一套 IMU 噪聲模型 + camera-IMU extrinsic，否則生成的 VIO 資料是負資產**
-- **VLA for drones** —— 若 Spatial 規劃 aerial-VLA，pre-training 資料瓶頸走這裡 sub-route (1) / (2)
+- **VLA for drones** —— 若 Spatial 規劃 aerial-VLA，pre-training 資料瓶頸走這裡子路線 (1) / (2)
 
-→ 完整契約見 **[Bridge: Aerial Embodiment（生成端造資料 × 感知端消費資料）](../../bridge-to-spatial/aerial-embodiment.md)**
+→ 完整契約見 **[橋接：Aerial Embodiment（生成端造資料 × 感知端消費資料）](../../bridge-to-spatial/aerial-embodiment.md)**
 
-## 本區 Dissections
+## 本區解構
 
 - [Swift — Champion-Level Drone Racing](./champion-level-drone-racing.md) — 首個真機比賽擊敗人類冠軍的自主無人機；GP+kNN 殘差跨 sim-to-real（Nature 2023）
 - [Dream to Fly — DreamerV3 Aerial World Model](./dream-to-fly.md) — latent WM 從 raw pixel 學會飛；及其 HIL-rendered-frames 的誠實邊界
@@ -103,11 +103,11 @@ flowchart LR
 - [Sim-to-Real 契約（無人機篇）](./sim-to-real-contract.md) — 讀近年 Science Robotics 的無人機論文（含 2026-06 gap-flight、RAPTOR、Neural-Fly），逐條讀出「什麼必須真、什麼可以學」
 - [CARLA-Air — 空地一體城市模擬](./carla-air.md) — 把 AirSim 飛控塞進 CARLA 城市，空中+地面共用一個物理 tick；唯一「城市 photoreal + 空地統一」的公開基座
 
-## 未來前沿（remaining frontiers）
+## 未來前沿
 
 前述 4 篇已覆蓋 sim stack / action-WM / 生成資料 / Swift。真正未解、兩冊都還空白的：
 
-- **Swarm / 多機** —— rotor-rotor 空氣動力學交互 + 多機資料生成；Spatial `swarm/` 與 Aerial Gym 都標為未解 frontier
+- **Swarm / 多機** —— rotor-rotor 空氣動力學交互 + 多機資料生成；Spatial `swarm/` 與 Aerial Gym 都標為未解前沿
 - **合成 event-stream** —— event camera 是 Swift #1 失效（lighting OOD）的解，Spatial 有 [event-camera 解構](https://github.com/sou350121/Spatial-Intelligence-Handbook/blob/main/embodiments/aerial/event-camera/event_camera_for_aerial_dissection.md)，但**生成端完全無人合成 event 資料** —— 乾淨機會
 - **Raw-camera 視覺 gap** —— Dream to Fly 只證了 rendered-frame HIL；真相機部署的 visual sim-to-real 仍未有公開解（UNVERIFIED）
 - **Injection 軸進階** —— 把 rotor 空氣動力學以 `architecture-bias-soft` GNN / `neural-surrogate` CFD / `aux-loss` 注入生成 —— 展示本倉相對 Spatial 的 USP；目前 aerial 各檔仍只用 `sim-in-loop-train` / `data-only`
