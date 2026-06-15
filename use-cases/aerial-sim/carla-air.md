@@ -152,6 +152,8 @@ CARLA-Air 的外觀來自 CARLA 的 Unreal render——城市夠豐富，但**�
 
 ## Carla2Real-2026：後訓練開源 video model，把 CARLA-Air 真正升到 photoreal
 
+> 📖 **想先理解整套研發**（原理 / control 詳解 / 三階段路線圖 / 風險登記 / 戰略定位 / 幾何驗證，**附 5 張圖**）→ 見獨立頁 **[Carla2Real-2026 研發路線](./carla2real-2026.md)**。**本節以下是配方與可執行建置細節**（5 步、命令骨架、成本、harness）。
+
 上面那套 Carla2Real 是 **2024 的 per-frame GAN**（街景訓練、有 flicker、aerial 未證）。2026 的做法本質不同：**後訓練一個開源 video diffusion 的「結構 ControlNet 分支」**，一次拿到**時序一致 + 強生成先驗 + 免配對標籤**——而且正好攻下「aerial sim→photoreal 影片增強」這個**至今沒人占的空缺**（4-scout 核：所有 learned enhancement 都是街景 Carla2Real/EPE/Cosmos-Transfer；aerial 端只有 3DGS 重建與合成資料生成，**無任何 aerial sim→real 全幀影片增強**）。
 
 **核心招式：train on real, infer on sim（零配對）。** 這是 Cosmos-Transfer 的**真實做法**（已核源）——control 分支**在真實影片上訓**（用現成估計器從真實影片抽 depth/seg/edge），**base 凍結**；推論時餵**模擬器的**結構 → photoreal 影片。**標籤被保留**，因為輸出跟著 control map 走，而 **CARLA-Air 的 depth/seg G-buffer 本身就是標籤**（Cosmos CARLA Sim2Real cookbook 實證「語意標籤維持原樣、100% anomaly preservation」）。**CARLA-Air 是理想基座**：它免費給 depth/seg/edge G-buffer ＋ 12–18 模態，還空地同 tick——可一致地增強空中與地面兩個視角。
