@@ -209,7 +209,7 @@ flowchart LR
 
 **影片規格**：720p+、切 **~5–12 秒 clip**（Cosmos 用 121-frame 窗）；每段配 VLM 自動 caption。**多樣性 > 純量**：晨/午/昏光照、天氣、高度、城市/郊區都要覆蓋；**視角要對**（中空斜視飛掠，別混純 nadir 遙測集，否則灌入域偏差）。**評測**用 held-out 有標真實航拍（如 UAVid val）＋ CARLA-Air sim（自帶 GT）跑「train-on-enhanced → test-on-real」mIoU。
 
-**先試零後訓的快路**：[2511.14719](https://arxiv.org/abs/2511.14719)（*Zero-shot Synthetic Video Realism Enhancement via Structure-aware Denoising*，**zero-shot、不微調**、建在 Cosmos-Transfer 上）——DDIM 反演合成影片 + 結構感知去噪 + 多條件 ControlNet。**先拿它對 CARLA-Air 一試**，再決定要不要花算力後訓。
+**先試零後訓的快路**：[2511.14719](https://arxiv.org/abs/2511.14719)（*Zero-shot Synthetic Video Realism Enhancement via Structure-aware Denoising*，**zero-shot、不微調**、建在 Cosmos-Transfer 上）——DDIM 反演合成影片 + 結構感知去噪 + 多條件 ControlNet。⚠ **但它至今無公開程式碼**（「upon publication 釋出」，無 GitHub）——所以真正**可跑**的零訓練 Phase 0 是 **stock Cosmos-Transfer2.5 + CARLA-Air native 圖**（見下方 playbook）；2511.14719 是要**自己復現**的技法（包在 Cosmos-Transfer 權重外）、不是現成工具。先用可跑的零訓練試水，再決定要不要花算力後訓。
 
 **誠實的風險（這是真難處，不是工程細節）**：
 - **EPE 的「硬」標籤鎖變「軟」了**：EPE 用 LPIPS 把幾何鎖死、標籤**保證**保留；video-diffusion 的 ControlNet 是 `control_weight` 的**軟**約束，弱了就 hallucinate / drift、幾何標籤對不齊（2511.14719 自承 prompt-conflict；hybrid 法 [2605.02291](https://arxiv.org/abs/2605.02291) 自承 diffusion 造成時序不一致，且發現「**分布匹配比強幾何編輯更重要**」）。**設計縫**＝把 EPE 的硬鎖塞回 video prior：反演 + 強多條件 + 對 sim G-buffer 的 LPIPS 式一致性懲罰，同時拿到時序一致**與**免費標籤。
@@ -267,7 +267,26 @@ flowchart TD
 
 **drift 硬化 / 除錯**：control_weight 從 ~0.5 起、逐模態 / 逐區調（要保幾何調高）；長片過 **93-frame 窗**會有邊界不連續，用 overlap（Transfer1 AV 是 1 或 9 幀）拼接；把 EPE 的硬鎖塞回＝對 sim G-buffer 加 LPIPS 式一致性懲罰（設計縫、無現成）。
 
-> ⚠ **時效**：Cosmos-Transfer2.5 README 已標「**limited maintenance、Cosmos 3 為後繼**」——動工前先查 Cosmos 3 是否已出 transfer/control 模型，可能直接用新的。
+### 執行細節（細 scout 已查實，2026-06）
+
+**用 Transfer2.5 還是等 Cosmos 3？→ 現在就上 Transfer2.5-2B。** Cosmos 3（`2606.02800`）宣稱用單一 MoT subsume Transfer/Predict/Reason/Policy、`nvidia/cosmos` 也列了「Transfer with Cosmos」範例——但**至今無 `cosmos-transfer3` repo、cookbook 無 Cosmos 3 controlled-generation recipe、論文摘要完全沒提 control/depth/seg**，最小的 Nano 也 16B（Transfer2.5 才 2B）、授權還不明。Transfer2.5-2B 已 ship、有官方 CARLA×Cosmos 整合、單卡可跑、OML 可商用、checkpoint 可下載且 Apache 碼可本地保存。**做法**：把「control 影片生成」抽象成介面讓 backend 可換，**先 pin/vendor 2.5 checkpoint 到本地**，等 Cosmos 3 的 control recipe 真 ship 再評估遷移。
+
+**⚠ Phase 0 第一個工程任務：CARLA-Air 無人機視角 control 不是 turnkey（源碼核實）。** README 喊「18 模態空地」，但範例碼裡**完整感測套件只掛地面車**（`sensor_gallery.py` attach Tesla）、所謂「無人機視角」是**掛在地面車高處的一個 RGB 相機**（`air_ground_sync.py`，pitch −30），**AirSim 多旋翼上沒綁任何 CARLA 感測**。要拿真正無人機視角的對齊 RGB+depth+seg，得**自己寫 capture**：首選 route (a)——spawn CARLA `sensor.camera.depth` / `semantic_segmentation` **attach 到 aerial actor**（保住 Cosmos 相容的 seg palette），勝過 AirSim `simGetImages`（seg 是任意 per-mesh 色、要重映射）。
+
+**成本（已查 NVIDIA model matrix + 雲價）**：Phase 0 推論一段 5s/93-frame/720p（帶 seg control）B200 ~4.8 min / H100-PCIe ~14.5 min → **~$0.25–0.60/clip**，跑 1000 段 ≈ $250–600、固定成本近零。Phase 1 訓一個 control 分支（8×H100、5000 iter）≈ **6–15 node-hr ≈ $300–740/次**（`UNVERIFIED ESTIMATE`）+ control 抽取 ~$40–180 + 策展 ~$20–120 → **~$300–1000 / 個 Phase-1 cycle**。
+
+**資料授權現實（Autel 是公司，這條關鍵）**：UAVid / VisDrone 是 **CC-BY-NC-SA = 學術限定、不能商用**；**MAVREC CC-BY 可商用但只 ~2.5 hr**；**AeroScapes CC-BY-SA 可商用、且是 Autel Robotics 合作建的（自家來源最易）但只有靜圖**；OpenSafari 至今**無釋出**。→ 商用乾淨的真實航拍**影片極稀缺**，Autel 該**自拍 ~20–50 hr**（不同高度/光照/場景）當主力 target。
+
+**幾何驗證 harness（直攻 #1 風險、工具已查實）**：CARLA-Air 免費給 GT pose（IMU/GNSS）+ GT depth，兩條硬指標直接能做——
+
+| 檢查 | 對增強影片跑 | 比對 CARLA-Air GT | 數字 |
+|---|---|---|---|
+| 深度 | Depth-Anything-V2（先 median 對齊尺度） | GT depth | abs-rel / RMSE / δ<1.25 |
+| 軌跡 | **VINS-Fusion**（mono+IMU，CARLA-Air 有 IMU）/ ORB-SLAM3 mono-inertial | GT pose | **ATE（SE3）+ scale-err（Sim3）** |
+| 結構 | DINOv2 cosine（2511.14719 的指標） | 輸入 control | feature-sim |
+| 時序 | RAFT warp-error / WarpSSIM | 自身 | Ewarp |
+
+**決定性判準**：對「raw-sim 影片」與「增強影片」各跑一次 VINS-Fusion + `evo`（`evo_ape … -as` 給 Sim3 scale）→ **增強的 ATE / scale ≈ raw-sim 的，幾何就保住了**（可餵 VIO）；差太多就調 control_weight / 加幾何一致性懲罰。
 
 > **一句話**：building blocks 在 2026 全齊（開源結構-ControlNet video diffusion ＋ 真實航拍影片 ＋ 現成估計器），**aerial sim→photoreal 影片增強是 buildable-but-novel**——CARLA-Air 因免費給 G-buffer ＋ 空地同場景，是落地這條的最佳起點。它與 3DGS 重建**互補**（重建 owns 拍過的真實、這條 owns sim 裡可控的新場景），與 [§自救](#自救如何補強--繞過鎖死) 的動力學升級**正交**（這條補外觀、§自救 補物理）。
 
