@@ -76,6 +76,36 @@ flowchart LR
 
 > **Cosmos 3 要不要等？→ 不等，現在上 Transfer2.5。** Cosmos 3 已 **2026-06-01 上市**、宣稱用單一 MoT 統一 Transfer/Predict/Reason/Policy，但**至今無 shipped 的 control 後訓 recipe**、最小 Nano 也 16B（vs 2B）。做法：把「control 影片生成」抽象成介面讓 backend 可換、**先 pin/vendor Transfer2.5 checkpoint 到本地**，Cosmos 3 control recipe 真 ship 再評估遷移。
 
+### 能不能套利更強的開源生成模型（Wan）？——更強 ≠ 更適合保標籤
+
+**先修一個事實**：**「Wan 2.7」不是開源模型**——官方只開到 **Wan2.1 / Wan2.2**（Apache-2.0、可商用）；**2.5 / 2.6 / 2.7 是 API / 閉權重**（Alibaba Cloud only；行銷站把 Wan2.2 的 27B MoE 數字誤植成「2.7」）。別照 2.7 規劃。
+
+**可以套利、而且 Wan 確實更強**：開源 **Wan2.2**（或 Wan2.1 + VACE）是當前**最強的開源 video 生成器**（VBench 開源第一），且 **VACE**（ali-vilab，ICCV 2025 `2503.07598`，Apache-2.0）支援 depth / seg / edge / canny 等結構控制——所以它**是個可換的 base**，套進同一套 train-on-real / infer-on-sim 配方（呼應「把 backend 抽象成可換」）。Wan2.2 的控制走 `Wan2.2-VACE-Fun`（VideoX-Fun，有 LoRA 微調）。
+
+**但「套利更強生成」是雙刃劍，而且刃口正對 #1 風險**：
+
+- **更強的 prior = 更會自由發揮**：資料流形更銳利、更自信，遇到「sim 幾何在 photoreal 上看起來怪」時，更用力把像素拉向「真實但位移」的地方 → **更容易脫離 control 結構**（推理，非已發表，但與一致性–真實性兩難同源）。
+- **更深的差別在「條件機制」、不只是「power」（關鍵）**：**VACE 是軟性加性 hint**（context block、zero-init 注入凍結的 Wan，強 prior 可以蓋過它）；**Cosmos-Transfer 是為 sim→real 專門訓練的 per-modality 分支 + 空間加權**（結構保真是它的設計目標）。**這個機制差距，可能比「誰的 prior 強」更決定保不保得住幾何。**
+- **沒人證過**：至今**沒有任何 Wan-class 強 prior 在 VIO / metric 級保住幾何**的工作（正是 §6 的研究空白）。最接近的正例是 **RoboTransfer**（`2505.23171`）——但它用**硬通道拼接**的 depth+normal（不是軟 hint）、中等 prior，就拿到下游 policy 13.3%→46.7%。
+
+```mermaid
+flowchart TD
+    Q["Cosmos-Transfer2.5 跑 Phase 0/1 後，瓶頸是哪個？"]
+    Q --> A["photoreal 不夠真<br/>畫面像但不夠像真"]
+    Q --> B["幾何 / 標籤漂移<br/>VIO / depth 對不上"]
+    A --> AR["試套利 Wan2.2 + VACE<br/>更強 prior、更真像素<br/>→ 重跑 §6 幾何 harness 驗證"]
+    B --> BR["Wan 反而更糟（軟 hint 更易脫結構）<br/>→ 留 Cosmos / 改硬條件<br/>RoboTransfer 式 depth-concat"]
+    classDef q fill:#ede7f6,stroke:#5e35b1,color:#311b92
+    classDef a fill:#e8f5e9,stroke:#388e3c,color:#1b5e20
+    classDef b fill:#ffebee,stroke:#c62828,color:#b71c1c
+    class Q q
+    class A,AR a
+    class B,BR b
+```
+*圖：套利 Wan 的決策——先用 Cosmos-Transfer2.5（purpose-built、有 CARLA cookbook）de-risk；瓶頸若是「不夠真」才換 Wan 賭更強像素、並用 §6 harness 驗幾何；瓶頸若是「幾何漂移」，Wan 反而更糟，該留 Cosmos 或改硬條件。*
+
+**一句話**：套利 Wan **買到的是像素（更真）、買不到的是標籤（幾何）**——對保標籤的增強，更強的生成 ＋ 軟 hint 很可能讓 #1 風險更糟。**別假設「強＝好」**，用 §6 幾何 harness 量了再說；要壓漂移，先試 VACE 的 **context-scale 調低**、或 **RoboTransfer 式硬通道拼接 depth**。
+
 ## 3. 資料策略（細節見 [carla-air §資料準備](./carla-air.md)）
 
 你要準備的只有**一堆真實航拍影片**——**不用配對、不用標註**（control 是算出來的，真實影片可裸素材）。來源優先：**① Autel 自拍**（最對口、商用乾淨）> ② 公開（**UAVid/VisDrone 是 CC-BY-NC-SA 學術限定不能商用**；**MAVREC CC-BY 可商用但只 ~2.5hr**；**AeroScapes 是 Autel Robotics 自家合作建的、但只靜圖**）> ③ CARLA-Air render（免費自生）。量：**零後訓 0 / LoRA 10–50 clip / 分支 數十 hr**。商用乾淨的真實航拍**影片極稀缺 → Autel 該自拍 ~20–50 hr**。
@@ -195,5 +225,6 @@ flowchart TD
 
 - **原理**：ControlNet `2302.05543` · EPE `2105.04619` · Carla2Real(2024) `2410.18238` · Consistency-Realism Dilemma（Driving-with-DINO）`2602.06159` · soft-control 漂移實證 `2511.14719`
 - **模型/平台**：Cosmos-Transfer1 `2503.14492` · Cosmos-Transfer2.5 `2511.00062` · Cosmos 3 `2606.02800`（2026-06-01 上市）
+- **套利更強開源生成（Wan）**：Wan2.1/2.2（開源 Apache，2.5+ 為 API/閉權重）· VACE `2503.07598`（ali-vilab，depth/seg/edge 控制）· Wan2.2-VACE-Fun / VideoX-Fun（LoRA 微調）· 硬條件正例 RoboTransfer `2505.23171`（depth+normal 通道拼接）
 - **aerial 對照**：FalconGym `2503.02198`（2.0 `2510.02248`）· SOUS VIDE `2412.16346` · FlightDiffusion `2509.14082`
 - **建置細節（命令/spec/成本/harness）**：[carla-air §建置 playbook](./carla-air.md)
