@@ -57,22 +57,24 @@ flowchart TD
 
 ## 外觀邊供應線：use-case（尤其 aerial）怎麼選
 
-下游 use-case 的外觀其實有**兩條供應線**，分工清楚：
+下游 use-case 的外觀其實有**三條供應線**——GS 那篇先講了後兩條（生成 / 重建），但**最老、最主流的其實是第一條：古典 game-engine 渲染**：
 
 ```mermaid
 flowchart TD
     Q["下游要外觀（appearance edge）"]
-    Q --> R["拍得到的場景<br/>→ 3DGS 重建"]
-    Q --> G["拍不到的新情境<br/>天氣 / 新物件 / 罕見事件<br/>→ 生成（Cosmos）"]
-    R --> RA["aerial 範式：FalconGym · SOUS VIDE<br/>Real2Sim2Real（ArUco 定 metric scale）"]
-    G --> GA["aerial：under-served<br/>見 Cosmos § aerial"]
+    Q --> CR["① 古典渲染（最老·最主流）<br/>手搭 3D 場景 → 引擎確定性渲染<br/>UE · Isaac Sim · Gazebo · Unity<br/>免費完美標籤＋內建物理，但 domain gap 大"]
+    Q --> R["② 重建：拍真實 → 3DGS/NeRF fit<br/>photoreal、限拍過的場景"]
+    Q --> G["③ 生成：學習外推 → Cosmos/Sora<br/>能造新情境、物理弱"]
+    CR -->|"修 domain gap（看起來假）"| EN["enhancement 貼皮<br/>Carla2Real · Cosmos-Transfer · EPE"]
+    classDef cr fill:#fff3e0,stroke:#ef6c00,color:#e65100
     classDef rec fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
     classDef gen fill:#e8f5e9,stroke:#388e3c,color:#1b5e20
-    class R,RA rec
-    class G,GA gen
+    class CR,EN cr
+    class R rec
+    class G gen
 ```
 
-*圖：**重建 owns「拍過的場景」外觀，生成 owns「沒拍過的新情境」**——互補不是競爭。對 [aerial-sim](../../use-cases/aerial-sim/overview.md) 這條本倉最深的 use-case，外觀的現實主力是 3DGS 重建（[GS 解構 § aerial](./generative-gaussian-splatting.md)）；生成（Cosmos）在 aerial 仍 under-served（見 [Cosmos § aerial](../foundation-physics-models/cosmos-wfm.md)）。*
+*圖：外觀邊**三條供應線**——① **古典渲染**（手搭場景、引擎確定性渲染：UE / Isaac Sim / Gazebo / Unity）是 AirSim / CARLA / Isaac-Sim-Replicator 的本體，免費給完美 depth/seg/flow 標籤＋內建物理，但有「看起來假」的 sim2real **domain gap**——這正是 ② **重建**（3DGS，拍真實）、③ **生成**（Cosmos，造新情境）、以及 **enhancement 貼皮**（Carla2Real / Cosmos-Transfer / EPE 把 ① 的便宜渲染拉向真實）存在的理由。分工：① owns「可控但假」、② owns「拍過的真」、③ owns「沒拍過的新」。對 [aerial-sim](../../use-cases/aerial-sim/overview.md)：① 古典渲染＋動力學走 AirSim（UE）/ [Aerial Gym](../differentiable-simulators/aerial-gym.md)，② 重建是現實主力（[GS § aerial](./generative-gaussian-splatting.md)：FalconGym / SOUS VIDE），③ 生成（Cosmos）仍 under-served（[Cosmos § aerial](../foundation-physics-models/cosmos-wfm.md)）。① 的平台清單見 [diff-sim § 生產 sim 平台](../differentiable-simulators/overview.md)。*
 
 ## 本區 vs Spatial-Handbook 的分工
 

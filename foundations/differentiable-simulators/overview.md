@@ -56,6 +56,20 @@ flowchart TD
 
 > 一句話讀法：要**並行吞吐**往上半段挑（MJX 是 contact-rich manipulation 的預設、Aerial Gym 是 drone 的預設）；要**乾淨梯度**且不碰接觸往 DiffTaichi / Genesis-MPM；要**過接觸的解析梯度**只能走 Dojo / Nimble / DiffMJX 那套專門補救。NVIDIA 全家桶（Cosmos / GR00T / Omniverse）的官方路徑是 Warp → Newton → Isaac Lab。
 
+## 另一端：生產級 photoreal sim 平台（非可微、全棧）
+
+上面那張表是**研究取向**的 diff / GPU-並行 sim。但真實世界跑合成資料、sim-in-loop 的主力，是**生產級 photoreal 全棧平台**——非可微，但有 photoreal 渲染＋成熟物理＋場景授權＋資料管線。它們同時供**外觀**（古典渲染，見 [3d-aware § 外觀邊供應線](../3d-aware-generation/overview.md)）與**物理**（PhysX / Chaos 的 sim-in-loop）：
+
+| 平台 | 是什麼 | 物理 | 角色（2026 核驗） |
+|---|---|---|---|
+| **Isaac Sim**（Omniverse） | photoreal 機器人 sim，**v6.0（2026-06、Apache-2.0）**，RTX 光追 + OpenUSD + Replicator | PhysX | NVIDIA 資料工廠的渲染層；Replicator **`CosmosWriter`** 直出 RGB/depth/seg/edge → [Cosmos-Transfer](../foundation-physics-models/cosmos-wfm.md) |
+| **Isaac Lab** | 建在 Isaac Sim 上的 **RL 框架**（取代 Isaac Gym/Orbit，**不是另一個 sim**） | PhysX / Newton 可選 | thousand-env RL；PhysX 不可微、可微走 Newton（`2511.04831`） |
+| **Unreal Engine 5** | 即時 photoreal 引擎（Nanite / Lumen / 光追） | **Chaos**（UE4 是 PhysX） | **AirSim / CARLA 的渲染＋物理底座**；CARLA 0.10 已 UE4→**UE5.5**（2024-12） |
+| **Gazebo（Gz）** | 經典 ROS 機器人 sim（Ignition 2022 改名 Gz） | DART（+Bullet / ODE） | photoreal 弱、工程成熟；ROS 生態預設 |
+| **Unity** | 遊戲引擎 + Perception / SynthDet + ML-Agents | PhysX(Unity) | 合成資料工具鏈；Flightmare（ETH）用其渲染 |
+
+**怎麼擺進本區光譜**：Isaac Gym（已 deprecated）→ Isaac Lab（RL **框架**）→ Isaac Sim（**sim+渲染平台**）→ Omniverse（USD **平台/中樞**）；可微的未來是 **Newton**（Warp-based）。這些平台就是**古典渲染**那條外觀供應線的本體——免費給完美標籤＋內建物理，但有 sim2real **domain gap**（看起來假），所以才需要 enhancement（Carla2Real / Cosmos-Transfer）、重建（3DGS）、生成（Cosmos）來補。AirSim（UE）/ CARLA（UE）/ Isaac-Sim-Replicator 就是這層在 aerial / driving 的落地。⚠ Isaac Sim 作為「資料工廠渲染層＋Cosmos 上遊」**值得獨立一篇解構**——目前只在此 overview 帶過。
+
 ## contact 之牆：四種補救
 
 「怎麼從非光滑的接觸裡擠出可用梯度」目前就四個流派，各有代價：
