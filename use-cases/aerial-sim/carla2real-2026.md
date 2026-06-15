@@ -7,7 +7,9 @@
 
 ## 一句話
 
-把 CARLA-Air 的 sim render（**有完美標籤、但「看起來假」**）→ 後訓練一個結構-ControlNet video diffusion → 輸出 **photoreal 影片、標籤原封保留、時序一致**。它攻的是一個確認的空缺：**aerial 的 sim→real 影片增強至今沒人做**（學界全在駕駛）。
+把 CARLA-Air 的 sim render（**有完美標籤、但「看起來假」**）→ 後訓練一個結構-ControlNet video diffusion → **目標**是輸出 photoreal 影片、**同時保住 sim 標籤、時序一致**。它攻的是一個**據檢索未見**的空缺：**aerial 的 sim→real 影片增強至今沒人做**（學界全在駕駛；截至 2026-06 arXiv/CVPR/CoRL 檢索無命中，故全文「沒人做」一律讀作「據檢索未見」而非鐵證）。
+
+> ⚠ **核心未證命題（先講在前）**：「**夠真、又保得住標籤**」能不能**同時**成立，**正是本案沒被證明的賭注**——軟 control 下把畫面拉真會傾向脫離結構（§1.3），而至今**沒有 aerial benchmark 證過增強後仍 metric 可用**（§6）。所以這頁不是宣告成果，是**設計一個有條件的賭注 ＋ 證它 / 否決它的方法（§6）**。下文的「保留標籤」「時序一致」皆為**設計目標**，能否達成由 §6 判定。
 
 ## 1. 原理：control 是「結構線稿」
 
@@ -58,7 +60,7 @@ flowchart LR
 
 ### 軟硬之別：最關鍵的取捨（Consistency–Realism Dilemma）
 
-標籤雖免費保留，但「保得多硬」是核心難處。EPE 用 **LPIPS 硬鎖**結構——幾何**保證**不動。ControlNet 是 **control_weight 軟約束**——幾何只是被**鼓勵**。這就生出 **一致性–真實性兩難**（Driving-with-DINO `2602.06159` 原話）：**low-level 訊號（edge/blur）精準保結構、但 bake 進合成感**；**high-level 先驗（depth/semantic）給真實感、但丟結構細節**。所以 `control_weight`（與 CFG）是個 **bias–variance 式旋鈕**：調高＝忠於結構但合成感重、多樣性低；調低＝真實但**漂移、hallucinate 脫離結構**。實證（`2511.14719`）：CFG 拉到 11 真實感升到 57.8%，但**小物件對齊持續下滑、LPIPS 從 0.36 惡化到 0.45**，最後取 CFG=7 折中。**這就是 #6 風險（軟控漂移）的根。**
+標籤雖免費保留，但「保得多硬」是核心難處。EPE 在 unpaired GAN 之上**另用 LPIPS 硬鎖**結構——幾何**保證**不動（§1.2 講的分布對齊是它的 GAN 那面、LPIPS 是它的結構鎖，兩者並存）。ControlNet 是 **control_weight 軟約束**——幾何只是被**鼓勵**。這就生出 **一致性–真實性兩難**（Driving-with-DINO `2602.06159` 原話）：**low-level 訊號（edge/blur）精準保結構、但 bake 進合成感**；**high-level 先驗（depth/semantic）給真實感、但丟結構細節**。所以 `control_weight`（與 CFG）是個 **bias–variance 式旋鈕**：調高＝忠於結構但合成感重、多樣性低；調低＝真實但**漂移、hallucinate 脫離結構**。實證（`2511.14719`）：CFG 拉到 11 真實感升到 57.8%，但**小物件對齊持續下滑、LPIPS 從 0.36 惡化到 0.45**，最後取 CFG=7 折中（**注意：這些是駕駛/通用域實證，aerial 未證、僅作先驗**）。**這就是 #6 風險（軟控漂移）的根。**
 
 > **兩個分布必須對齊**：真實端抽的 control 與 sim 端餵的 control 必須來自**同一個過程/表徵**，否則映射被 off-distribution 查詢、橋就斷（例：訓練用 MiDaS 相對視差、推論餵 CARLA 度量 z-buffer，數字意義不同 → 模型沒看過、要嘛忽略要嘛扭曲幾何）。所以實務上兩邊跑**同一估計器**，或把 sim native buffer **重映射**成估計器的表徵。
 
@@ -74,7 +76,7 @@ flowchart LR
 | Apache 替代 | Wan2.2 + VACE | 最大 LoRA/ControlNet 生態；官方訓練碼未釋出 |
 | 省算力 | CogVideoX-2B / LTX-Video | 單卡可後訓、LTX 近即時 |
 
-> **Cosmos 3 要不要等？→ 不等，現在上 Transfer2.5。** Cosmos 3 已 **2026-06-01 上市**、宣稱用單一 MoT 統一 Transfer/Predict/Reason/Policy，但**至今無 shipped 的 control 後訓 recipe**、最小 Nano 也 16B（vs 2B）。做法：把「control 影片生成」抽象成介面讓 backend 可換、**先 pin/vendor Transfer2.5 checkpoint 到本地**，Cosmos 3 control recipe 真 ship 再評估遷移。
+> **Cosmos 3 要不要等？→ 不等，現在上 Transfer2.5。** Cosmos 3 已 **2026-06-01 上市**、宣稱用單一 MoT 統一 Transfer/Predict/Reason/Policy，但**至今無 shipped 的 control 後訓 recipe**、最小變體（Nano）也遠大於 Transfer2.5（據發布資料 ~16B vs 2B，`UNVERIFIED` 確切數）。做法：把「control 影片生成」抽象成介面讓 backend 可換、**先 pin/vendor Transfer2.5 checkpoint 到本地**，Cosmos 3 control recipe 真 ship 再評估遷移。
 
 ### 能不能套利更強的開源生成模型（Wan）？——更強 ≠ 更適合保標籤
 
@@ -86,7 +88,7 @@ flowchart LR
 
 - **更強的 prior = 更會自由發揮**：資料流形更銳利、更自信，遇到「sim 幾何在 photoreal 上看起來怪」時，更用力把像素拉向「真實但位移」的地方 → **更容易脫離 control 結構**（推理，非已發表，但與一致性–真實性兩難同源）。
 - **更深的差別在「條件機制」、不只是「power」（關鍵）**：**VACE 是軟性加性 hint**（context block、zero-init 注入凍結的 Wan，強 prior 可以蓋過它）；**Cosmos-Transfer 是為 sim→real 專門訓練的 per-modality 分支 + 空間加權**（結構保真是它的設計目標）。**這個機制差距，可能比「誰的 prior 強」更決定保不保得住幾何。**
-- **沒人證過**：至今**沒有任何 Wan-class 強 prior 在 VIO / metric 級保住幾何**的工作（正是 §6 的研究空白）。最接近的正例是 **RoboTransfer**（`2505.23171`）——但它用**硬通道拼接**的 depth+normal（不是軟 hint）、中等 prior，就拿到下游 policy 13.3%→46.7%。
+- **沒人證過**：至今**沒有任何 Wan-class 強 prior 在 VIO（visual-inertial odometry，視覺慣性里程計）/ metric 級保住幾何**的工作（正是 §6 的研究空白）。最接近的正例是 **RoboTransfer**（`2505.23171`）——但它用**硬通道拼接**的 depth+normal（不是軟 hint）、中等 prior，就拿到下游 policy 13.3%→46.7%。
 
 ```mermaid
 flowchart TD
@@ -108,7 +110,7 @@ flowchart TD
 
 ## 3. 資料策略（細節見 [carla-air §資料準備](./carla-air.md)）
 
-你要準備的只有**一堆真實航拍影片**——**不用配對、不用標註**（control 是算出來的，真實影片可裸素材）。來源優先：**① Autel 自拍**（最對口、商用乾淨）> ② 公開（**UAVid/VisDrone 是 CC-BY-NC-SA 學術限定不能商用**；**MAVREC CC-BY 可商用但只 ~2.5hr**；**AeroScapes 是 Autel Robotics 自家合作建的、但只靜圖**）> ③ CARLA-Air render（免費自生）。量：**零後訓 0 / LoRA 10–50 clip / 分支 數十 hr**。商用乾淨的真實航拍**影片極稀缺 → Autel 該自拍 ~20–50 hr**。
+你要準備的只有**一堆真實航拍影片**——**不用配對、不用標註**（control 是算出來的，真實影片可裸素材）。來源優先：**① Autel 自拍**（最對口、商用乾淨）> ② 公開（**UAVid/VisDrone 是 CC-BY-NC-SA 學術限定不能商用**；**MAVREC CC-BY 可商用但只 ~2.5hr**；**AeroScapes 是 Autel Robotics 自家合作建的、但只靜圖**）> ③ CARLA-Air render（免費自生）。量：**零後訓 0 / LoRA 10–50 clip / 分支 數十 hr**。商用乾淨的真實航拍**影片極稀缺 → Autel 該自拍 ~20–50 hr**（各 dataset 的授權與規模以其官方頁為準、2026-06 查；商用前再核）。
 
 ### 解析度怎麼對齊（常見誤會：720p 是模型規格，不是 CARLA-Air 的上限）
 
@@ -155,7 +157,7 @@ flowchart TD
 ```
 *圖：每一階段都是下一階段的閘門，不准跳階押訓練。Phase 0 用 0 資料先驗「崩不崩」；崩壞型直接轉 3DGS（後訓不會救），外觀型才值得花資料後訓。*
 
-- **Phase 0**（低成本，純推論）——問「stock 模型在 sim 原生圖的斜視空拍下還能用嗎」；**kill**：結構崩壞且 depth 與 control 系統性脫鉤 → 3DGS。
+- **Phase 0**（低成本，純推論）——問「stock 模型在 sim 原生圖的斜視空拍下還能用嗎」；**kill**：結構崩壞且 depth 與 control 系統性脫鉤 → 改走 **3DGS（3D Gaussian Splatting，三維高斯重建）**（見 [generative-aerial-data](./generative-aerial-data.md)）。
 - **Phase 1**（中成本）——問「~5–20hr 真實空拍後訓能補外觀又不破幾何嗎」；go 標準＝**下游（非肉眼）出現可量測增益**；**kill**：幾何漂移未降到 VIO 門檻 → 3DGS。
 - **Phase 2**（高成本）——擴資料/多控/跨場景；**kill**：邊際增益遞減且資料成本超過自建 3DGS。
 
@@ -169,6 +171,7 @@ flowchart TD
 | d | 商用乾淨空拍**影片**稀缺 | 高 | 高 | 以自採為主、MAVREC 補 | 達不到 5–20hr 商用乾淨門檻 |
 | e | Transfer2.5 退場 / Cosmos-3 churn | 中 | 中 | 押有 shipped control recipe 的 Transfer2.5、抽象 backend | Cosmos-3 已上市但無 control recipe |
 | f | **soft-control label drift** | 中 | 中 | 優先用 sim native GT、別在 sim RGB 上跑估計器 | 估計 depth 與 GT 系統性偏差 |
+| g | **control 表徵不對齊**（real 端估計器 vs sim 端 native buffer，數字意義不同）→ off-distribution 查詢、橋斷 | 中 | 高 | 兩邊用同一估計器，或把 sim buffer remap 成估計器表徵（§1.3 鐵律） | 增強輸出忽略 control 或扭曲幾何 |
 
 ## 6. 驗證：幾何保真怎麼證（#1 風險 → 研究貢獻）
 
@@ -211,11 +214,11 @@ flowchart TD
 ```
 *圖：enhancement 不是唯一解、是**策略選擇**。它**唯一同時拿到「保留 sim 標籤 + 可控新場景 + 時序影片」三件**；3DGS 給不了新內容、生成給不了可靠標籤。要最大化重現一段真飛過的場景 → 3DGS；要大量可控、帶 GT 標籤的多樣空中影片 → enhancement。*
 
-**競爭版圖**：外觀增強研究**高度集中於駕駛域**（EPE 2021 → Carla2Real 2024 → Cosmos-Transfer 2025 → Driving-with-DINO 2026）；**aerial 端是確認的空缺**（空中文獻全在 3DGS 重建或文生影片）。一個 **aerial-first 增強器即佔據無人區**。
+**競爭版圖**：外觀增強研究**高度集中於駕駛域**（EPE 2021 → Carla2Real 2024 → Cosmos-Transfer 2025 → Driving-with-DINO 2026）；**aerial 端據檢索是空缺**（空中文獻全在 3DGS 重建或文生影片）。一個 **aerial-first 增強器即佔據無人區**（前提：§6 驗證能過）。
 
 ## 8. 研究貢獻 + 對接前沿
 
-- **(a) 首個 aerial 域 sim→real 影片增強器**（空缺已核實）。
+- **(a) 首個 aerial 域 sim→real 影片增強路線**（據檢索未見先例；**成立與否取決於通過 §6 幾何驗證**——是「首個嘗試」，不是「已成」）。
 - **(b) 幾何/metric 保持驗證**（§6）——沒人發過，把 #1 風險變貢獻。
 - **(c) 用 CARLA-Air 免費 GT pose+depth 當驗證 oracle**——只有 sim 來源才有的不對稱優勢（駕駛端真實資料拿不到逐幀 GT）。
 
