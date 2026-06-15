@@ -218,6 +218,57 @@ flowchart LR
 
 **評測**：train-on-enhanced → test-on-real-aerial 的分割 mIoU（aerial 版 Carla2Real 指標）＋ FVD vs 真實航拍 ＋ 幾何 / metric 一致性（給 VIO 用）＋ 時序一致性。
 
+### 建置 playbook（端到端、可執行——給真要做的人）
+
+**三階段 + go/no-go（逐階加碼，每階先過閘再往下）**：
+
+```mermaid
+flowchart TD
+    P0["Phase 0 · 零訓練驗證（~數天 · 0 資料）<br/>stock Cosmos-Transfer2.5 + CARLA-Air native 圖<br/>＋ 2511.14719 zero-shot"]
+    P0 --> G0{"aerial OOD / drift<br/>可接受？"}
+    G0 -->|"否：崩太兇"| STOP["先回 3DGS 重建<br/>FalconGym / SOUS VIDE"]
+    G0 -->|"是"| P1["Phase 1 · 後訓練 control 分支（~數週 · ~5-20hr 真實航拍）<br/>抽 control → torchrun 8-GPU 訓分支"]
+    P1 --> G1{"下游 mIoU 有升<br/>＋ 幾何保住？"}
+    G1 -->|"否"| FIX["調 control_weight / hybrid 圖源<br/>/ 加幾何一致性懲罰"]
+    FIX --> P1
+    G1 -->|"是"| P2["Phase 2 · 擴數據＋硬化（數十 hr）<br/>full eval → 部署"]
+    classDef p fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
+    classDef g fill:#fff3e0,stroke:#ef6c00,color:#e65100
+    classDef stop fill:#ffebee,stroke:#c62828,color:#b71c1c
+    class P0,P1,P2 p
+    class G0,G1 g
+    class STOP,FIX stop
+```
+*圖：Phase 0 不花一分訓練先驗 aerial 崩不崩；過了才花 ~5-20hr 資料後訓；再過才擴到數十小時。每個 gate 是真 go/no-go。*
+
+**工具鏈（具體 repo + 命令骨架，已核源；exact flags 以各 repo 為準）**：
+
+| 步驟 | repo / 工具 | 命令骨架 |
+|---|---|---|
+| **base 模型** | `nvidia-cosmos/cosmos-transfer2.5`（2B · 720p/16fps · **93-frame 窗** · **65GB VRAM** · NVIDIA OML 可商用） | `python examples/inference.py -i spec.json -o out`（control 走 JSON `controlnet_specs`，per-modality `control_path`+`control_weight`） |
+| 真實 depth | `DepthAnything/Video-Depth-Anything`（`2501.12375`，**時序一致**，別用 per-frame DAv2 會閃） | `python run.py --input_video v --encoder vitl [--metric]` |
+| 真實 seg | `IDEA-Research/Grounded-SAM-2`（text→GroundingDINO→SAM2→跨幀 track） | `grounded_sam2_tracking_demo_*.py` |
+| edge | OpenCV Canny（Cosmos 預設、可自動算） | `cv2.Canny(blur, 10, 50)` |
+| caption | **Qwen2.5-VL**（`2502.13923`，Cosmos curation 用的就是它） | per-clip 描述 |
+| 資料策展 | `nvidia-cosmos/cosmos-curate`（split/transcode/crop/filter/caption/dedup/shard 七段） | 一條龍 |
+| **訓分支** | cosmos-transfer2.5 post-train（**base 凍結、只訓 control 分支**；⚠ **無 Transfer-branch LoRA recipe**，只能 full branch） | `torchrun --nproc_per_node=8 -m scripts.train --config=.../vid2vid_transfer/config.py -- experiment=EXP`（`max_iter=5000`） |
+
+**CARLA-Air → control 抽取（設計決策）**：
+- **預設餵 CARLA-Air 的 native 圖**——NVIDIA 官方 CARLA recipe 就這樣（`carla_cosmos_gen.py`）：semantic seg（**29 類、紅通道、可轉 Cityscapes palette**）、depth（24-bit 解碼 `公尺 = 1000·(R+G·256+B·256²)/(256³−1)`、**再正規化 [0,1]** 對齊 DepthAnything2）、edge（Canny on RGB）。免費、精確、**斜視角不退化**（是 render buffer 不是估計器）。
+- **設計叉口（重要）**：訓練時 control 是「估計器抽自真實 RGB」，推論餵「native sim 圖」有**分布不對稱**。NVIDIA 實務證 native 可行（分支對乾淨 control 穩健）；aerial gap 更大時，**fallback (b)＝對 CARLA-Air RGB 跑同一組估計器**讓 control 分布**對齊訓練**，hybrid（native depth + Canny-on-RGB edge）也行。
+- ⚠ **更大的風險不是 control 來源、是生成器本身**：Cosmos-Transfer 在地面駕駛真實影片上訓，**斜視航拍 RGB 對它本身就是 OOD**——這正是為什麼非後訓練（Phase 1 餵真實航拍）不可。
+- **分布對齊鐵律**：真實與 sim 兩邊用**同一估計器、同一 Canny 閾值、同一 seg 詞表、同解析度/fps**——任一不一致就斷橋（這是整套配方最容易翻車的地方）。
+
+**評測 + 幾何驗證（直攻 #1 風險）**：
+- **下游（已立 protocol）**：train-on-enhanced-sim（sim 免費 GT）→ test-on-UAVid-val → **mIoU**（seg 模型 DeepLabV3 / Mask2Former / SegFormer；CARLA2Real 即此法、報 ~2× 增益）。
+- **realism**：**CMMD**（小集優於 FID，hybrid 法 `2605.02291` 採用）+ content-debiased FVD。
+- **幾何 / metric（你要補的、也是學術空白）**：已發表做法只到「**重抽 control 比對**」（`2511.14719` DINOv2 一致性 0.550；Cosmos-Transfer1 Edge-F1 0.28 / Blur-SSIM 0.96）＋下游 mIoU。**真正證「metric 上還能餵 VIO」的兩條沒人發過**——(a) 對增強影片跑 Depth-Anything 比 **sim-GT depth** 的 abs-rel / δ<1.25；(b) 對增強影片跑 **VIO/SLAM** 比 sim-GT pose 的 **ATE + scale-error**（Zhang-Scaramuzza 評法）。**這兩條正是 aerial 落地必補、且可發表的缺口。**
+- **時序**：warp error / WarpSSIM（光流 warp 前幀比當幀）。
+
+**drift 硬化 / 除錯**：control_weight 從 ~0.5 起、逐模態 / 逐區調（要保幾何調高）；長片過 **93-frame 窗**會有邊界不連續，用 overlap（Transfer1 AV 是 1 或 9 幀）拼接；把 EPE 的硬鎖塞回＝對 sim G-buffer 加 LPIPS 式一致性懲罰（設計縫、無現成）。
+
+> ⚠ **時效**：Cosmos-Transfer2.5 README 已標「**limited maintenance、Cosmos 3 為後繼**」——動工前先查 Cosmos 3 是否已出 transfer/control 模型，可能直接用新的。
+
 > **一句話**：building blocks 在 2026 全齊（開源結構-ControlNet video diffusion ＋ 真實航拍影片 ＋ 現成估計器），**aerial sim→photoreal 影片增強是 buildable-but-novel**——CARLA-Air 因免費給 G-buffer ＋ 空地同場景，是落地這條的最佳起點。它與 3DGS 重建**互補**（重建 owns 拍過的真實、這條 owns sim 裡可控的新場景），與 [§自救](#自救如何補強--繞過鎖死) 的動力學升級**正交**（這條補外觀、§自救 補物理）。
 
 ## 自救：如何補強 / 繞過鎖死
@@ -348,6 +399,7 @@ while True:
 - **Carla2Real**（把 CARLA 外觀後處理升 photoreal，appearance-edge）—— arXiv [2410.18238](https://arxiv.org/abs/2410.18238)（IEEE T-ITS 2025）· [github.com/stefanos50/CARLA2Real](https://github.com/stefanos50/CARLA2Real) · 母法 EPE [2105.04619](https://arxiv.org/abs/2105.04619)（Intel）
 - **video-to-video**（時序一致的 sim→photoreal）—— vid2vid [1808.06601](https://arxiv.org/abs/1808.06601)（NVIDIA NeurIPS 2018）· Cosmos-Transfer [2503.14492](https://arxiv.org/abs/2503.14492)（depth/seg ControlNet、sim→real 實證）· 結構感知去噪「video EPE」[2511.14719](https://arxiv.org/abs/2511.14719)
 - **Carla2Real-2026 配方**（後訓練開源 video model；本篇上方一節）—— base：Cosmos-Transfer2.5 [2511.00062](https://arxiv.org/abs/2511.00062) · Wan-VACE [2503.07598](https://arxiv.org/abs/2503.07598) · zero-shot 快路 [2511.14719](https://arxiv.org/abs/2511.14719) · hybrid 對照 [2605.02291](https://arxiv.org/abs/2605.02291)；真實航拍 target：UAVid [1810.10438](https://arxiv.org/abs/1810.10438) · OpenSafari [2511.22815](https://arxiv.org/abs/2511.22815) · VisDrone-VID [2001.06303](https://arxiv.org/abs/2001.06303) · MAVREC [2312.04548](https://arxiv.org/abs/2312.04548)；control 估計器：Depth-Anything-V2 · SAM2 · GroundingDINO
+- **Carla2Real-2026 建置工具鏈**（本篇「建置 playbook」）—— [cosmos-transfer2.5](https://github.com/nvidia-cosmos/cosmos-transfer2.5)（720p · 93-frame 窗 · 65GB VRAM · OML 可商用）＋ NVIDIA [CARLA×Cosmos recipe](https://carla.readthedocs.io/en/latest/nvidia_cosmos_transfer/) · 時序一致 depth [Video-Depth-Anything](https://github.com/DepthAnything/Video-Depth-Anything)（[2501.12375](https://arxiv.org/abs/2501.12375)）· seg [Grounded-SAM-2](https://github.com/IDEA-Research/Grounded-SAM-2) · caption Qwen2.5-VL（[2502.13923](https://arxiv.org/abs/2502.13923)）· 策展 [cosmos-curate](https://github.com/nvidia-cosmos/cosmos-curate) · 幾何/結構驗證對照 Driving-with-DINO（[2602.06159](https://arxiv.org/abs/2602.06159)）
 
 ## §8 踩坑日誌
 
