@@ -146,9 +146,56 @@ CARLA-Air 的外觀來自 CARLA 的 Unreal render——城市夠豐富，但**�
 | **reconstruction**（重建真實場景） | NeRF / 3DGS（driving: NeuRAD；**aerial: [FalconGym](https://arxiv.org/abs/2503.02198) 95.8%、SOUS VIDE 105 飛**） | 外觀近乎完美（重放真感測） | 只限拍過的場景，難造新內容 / 新標籤 |
 | **generation**（生成） | Cosmos / GAIA-2 / FlightDiffusion | 任意場景、可控、最多樣 | 幾何 / 標籤對齊最弱 |
 
-**per-frame enhancement 的 flicker 怎麼解？→ video-to-video（時序一致版的 enhancement）**：把「逐幀翻」換成「整段一起翻」，用光流 warp + 時空判別器把時序吃進去。經典是 **vid2vid**（NVIDIA，NeurIPS 2018，[1808.06601](https://arxiv.org/abs/1808.06601)：seg 影片→photoreal 影片；後續 few-shot / world-consistent vid2vid）；現在多走 **video-diffusion**——**Cosmos-Transfer**（[2503.14492](https://arxiv.org/abs/2503.14492)，depth/seg/edge ControlNet 條件化，**sim→real 已實證**含 robotics）、結構感知去噪的「video EPE」（[2511.14719](https://arxiv.org/abs/2511.14719)）。**兩個代價**：① 算力遠高於 per-frame；② **保標籤變難**——時序一致的生成會 hallucinate / drift，幾何與標籤對不齊，EPE「免費標籤」的賣點被削弱。**而且一樣只動外觀邊、零動力學。** ⚠ **aerial 同樣是空缺（`UNVERIFIED`）**：video2video / video-diffusion 的 sim→photoreal 全在駕駛 / 桌面操作 / 人臉 / 通用場景，**沒有任何「aerial sim-render → photoreal」的時序一致工作**（FlightDiffusion 那種是「文字 / 單幀 → 生影片」、不是把 sim render 翻真，不算）。
+**per-frame enhancement 的 flicker 怎麼解？→ video-to-video（時序一致版的 enhancement）**：把「逐幀翻」換成「整段一起翻」，用光流 warp + 時空判別器把時序吃進去。經典是 **vid2vid**（NVIDIA，NeurIPS 2018，[1808.06601](https://arxiv.org/abs/1808.06601)：seg 影片→photoreal 影片；後續 few-shot / world-consistent vid2vid）；現在多走 **video-diffusion**——**Cosmos-Transfer**（[2503.14492](https://arxiv.org/abs/2503.14492)，depth/seg/edge ControlNet 條件化，**sim→real 已實證**含 robotics）、結構感知去噪的「video EPE」（[2511.14719](https://arxiv.org/abs/2511.14719)）。**兩個代價**：① 算力遠高於 per-frame；② **保標籤變難**——時序一致的生成會 hallucinate / drift，幾何與標籤對不齊，EPE「免費標籤」的賣點被削弱。**而且一樣只動外觀邊、零動力學。** ⚠ **aerial 同樣是空缺（`UNVERIFIED`）**：video2video / video-diffusion 的 sim→photoreal 全在駕駛 / 桌面操作 / 人臉 / 通用場景，**沒有任何「aerial sim-render → photoreal」的時序一致工作**（FlightDiffusion 那種是「文字 / 單幀 → 生影片」、不是把 sim render 翻真，不算）——**這個沒人占的空缺，正是下面「Carla2Real-2026」要攻的**。
 
-所以 **aerial 的外觀 gap 現在是 3DGS / NeRF 重建在解**（FalconGym / SOUS VIDE 已落地），不是 Carla2Real / video2video 式 enhancement——這也再次點出 CARLA-Air 的定位：價值在**空地 physics + 城市場景**；要外觀更真，街景上接 Carla2Real / vid2vid、aerial 上走 3DGS 重建（見 [Generative Aerial Data](./generative-aerial-data.md)）。
+**到 2024 為止**，aerial 的外觀 gap 是 3DGS / NeRF 重建在解（FalconGym / SOUS VIDE 已落地），enhancement 那條只在街景、aerial 未證。**但 2026 局面變了**——後訓練一個開源 video diffusion 的結構 ControlNet，能把 enhancement 真正帶到 aerial（見下「Carla2Real-2026」），且它與 3DGS **互補**：重建 owns「拍過的真實場景」、enhancement owns「sim 裡任意可控的新場景」。CARLA-Air 因為免費給 G-buffer + 空地同場景，正是落地這條的理想基座。
+
+## Carla2Real-2026：後訓練開源 video model，把 CARLA-Air 真正升到 photoreal
+
+上面那套 Carla2Real 是 **2024 的 per-frame GAN**（街景訓練、有 flicker、aerial 未證）。2026 的做法本質不同：**後訓練一個開源 video diffusion 的「結構 ControlNet 分支」**，一次拿到**時序一致 + 強生成先驗 + 免配對標籤**——而且正好攻下「aerial sim→photoreal 影片增強」這個**至今沒人占的空缺**（4-scout 核：所有 learned enhancement 都是街景 Carla2Real/EPE/Cosmos-Transfer；aerial 端只有 3DGS 重建與合成資料生成，**無任何 aerial sim→real 全幀影片增強**）。
+
+**核心招式：train on real, infer on sim（零配對）。** 這是 Cosmos-Transfer 的**真實做法**（已核源）——control 分支**在真實影片上訓**（用現成估計器從真實影片抽 depth/seg/edge），**base 凍結**；推論時餵**模擬器的**結構 → photoreal 影片。**標籤被保留**，因為輸出跟著 control map 走，而 **CARLA-Air 的 depth/seg G-buffer 本身就是標籤**（Cosmos CARLA Sim2Real cookbook 實證「語意標籤維持原樣、100% anomaly preservation」）。**CARLA-Air 是理想基座**：它免費給 depth/seg/edge G-buffer ＋ 12–18 模態，還空地同 tick——可一致地增強空中與地面兩個視角。
+
+```mermaid
+flowchart LR
+    subgraph TRAIN["後訓練（在真實航拍上 · base 凍結）"]
+        REAL["真實航拍影片<br/>UAVid / OpenSafari / MAVREC"] --> EXT["抽 control<br/>Depth-Anything-V2 · SAM2 · Canny"]
+        EXT --> CTRL["訓 ControlNet 分支<br/>學『結構→photoreal 航拍』"]
+    end
+    subgraph INFER["推論（在 CARLA-Air · 零配對）"]
+        CA["CARLA-Air G-buffer<br/>depth / seg / edge（免費）"] --> APPLY["套同一 ControlNet<br/>control_weight≈1.0"]
+        APPLY --> OUT["photoreal 航拍影片<br/>標籤＝sim 標籤（被保留）"]
+    end
+    CTRL ==>|"同一個 adapter"| APPLY
+    classDef t fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
+    classDef i fill:#e8f5e9,stroke:#388e3c,color:#1b5e20
+    class REAL,EXT,CTRL t
+    class CA,APPLY,OUT i
+```
+*圖：Carla2Real-2026 的關鍵——control 分支在「真實航拍」上學「結構→photoreal」，推論時把同一個 adapter 套到「CARLA-Air 的 sim G-buffer」上。不用 sim↔real 配對，sim 標籤 1:1 轉移。*
+
+**買哪個 base（2026 開源菜單，已核）**：
+- **首選 Cosmos-Transfer2.5-2B**——唯一 **purpose-built** 的 sim→real 多模 ControlNet（depth/seg/edge），開源權重（NVIDIA OML，**可商用**），2B 單機可後訓，官方有 Isaac-Sim / [CARLA Sim2Real](../../foundations/foundation-physics-models/cosmos-wfm.md) recipe。
+- **Apache-2.0 替代：Wan2.2 + VACE**——最大開源生態（LoRA/ControlNet/ComfyUI）、all-in-one 控制；但官方訓練碼未釋出（走社群）。
+- **省算力：CogVideoX-2B（Apache）/ LTX-Video**——單卡可後訓，LTX 是唯一近即時。
+
+**後訓練怎麼做（5 步，單機 8×A100/H100 可行）**：
+1. **收真實航拍影片**當「真實 look」目標：**UAVid**（4K 連續斜視城市飛掠，最貼 CARLA-Air 視角）、**OpenSafari**（2026，in-the-wild FPV、已驗相機軌跡）、MAVREC。⚠ UAVid/VisDrone 是 **CC-BY-NC-SA 學術限定**（商用阻擋），AeroScapes 可商用但只有靜圖——商用前先解授權。
+2. **抽 control**：Depth-Anything-V2（depth）＋ SAM2 / GroundingDINO（seg）＋ Canny（edge），組 `{真實影片, control, caption}`（VLM 自動標 caption）。這就是「零配對」的關鍵——control 是**算出來的**、不用配對採集。
+3. **訓 control 分支（base 凍結）**：Cosmos-Transfer 是 `torchrun --nproc_per_node=8`、**~5000 iter、單機 8 GPU**（對齊官方 AV / 農業 Sim2Real recipe）；或 Wan-VACE Context-Adapter / LoRA（更輕、10–50 clip 起跳）。
+4. **推論餵 CARLA-Air 的 sim 結構**：把 CARLA-Air render 出的 depth/seg/edge 當 control、`control_weight≈1.0`、prompt 指定航拍域 → photoreal 航拍影片，**sim 標籤 1:1 轉移**。
+5. **逐模態 / 逐區調 control_weight**（Cosmos 的 adaptive `w`）：要保幾何處調高、要 photoreal 多樣處調低。
+
+**先試零後訓的快路**：[2511.14719](https://arxiv.org/abs/2511.14719)（*Zero-shot Synthetic Video Realism Enhancement via Structure-aware Denoising*，**zero-shot、不微調**、建在 Cosmos-Transfer 上）——DDIM 反演合成影片 + 結構感知去噪 + 多條件 ControlNet。**先拿它對 CARLA-Air 一試**，再決定要不要花算力後訓。
+
+**誠實的風險（這是真難處，不是工程細節）**：
+- **EPE 的「硬」標籤鎖變「軟」了**：EPE 用 LPIPS 把幾何鎖死、標籤**保證**保留；video-diffusion 的 ControlNet 是 `control_weight` 的**軟**約束，弱了就 hallucinate / drift、幾何標籤對不齊（2511.14719 自承 prompt-conflict；hybrid 法 [2605.02291](https://arxiv.org/abs/2605.02291) 自承 diffusion 造成時序不一致，且發現「**分布匹配比強幾何編輯更重要**」）。**設計縫**＝把 EPE 的硬鎖塞回 video prior：反演 + 強多條件 + 對 sim G-buffer 的 LPIPS 式一致性懲罰，同時拿到時序一致**與**免費標籤。
+- **aerial 的幾何 / metric 保真是頭號風險**：高空小紋理 + 斜視透視 → depth-only 條件約束不足；diffusion 不保 metric scale。增強後的影片要還能餵 VIO / depth / policy，**目前沒有任何 aerial benchmark 證過它 metric 上仍可用**——要上真機先驗這條。
+- **視角要對得上**：真實航拍多是俯視 survey，CARLA-Air 是中空斜視飛掠——target 選 UAVid / OpenSafari / MAVREC（視角對），別用純 nadir 遙測集（會灌域偏差）。
+
+**評測**：train-on-enhanced → test-on-real-aerial 的分割 mIoU（aerial 版 Carla2Real 指標）＋ FVD vs 真實航拍 ＋ 幾何 / metric 一致性（給 VIO 用）＋ 時序一致性。
+
+> **一句話**：building blocks 在 2026 全齊（開源結構-ControlNet video diffusion ＋ 真實航拍影片 ＋ 現成估計器），**aerial sim→photoreal 影片增強是 buildable-but-novel**——CARLA-Air 因免費給 G-buffer ＋ 空地同場景，是落地這條的最佳起點。它與 3DGS 重建**互補**（重建 owns 拍過的真實、這條 owns sim 裡可控的新場景），與 [§自救](#自救如何補強--繞過鎖死) 的動力學升級**正交**（這條補外觀、§自救 補物理）。
 
 ## 自救：如何補強 / 繞過鎖死
 
@@ -277,6 +324,7 @@ while True:
 - **同類取捨**：[Aerial Sim Stack 對比](./aerial-sim-stack.md)（純空中七套）· [Generative Aerial Data](./generative-aerial-data.md)（資料用途）
 - **Carla2Real**（把 CARLA 外觀後處理升 photoreal，appearance-edge）—— arXiv [2410.18238](https://arxiv.org/abs/2410.18238)（IEEE T-ITS 2025）· [github.com/stefanos50/CARLA2Real](https://github.com/stefanos50/CARLA2Real) · 母法 EPE [2105.04619](https://arxiv.org/abs/2105.04619)（Intel）
 - **video-to-video**（時序一致的 sim→photoreal）—— vid2vid [1808.06601](https://arxiv.org/abs/1808.06601)（NVIDIA NeurIPS 2018）· Cosmos-Transfer [2503.14492](https://arxiv.org/abs/2503.14492)（depth/seg ControlNet、sim→real 實證）· 結構感知去噪「video EPE」[2511.14719](https://arxiv.org/abs/2511.14719)
+- **Carla2Real-2026 配方**（後訓練開源 video model；本篇上方一節）—— base：Cosmos-Transfer2.5 [2511.00062](https://arxiv.org/abs/2511.00062) · Wan-VACE [2503.07598](https://arxiv.org/abs/2503.07598) · zero-shot 快路 [2511.14719](https://arxiv.org/abs/2511.14719) · hybrid 對照 [2605.02291](https://arxiv.org/abs/2605.02291)；真實航拍 target：UAVid [1810.10438](https://arxiv.org/abs/1810.10438) · OpenSafari [2511.22815](https://arxiv.org/abs/2511.22815) · VisDrone-VID [2001.06303](https://arxiv.org/abs/2001.06303) · MAVREC [2312.04548](https://arxiv.org/abs/2312.04548)；control 估計器：Depth-Anything-V2 · SAM2 · GroundingDINO
 
 ## §8 踩坑日誌
 
@@ -291,4 +339,5 @@ while True:
 | 8.7 | **授權自動偵測 NOASSERTION**（README 稱 MIT+CC-BY） | 🟡 Low | GitHub API vs README 不一致 | 商用前以實際 LICENSE 檔為準 `UNVERIFIED` |
 | 8.8 | 署名單位與「同儕審查」**未公開查證** | 🟡 Low | arXiv 技術報告 | 引用時標 `UNVERIFIED`，勿當已發表期刊 |
 | 8.9 | **README 數字與 repo 源碼不符**：自稱「3 檔/35 行薄整合 + CARLAAirGameMode」但實為完整內嵌分支（無該檔/diff）；「~1000 Hz」實為 ~333 Hz（`SimModeWorldBase.h` 預設 3 ms）；「0.0000 m/89-89/18 模態」皆論文/README 宣稱 | 🟠 Medium（影響「能否輕鬆換版本」判斷） | clone repo 全樹核對（見 [§自救 B](#自救如何補強--繞過鎖死)） | 以源碼為準；重接新版本是對完整分支動刀、非套 patch |
-| 8.10 | **把 Carla2Real（街景訓練的 EPE）直接套 aerial 俯視 / 斜視**，假設它會 work | 🟡 Low（`UNVERIFIED`） | EPE discriminator / patch-matching 調在街景統計；無任何 aerial 工作 | 先在 aerial 視角驗證 / 微調，別假設轉移；aerial 外觀現走 3DGS 重建（FalconGym / SOUS VIDE） |
+| 8.10 | **把 Carla2Real（街景訓練的 EPE）直接套 aerial 俯視 / 斜視**，假設它會 work | 🟡 Low（`UNVERIFIED`） | EPE discriminator / patch-matching 調在街景統計；無任何 aerial 工作 | 先在 aerial 視角驗證 / 微調，別假設轉移；aerial 外觀現走 3DGS 重建或 Carla2Real-2026 後訓練 |
+| 8.11 | **Carla2Real-2026 的軟 control 漂移**：後訓練 video enhancer 用 `control_weight` 軟約束（非 EPE 的硬 LPIPS 鎖），弱了會 hallucinate、幾何 / metric 對不齊，增強後影片未必還能餵 VIO / policy | 🟠 Medium（`UNVERIFIED`，aerial 無 benchmark 證過 metric 可用） | 2511.14719 / 2605.02291 自承 drift / 時序不一致；aerial metric 無驗證 | `control_weight≈1.0` 起、逐區調；加對 sim G-buffer 的 LPIPS 式一致性懲罰；上真機前先驗 metric 可用性 |
