@@ -10,9 +10,9 @@ ref=../../cheat-sheet/ontology.md
 # NVIDIA Cosmos World Foundation Model 解構（Cosmos WFM Dissection）
 
 > **論文** *Cosmos World Foundation Model Platform for Physical AI* · NVIDIA Cosmos team（Sanja Fidler 組 + Toronto AI Lab + NVIDIA Research Robotics / AV）
-> **arXiv** [2501.03575](https://arxiv.org/abs/2501.03575)（Predict1, 2025-01）· [2503.15558](https://arxiv.org/abs/2503.15558)（Reason1, 2025-03）· [2601.16163](https://arxiv.org/abs/2601.16163)（Policy, 2026-01）
+> **arXiv** [2501.03575](https://arxiv.org/abs/2501.03575)（Predict1, 2025-01）· [2511.00062](https://arxiv.org/abs/2511.00062)（Predict2.5 / Transfer2.5, 2025-11）· [2503.14492](https://arxiv.org/abs/2503.14492)（Transfer1, 2025-03）· [2503.15558](https://arxiv.org/abs/2503.15558)（Reason1, 2025-03）· [2601.16163](https://arxiv.org/abs/2601.16163)（Policy, 2026-01）· [2506.09042](https://arxiv.org/abs/2506.09042)（Drive-Dreams, 2025-06）· [2606.02800](https://arxiv.org/abs/2606.02800)（**Cosmos 3**, 2026-06，omnimodal apex）
 > **核心定位** 第一個 **open-weight、generalist 預訓練、顯式支援多模 conditioning（text / image / video / trajectory / action / depth+seg）、配套 Reason-VLM + Tokenizer + Transfer multi-controlnet** 的 video FM stack。在 v2 ontology 上 anchor `output=pixel-video × injection=data-only|sim-in-loop-infer × control=multi-modal × temporal=clip-parallel|hierarchical × domain=generalist`。
-> **狀態** v0.5 — 基於 Predict1 paper 摘要 + 官方 release notes + 社群 reproduction + NVIDIA blog；Predict2 / Predict2.5 / Cosmos-Drive-Dreams 的 arxiv ID 與部分 benchmark 數字待升 v1 補。
+> **狀態** v0.6 — 基於 Predict1 + Predict2.5(`2511.00062`) + Transfer1(`2503.14492`) + Reason1 + Policy + Drive-Dreams(`2506.09042`) 論文 + 官方 docs + 社群 reproduction；**2026-06 Cosmos 3**(`2606.02800`) 已上線（家族新 apex，見時間線）。部分 benchmark 絕對數字仍待補（§5）。
 
 **TL;DR:** Cosmos 把 video FM 的天價 pre-training cost（**10K H100 × 3 個月**、**~20M 小時 video → ~10^8 clips**）一次燒掉，下游 robotics / driving 團隊只要幾百到幾千 GPU-hour 做 post-train 就能拿到一個可掛 prompt + image + trajectory + action conditioning 的 world simulator。它的 USP 不在「比 Sora 更會做夢」，而在 **(a) open weight + (b) 顯式 control axes + (c) 配套 Reason1 reasoning VLM + Transfer multi-controlnet + Tokenize1**。最關鍵實證：**Cosmos-Policy 從 Predict2-2B 單階段 post-train 即在 LIBERO / RoboCasa 超越從零訓的 diffusion policy 與 VLA baseline**，且論文明說「無架構修改」是 unlock。
 
@@ -29,19 +29,18 @@ ref=../../cheat-sheet/ontology.md
 ## 📍 研究全景時間線
 
 ```ascii
-   2023        2024              2025-01           2025-10                2026?
-   Sora ──────► Cosmos beta ────► Predict1 ──────► Predict2.5 ─────────► closed-loop
-   pre-cursor   internal NVIDIA    YOU ARE HERE     + Reason1 as text     AV / robot
-   (closed)     pipeline           ★ 7B/14B Diff    encoder, T2W/I2W/V2W   data engine
-                                   ★ 4B/12B AR      合成 single flow      (?)
-                                   ★ Tokenize1      Drive-Dreams + 
-                                   ★ open weight    Transfer2.5
-                                                    Policy (2026-01)
-   └─ closed FM ──────────────► open pipeline ─► hierarchical stack ─► sim-in-loop?
-                                                  (Reason × Predict)
+   2023        2024            2025-01         2025-11            2026-06
+   Sora ──────► Cosmos beta ──► Predict1 ─────► Predict2.5 ──────► Cosmos 3
+   pre-cursor   internal        ★ 7B/14B Diff   2511.00062         omnimodal apex
+   (closed)     NVIDIA pipe     ★ 4B/12B AR      + Reason1 text    ★ 雙塔 MoT
+                                ★ Tokenize1      encoder,單一flow  ★ 文/圖/影/音/動作
+                                ★ open weight    Transfer2.5       ★ world-action
+                                                 Policy(2026-01)   ★ Super/Nano/Edge
+   └─ closed FM ──────────────► open pipeline ──► hierarchical ───► omnimodal backbone
+                                                  (Reason×Predict)   跨 robotics/AV/media
 ```
 
-★ = 主要新點：open weight + multi-control + Reason+Predict 分層 stack。**仍未解：contact-rich physics、long-horizon drift > 8s、3D consistency**（pixel-video 路線結構性 break，留給 latent-WM / diff-sim 補）。
+★ = 主要新點。**2026-06 Cosmos 3**（`2606.02800`）把 Reason+Predict 收進單一 omnimodal 雙塔 MoT，並驗證一個 backbone 跨 robotics/AV/media post-train。**仍未解：contact-rich physics、long-horizon drift > 8s、3D consistency**——pixel-video 路線結構性 break，不因 omnimodal 化自動解，留給 latent-WM / diff-sim 補。
 
 ---
 
@@ -55,7 +54,7 @@ ref=../../cheat-sheet/ontology.md
 | **Conditioning** | text + image | text + image | ego-traj + agent config + road semantics | **text / image / video / trajectory / action / depth+seg / edge** |
 | **Pre-train scale** | 內部未披露 | 內部未披露 | driving-only | **20M hr → 10^8 clips, 10K H100 × 3 mo** |
 | **Post-train kit** | ❌ | ❌ | ❌ (internal) | **✅ Drive / Drive-Dreams / Policy / Transfer / Transfer2.5** |
-| **Reasoning VLM 配套** | ❌ | ❌ | ❌ | **✅ Reason1-7B (Qwen2.5-VL based)** |
+| **Reasoning VLM 配套** | ❌ | ❌ | ❌ | **✅ Reason1-7B/56B + Reason2-2B/8B**（base model 常稱 Qwen2.5-VL，官方未明載·`UNVERIFIED`） |
 | **Tokenizer standalone** | ❌ | ❌ | ❌ | **✅ Tokenize1 (CV/DV, up to 2048× spatio-temporal)** |
 | **Domain** | generalist | generalist | driving-only | **generalist → robotics / driving fine-tune** |
 
@@ -248,6 +247,7 @@ Predict2.5（2025-10）把 T2W / I2W / V2W 三條合成單一 flow-based 主幹�
 
 - **VLA / robot policy 工程師** —— Cosmos-Policy 是 first clean evidence「video FM 直接當 policy backbone」。從 Predict2-2B 單階段 SFT，8× A100/H100 一晚跑通；**不要加 action head / diffusion head**（paper §method ablation 明列退化）。grasp / 接觸 task 不要單獨用 Cosmos rollout 當訓練資料 —— §9.2 silent failure 已被多筆社群 reproduction 報告。
 - **自駕 closed-loop 工程師** —— 用 **Cosmos-Drive-Dreams + Transfer2.5** 做 long-tail 資料增廣（遮擋行人、異常車輛），是 Wayve / NVIDIA Isaac 採用的 production pattern。但**不要拿來當 in-loop simulator 跑 PID/MPC** —— long-horizon drift + 3D inconsistency 會讓控制環學歪。Cosmos-Drive 是 **out-of-loop data engine**，不是 in-loop sim。
+- **無人機 / aerial 工程師** —— Cosmos 對 aerial **留白**：無官方 aerial 變體、預訓 9 類分布無 aerial 類、無 Transfer aerial recipe（見下方 § Cosmos × aerial）。把 Cosmos-Transfer 當「**待自行驗證**的 aerial sim→photoreal 路徑」探索可以，但 aerial 外觀的現實解是 **3DGS 重建**（FalconGym / SOUS VIDE），不是 Cosmos generation。**別假設 Cosmos rollout 自帶 aerial 動力學/外觀先驗**——預訓沒這個 domain。
 - **影片生成工程師** —— 如果只追 prompt fidelity / 視覺品質，Sora 2 / Veo 3 仍領先。Cosmos 的價值在 **open weight + multi-controlnet (Transfer2.5)** —— RGB+depth+seg+edge 同時 condition，是 production data engine 用法。Predict2.5 用 Reason1 當 text encoder 後 spatial relation 大幅改善，值得從 Predict1 升上去。
 - **神經 PDE / surrogate 研究者** —— Cosmos 與 GraphCast / FNO 不直接對接（一邊是 pixel，一邊是 field）。組合方式只在 scientific viz：surrogate 算流場 → renderer → Cosmos refine 視覺。**不要把 Cosmos 當作流體 / 接觸 surrogate** —— implicit physics 在這層完全失效。
 - **物理 conditioning 研究者** —— Cosmos 是 `injection=data-only|sim-in-loop-infer` 的 anchor。要加 hard constraint 必須走 sim-in-loop（Genesis / MJX 做 ground-truth → Cosmos-Transfer 貼皮）。**這是 axis 2 從 data-only 跳到 sim-in-loop 的 cleanest production pattern**，比 hard PDE 路線更 scalable，但 force-fidelity 仍受 pixel 層限制。
@@ -284,11 +284,41 @@ Predict2.5（2025-10）把 T2W / I2W / V2W 三條合成單一 flow-based 主幹�
 
 ---
 
+## 🚁 Cosmos × aerial（aerial-sim 的上遊：誠實缺口）
+
+[aerial-sim](../../use-cases/aerial-sim/overview.md) 是本倉最深的 use-case，把本檔列為 **#1 上遊**（6 處引用）。但 Cosmos 對 aerial 其實**留白**——這個落差必須講清楚，否則讀者會誤以為「直接 fine-tune Cosmos 就有 aerial 外觀」。
+
+**缺口（scout 核驗，2026-06）：**
+
+- **無 aerial 官方變體**：有 Cosmos-Drive-Dreams（駕駛），**無「Aerial-Dreams」**；GitHub org、cookbook recipe 全是 driving（CARLA SDG）+ robotics navigation，零 aerial。
+- **預訓 9 類分布裡無 aerial**（順帶修正本檔舊維護註：分布其實**有 top-level 披露**）：Predict1（`2501.03575` §data curation）給出 9 類占比——Nature 20% / manipulation 16% / spatial-navigation 16% / driving 11% / human-motion 10% / **first-person POV 8%** / dynamic-camera 8% / synthetic 4% / other 7%。**沒有 aerial / drone / UAV 類**；「first-person POV 8%」是否含空拍**未說明**（`UNVERIFIED`，多半是地面 egocentric）。
+- **無 Cosmos-Transfer aerial recipe**：Transfer1（`2503.14492`）的 sim→photoreal 全用在 driving / robot-nav；**查無 AirSim / CARLA-Air 空拍 render → photoreal aerial 的工作**。
+
+**aerial 外觀其實怎麼解（是 reconstruction，不是 Cosmos generation）：**
+
+- 主流靠 **3DGS / NeRF 重建**真實飛行場景：**FalconGym**（`2503.02198`，NeRF→Gaussian-Splat 的可飛 photoreal gym、zero-shot sim-to-real；2.0 = `2510.02248` 加可編輯 GS）、**SOUS VIDE**（`2412.16346`，FiGS 把簡化動力學 + 3DGS 渲染 ~130fps 訓 SV-Net visuomotor）、大場景 **Aerial-GS / CityGaussian / DroneSplat**。
+- aerial **generation** 的反例是 **FlightDiffusion**（`2509.14082`）：單幀→FPV 影片+動作對的**自製 diffusion**——**不是 Cosmos finetune、也不是 sim-render→photoreal 翻真**，別混為一談。
+
+**所以 aerial-sim 該怎麼用 Cosmos：**
+
+- ✅ 把 Cosmos-Transfer 當「**理論上**的 aerial sim→photoreal 路徑」探索（depth+seg 保 sim ground-truth），但要**自己驗**——官方無 aerial 背書。
+- ✅ 把 Cosmos-Reason 當生成 aerial 片段的物理裁判。
+- ❌ **不要假設 Cosmos rollout 自帶 aerial 動力學 / 外觀先驗**——預訓沒這個 domain。aerial 外觀先走 [3DGS 重建](../3d-aware-generation/generative-gaussian-splatting.md)，動力學走 [Aerial Gym](../differentiable-simulators/aerial-gym.md) / RotorPy（aerial-sim 的「外觀邊 + 動力學邊」兩條供應線）。
+
+> 一句話：**Cosmos 是 driving + robotics 中心的 WFM；aerial 是 under-served domain，外觀目前靠 3DGS 重建多過靠 Cosmos 式生成。** 這也是本區 overview「為什麼是上遊 + aerial 連結」一節的根據。
+
+---
+
 ## References
 
 - **Cosmos Predict1** — NVIDIA Cosmos team. *Cosmos World Foundation Model Platform for Physical AI*. 2025-01 · [arXiv:2501.03575](https://arxiv.org/abs/2501.03575)
 - **Cosmos Reason1** — *From Physical Common Sense To Embodied Reasoning*. 2025-03 · [arXiv:2503.15558](https://arxiv.org/abs/2503.15558)
 - **Cosmos Policy** — *Fine-Tuning Video Models for Visuomotor Control and Planning*. 2026-01 · [arXiv:2601.16163](https://arxiv.org/abs/2601.16163)
+- **Cosmos Predict2.5 / Transfer2.5** — *World Simulation with Video Foundation Models for Physical AI*. 2025-11 · [arXiv:2511.00062](https://arxiv.org/abs/2511.00062)
+- **Cosmos-Transfer1** — *Conditional World Generation with Adaptive Multimodal Control*. 2025-03 · [arXiv:2503.14492](https://arxiv.org/abs/2503.14492)
+- **Cosmos-Drive-Dreams** — *Scalable Synthetic Driving Data Generation with World Foundation Models*. 2025-06 · [arXiv:2506.09042](https://arxiv.org/abs/2506.09042)
+- **Cosmos 3** — *Omnimodal World Models for Physical AI*. 2026-06（GTC Taipei）· [arXiv:2606.02800](https://arxiv.org/abs/2606.02800)
+- **aerial 外觀（reconstruction 路線，§ Cosmos × aerial 引用）** — FalconGym [arXiv:2503.02198](https://arxiv.org/abs/2503.02198) · SOUS VIDE [arXiv:2412.16346](https://arxiv.org/abs/2412.16346) · FlightDiffusion（aerial generation 反例）[arXiv:2509.14082](https://arxiv.org/abs/2509.14082)
 - NVIDIA blog 公告：<https://blogs.nvidia.com/blog/cosmos-world-foundation-models/>
 - NVIDIA docs (Predict2.5 / Transfer2.5 cookbook, 2025-10)：<https://docs.nvidia.com/cosmos/latest/>
 - GitHub orgs：<https://github.com/nvidia-cosmos>（predict1, predict2, predict2.5, transfer2.5, reason1）
@@ -313,12 +343,12 @@ Predict2.5（2025-10）把 T2W / I2W / V2W 三條合成單一 flow-based 主幹�
 
 本 v0.5 基於 Predict1 paper 摘要 + 後續 release notes + NVIDIA blog + 社群 reproduction。下次升 v1 時補：
 
-1. ⏳ **Cosmos-Drive-Dreams arxiv ID** —— NVIDIA blog 2025-Q1 出現但無 standalone preprint 確認
-2. ⏳ **Predict2 / Predict2.5 完整 arxiv ID + author list**（目前僅有 docs / release notes）
+1. ✅ **Cosmos-Drive-Dreams arxiv** = [2506.09042](https://arxiv.org/abs/2506.09042)（2025-06，已確認）
+2. 🔧 **Predict2.5 arxiv** = [2511.00062](https://arxiv.org/abs/2511.00062)（已確認，單一 flow 主幹）；Predict2 仍僅 docs/blog（無 standalone paper）
 3. ⏳ **完整 benchmark 數字**：LIBERO / RoboCasa Cosmos-Policy 具體 success rate vs baseline，VBench-style 通用 metric 數字
 4. ⏳ **Tokenize1 完整 compression ratio table**（CV vs DV 各 setting 的 PSNR / LPIPS）
 5. ⏳ **Curation pipeline 細節**：shot detect / filter / caption / dedup 各步具體模型 + 過濾率
-6. ⏳ **Pre-train 數據組成**：20M hr 的 domain 分布（driving / robotics / generic）—— 影響下游 fine-tune 效率
+6. ✅ **Pre-train 數據組成已披露**（`2501.03575`）：Nature 20% / manipulation 16% / spatial-nav 16% / driving 11% / human 10% / first-person-POV 8% / dynamic-camera 8% / synthetic 4% / other 7%——**無 aerial 類**（見 § Cosmos × aerial）
 7. ⏳ **Cosmos-Policy 在 RoboCasa 以外的真機部署數據**（目前都是 sim benchmark）
 8. ⏳ Status v0.5 → v1，刪本節
 
