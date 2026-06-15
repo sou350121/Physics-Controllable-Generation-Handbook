@@ -2,6 +2,23 @@
 
 > Ontology v2.0 對應版（2026-05-26）。19 anchor dissection 已落地後填實。
 
+## 物理注入軸光譜
+
+> 本倉 USP（ontology axis 2）按訊號強度排成一條光譜：左端弱物理但能 scale，右端強物理但難 scale。值與排序對齊 [ontology.md](./ontology.md#axis-2-physics-injection) 的 v2.0 canonical 7 值（已棄用 v1 名 implicit-from-data / constraint-loss / score-conditioned / energy-based / sim-in-loop / hard-PDE）。
+
+```mermaid
+flowchart LR
+    D["data-only<br/>賭 scale (Sora)"] --> AL["aux-loss<br/>PINN"] --> GG["guidance-gradient<br/>PhysDiff"] --> AB["architecture-bias-soft<br/>NewtonGen"] --> ST["sim-in-loop-train<br/>Genesis"] --> SI["sim-in-loop-infer<br/>PhysDiff rollout"] --> HC["hard-constraint<br/>HNN / LNN 最紮實"]
+    classDef weak fill:#e8f5e9,stroke:#388e3c,color:#1b5e20
+    classDef mid fill:#fff3e0,stroke:#ef6c00,color:#e65100
+    classDef strong fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
+    class D,AL weak
+    class GG,AB mid
+    class ST,SI,HC strong
+```
+
+*物理注入軸（ontology axis 2，本倉 USP）是一條光譜——左端 data-only 賭 scale、弱物理但能 scale 到開放世界（Cosmos / Sora / Veo）；右端 hard-constraint 與 sim-in-loop 強物理但難 scale（HNN/LNN 等價網絡、Genesis 可微 sim）。越往右訊號強度越高、fidelity 越高，但 generalization 越低、越不通用。*
+
 ## 一句話路線分流
 
 | 需求 | 首選技術路線 | foundations 入口 |

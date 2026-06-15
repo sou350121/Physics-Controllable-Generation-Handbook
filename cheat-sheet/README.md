@@ -1,5 +1,24 @@
 # Cheat-sheet — 30 分鐘掌握全景
 
+這頁是全書的最頂層地圖。先看下圖抓住六個 tab 怎麼接、該照什麼順序讀，再用底下四張表深入細節。
+
+```mermaid
+flowchart LR
+    F["foundations<br/>方法是什麼"] --> U["use-cases<br/>下游怎麼用"]
+    F -. "橫切對比" .-> X["crossing<br/>USP wedge"]
+    U --> E["benchmarks +<br/>evaluation-physics<br/>怎麼量"]
+    E --> DP["deployment<br/>能不能上線"]
+    X --> FR["frontier<br/>未解硬骨頭"]
+    E --> FR
+    DP --> FR
+    classDef m fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
+    classDef cap fill:#ede7f6,stroke:#5e35b1,color:#311b92
+    class F,U,E,DP m
+    class X,FR cap
+```
+
+*全書讀法：[foundations](../foundations/overview.md)（方法是什麼）→ [use-cases](../use-cases/overview.md)（下游怎麼用）→ [benchmarks](../benchmarks/overview.md)/evaluation（怎麼量）→ [deployment](../deployment/overview.md)（能不能上線）；[crossing](../crossing/overview.md) 橫切做方法對比，[frontier](../frontier/overview.md) 收斂所有未解的硬骨頭。*
+
 四張表，從 ontology 到 violation atlas，一條讀完即懂 landscape。
 
 | 檔 | 用途 |

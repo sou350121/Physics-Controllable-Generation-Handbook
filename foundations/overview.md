@@ -2,6 +2,27 @@
 
 每 zone 對應一個獨立的「物理可控生成」技術路線。每篇 dissection 需要在 zone 內歸位，並在五軸 ontology 中明確標籤。
 
+這 13 個 zone 並非一字排開，而是沿本書的中心命題分成「兩條邊」：[外觀邊](3d-aware-generation/)（appearance，可生成）負責像素與幾何，[動力學邊](differentiable-simulators/)（dynamics，必須物理）負責守恆與演化，兩邊在 [physics-conditioning](physics-conditioning/) 這個注入層匯流到同一個 state。
+
+```mermaid
+flowchart TD
+    G["物理可控生成"]
+    G --> A["外觀邊：可生成"]
+    G --> D["動力學邊：必須物理"]
+    A --> AZ["video-world-models · 3d-aware-generation<br/>foundation-physics-models<br/>（古典渲染 / 重建 / 生成）"]
+    D --> DZ["differentiable-simulators · neural-surrogates<br/>（MJX / Genesis / Isaac Sim · GraphCast / FNO）"]
+    AZ --> S["physics-conditioning<br/>兩條邊在 state 匯流"]
+    DZ --> S
+    classDef app fill:#e8f5e9,stroke:#388e3c,color:#1b5e20
+    classDef dyn fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
+    classDef hub fill:#ede7f6,stroke:#5e35b1,color:#311b92
+    class A,AZ app
+    class D,DZ dyn
+    class G,S hub
+```
+
+*外觀邊可生成（video-world-models / 3d-aware-generation / foundation-physics-models，含古典渲染、重建、生成三條供應線），動力學邊必須物理（differentiable-simulators / neural-surrogates），兩條邊在 physics-conditioning 注入層匯流到同一個 state。*
+
 | Zone | 核心問題 | Anchor methods |
 |---|---|---|
 | [video-world-models](video-world-models/) | 直接生成像素影片，物理 `data-only`（v2） | Sora · Veo · Cosmos-Predict · GAIA · SVD |

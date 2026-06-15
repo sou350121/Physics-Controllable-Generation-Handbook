@@ -36,6 +36,21 @@ flowchart TD
 
 每根：**問題 → 為什麼是結構性的（非 scale 可解）→ 哪裡出現 → 目前最佳補救 → 什麼結果能解**。
 
+```mermaid
+flowchart TD
+    M["④ 物理評測量不準<br/>meta：解了才量得動其餘"]
+    M --> W["三道結構牆<br/>① 可微 contact ② long-horizon ③ 3D 一致"]
+    W --> P["四個投影<br/>⑤ sim2real ⑥ 資料混比<br/>⑦ controllability-fidelity ⑧ 表徵-物理耦合"]
+    classDef meta fill:#fff3e0,stroke:#ef6c00,color:#e65100
+    classDef wall fill:#ffebee,stroke:#c62828,color:#b71c1c
+    classDef proj fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
+    class M meta
+    class W wall
+    class P proj
+```
+
+*圖：八根骨頭不是並列——④ 物理評測是 meta（量不準就無法優化其餘），①②③ 是三道結構牆，⑤⑥⑦⑧ 是這些牆投影到資料、控制、表徵上的結果；與本頁結尾那句一致。*
+
 ### ① 可微 contact 之牆
 - **問題**：要對動力學求解析梯度（diff-MPC / 系統辨識 / first-order policy），一碰剛體接觸梯度就病態（時而為零、時而爆炸）。
 - **結構性**：接觸是**非光滑**的；Suh et al. ICML22（`2202.00817`）證明近 stiff/discontinuous 接觸，一階梯度的偏差/方差大到**可能輸給零階 RL**。

@@ -20,6 +20,20 @@
 | 🤖 **AI access via MCP** | 待 Mintlify Phase 3 部署後自帶 `/mcp` endpoint（與 [Spatial MCP](https://kensou.mintlify.app/mcp) 同 schema） |
 | 🌉 **三冊一體 · 姊妹倉** | [VLA-Handbook](https://github.com/sou350121/VLA-Handbook)（action 端）· [Spatial-Intelligence-Handbook](https://github.com/sou350121/Spatial-Intelligence-Handbook)（perception 端，[live](https://kensou.mintlify.app)）· **本倉 = generation 端** |
 
+```mermaid
+flowchart LR
+    G["Physics-Gen 本倉<br/>generation 端"]
+    G -->|"生成資料 / 世界模型"| V["VLA-Handbook<br/>action 端"]
+    G -->|"3D-aware 生成 / 資料契約"| S["Spatial-Handbook<br/>perception 端"]
+    V -. "照見三冊一體" .- S
+    classDef me fill:#ede7f6,stroke:#5e35b1,color:#311b92
+    classDef sis fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
+    class G me
+    class V,S sis
+```
+
+*本倉是 generation 端 — 經 [`bridge-to-vla`](./bridge-to-vla/) 把生成資料 / 世界模型餵給 VLA（action），經 [`bridge-to-spatial`](./bridge-to-spatial/) 與 Spatial（perception）交換 3D-aware 生成與資料契約；三冊一體（generation × action × perception）。*
+
 &nbsp;
 
 <a name="status"></a>
