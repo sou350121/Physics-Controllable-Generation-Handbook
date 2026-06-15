@@ -82,6 +82,7 @@
               "foundations/differentiable-simulators/aerial-gym.md",
               "foundations/differentiable-simulators/difftaichi.md",
               "foundations/differentiable-simulators/genesis.md",
+              "foundations/differentiable-simulators/isaac-sim.md",
               "foundations/differentiable-simulators/mujoco-mjx.md",
               "foundations/differentiable-simulators/nvidia-warp.md"
             ]
@@ -362,6 +363,18 @@
             "group": "World Model",
             "pages": [
               "benchmarks/world-model/overview.md"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Frontier",
+        "icon": "binoculars",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "frontier/overview.md"
             ]
           }
         ]

@@ -26,6 +26,7 @@ TABS = [
     ("Crossing", "crossing", "shuffle"),
     ("Deployment", "deployment", "screwdriver-wrench"),
     ("Benchmarks", "benchmarks", "ruler"),
+    ("Frontier", "frontier", "binoculars"),
     ("Companies", "companies", "building"),
     ("Bridge to VLA", "bridge-to-vla", "bridge"),
     ("Bridge to Spatial", "bridge-to-spatial", "bridge"),
