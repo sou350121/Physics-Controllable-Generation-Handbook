@@ -108,6 +108,23 @@ domain     = rigid                   ← Check 9c 白名單外；訓練資料 Re
 
 **跨 handbook**：Spatial-Handbook `foundations/3dgs-family/` **重建線** + GGS **生成線** = 同表徵兩方向。pipeline：Spatial 從機器人攝影機 fit anchor scene → GGS 生 corner-case scene → 一起餵 Isaac Sim 做 VLA training scene multiplication。跟 VLA-Handbook：GGS 場景 → mesh extraction → sim → VLA policy 是合理 chain。
 
+## 🚁 § aerial：GGS 是「生成」，aerial 用的是「重建」
+
+[aerial-sim](../../use-cases/aerial-sim/overview.md) 從本檔連進來（`generative-aerial-data.md` 的「3DGS 線 Real2Sim2Real」），但要先講清一刀：**本檔主角 GGS 是生成側**（文字/單圖 → 外推 3D，需 hallucinate 遮擋面）；**aerial 實際用的是重建側**（真實飛行多視角拍攝 → 忠實 fit 3DGS）。兩者同產 3DGS 表徵、**資訊方向相反**。本倉 foundations 沒有獨立的「重建 anchor」（重建 method 解構在 [[spatial-handbook]] 的 `3dgs-family/`），所以把 aerial 重建範式補在這裡——它才是 aerial 外觀邊的現實主力。
+
+**Real2Sim2Real 兩個 aerial 旗艦（scout 一手核驗）：**
+
+- **FalconGym**（`2503.02198`，UIUC，IROS 2025）：用 **NeRF**（v1）重建真實競速空間 → 渲染無限合成過門影像 → 訓視覺策略（神經姿態估計 + Kalman + self-attention 控制器）→ zero-shot 上機。**95.8% 真機過門、~10 cm 平均誤差、38 cm 半徑門、30 次飛行 / 120 門**。**FalconGym 2.0**（`2510.02248`）把 NeRF→**GSplat** 加速 + Edit API：sim 100% 未見賽道（含定翼+四旋翼）、硬體 **98.6%（69/70 門）**。
+- **SOUS VIDE**（`2412.16346`，Stanford MSL，RA-L 2025）：**FiGS** 模擬器 = **簡化動力學模型 + 3DGS 重建場景耦合**，渲染 **~130 fps** 訓 SV-Net（RGB + 光流 + IMU → thrust/body-rates @20 Hz，100k–300k MPC 對 + RMA）。**105 次硬體實驗，對 30% 質量 / 40 m/s 陣風 / 60% 亮度 / 物件+人 擾動穩健**。
+
+兩者都是本手冊反覆講的 **photons（3DGS 給外觀）＋ forces（簡化動力學給力）** 拆分——SOUS VIDE 明說、FalconGym 同構。
+
+**大場景 / 城市級 aerial 重建**（aerial-sim 外觀的真正引擎）：CityGaussian（`2404.01133`）· VastGaussian（`2402.17427`）· DroneSplat（`2503.16964`，in-the-wild 稀疏視角去動態干擾）· Horizon-GS（`2412.01745`，aerial-to-ground 統一）· AGS（`2409.00381`，空拍表面重建）。
+
+**⚠ metric-scale 陷阱（aerial 必踩）**：SfM/3DGS 重建**尺度模糊**（差一個未知比例），但 drone 控制要**真實公尺**（推力/重力/速度）。aerial 範式的輕量解是 **ArUco fiducial**：SOUS VIDE 在錄影開頭放 ArUco tag 對齊 GSplat 到已知全域座標、mocap 只當 diagnostics；FalconGym 2.0 用 ArUco + COLMAP→world（Kabsch-Umeyama），**免昂貴 mocap**。
+
+**和生成（Cosmos）的分工——互補不是競爭**：重建 owns「**拍得到的場景**」外觀（metric-anchorable、zero-shot 95.8–98.6%）；生成 owns「**拍不到的新情境**」（天氣/新物件/罕見事件）。aerial 的 generation 端仍 under-served（見 [Cosmos § aerial](../foundation-physics-models/cosmos-wfm.md)）；aerial-gen 反例是 FlightDiffusion（單幀→FPV 影片，非 sim-render 翻真）。動力學邊回 [Aerial Gym](../differentiable-simulators/aerial-gym.md) / RotorPy。
+
 ## 7. References
 
 **Canonical**：
@@ -127,6 +144,12 @@ domain     = rigid                   ← Check 9c 白名單外；訓練資料 Re
 **動態 / 4D Gaussian（GGS 不解決，v2 wishlist 下一篇）**：
 - Wu et al. (2024). "4D Gaussian Splatting." CVPR 2024
 - Yang et al. (2024). "Deformable 3D Gaussians." CVPR 2024
+
+**aerial 重建 / Real2Sim2Real（§ aerial 引用）**：
+- Miao, Shen, Mitra. "FalconGym." IROS 2025 · [2503.02198](https://arxiv.org/abs/2503.02198)；FalconGym 2.0 · [2510.02248](https://arxiv.org/abs/2510.02248)
+- Low et al. "SOUS VIDE / FiGS." RA-L 2025 · [2412.16346](https://arxiv.org/abs/2412.16346)
+- 大場景 aerial：CityGaussian [2404.01133](https://arxiv.org/abs/2404.01133) · VastGaussian [2402.17427](https://arxiv.org/abs/2402.17427) · DroneSplat [2503.16964](https://arxiv.org/abs/2503.16964) · Horizon-GS [2412.01745](https://arxiv.org/abs/2412.01745) · AGS [2409.00381](https://arxiv.org/abs/2409.00381)
+- GS ＋ 物理（forces 另接）：PhysGaussian [2311.12198](https://arxiv.org/abs/2311.12198) · RoboGSim [2411.11839](https://arxiv.org/abs/2411.11839) · SplatSim [2409.10161](https://arxiv.org/abs/2409.10161) · GSWorld [2510.20813](https://arxiv.org/abs/2510.20813)
 
 **二手**：Hugging Face papers (https://huggingface.co/papers/2503.13272) · alphaXiv (https://www.alphaxiv.org/overview/2503.13272)
 
