@@ -186,6 +186,29 @@ flowchart LR
 4. **推論餵 CARLA-Air 的 sim 結構**：把 CARLA-Air render 出的 depth/seg/edge 當 control、`control_weight≈1.0`、prompt 指定航拍域 → photoreal 航拍影片，**sim 標籤 1:1 轉移**。
 5. **逐模態 / 逐區調 control_weight**（Cosmos 的 adaptive `w`）：要保幾何處調高、要 photoreal 多樣處調低。
 
+**資料準備：要備什麼、要多少（零配對、免標註）**
+
+你要準備的只有**一堆真實航拍影片**——而且**不用配對、不用標註**，這是這套配方最省成本的兩點：
+- **不用配對**：train-on-real / infer-on-sim 的兩堆資料（真實影片 vs sim render）**各自獨立**，沒有 sim↔real 一一對應；不存在「同一場景拍真實又跑模擬」的苦差。
+- **不用標註**：control（depth/seg/edge）是估計器**算出來的**，真實影片可以是**完全沒標的原始素材**。標籤只在 **sim 端**需要（CARLA-Air 免費給）＋評測用的 held-out 真實集需要。
+
+**三個來源（按優先）**：
+1. **Autel 自家飛行素材（最佳）**——有無人機就能飛能錄，拍出**正好匹配你產品相機 + 飛行包絡**的真實影片，且**自有資料、商用乾淨**。它比公開資料集更對口，因為推論時面對的就是這個分布。
+2. **公開航拍影片**補多樣性——UAVid（視角最貼 CARLA-Air）/ OpenSafari（FPV）/ MAVREC / VisDrone-VID；⚠ 多為 **CC-BY-NC-SA 學術限定**，商用要另解授權。
+3. **CARLA-Air sim render（免費、自己生）**——推論輸入 + 評測用，自帶 GT 標籤、無限量。
+
+**要多少（三檔，從便宜到正規）**：
+
+| 檔 | 真實影片量 | 算力 | 換到什麼 |
+|---|---|---|---|
+| **零後訓（先試）** | **0**（只要 CARLA-Air render） | 推論即可 | 用 `2511.14719` zero-shot 先量 aerial drift 有多嚴重 |
+| **LoRA「調 look」** | **~10–50 段 clip（≈10 分–1 小時）** | 1–3 GPU、數小時 | 輕量風格遷移，快但弱 |
+| **ControlNet 分支（正規）** | **數十～低百小時**（NVIDIA AV 分支參考＝14 萬 clip ≈ ~190 小時） | 單機 8×A100/H100、~5000 iter | 強域分支，標籤保真最好 |
+
+> 下界（LoRA 10–50 clip、分支 tens-of-hours）多是從 NVIDIA AV recipe 與社群 LoRA 工作**外推**，aerial 無公開定數（`UNVERIFIED`）——所以**先零後訓試水 → LoRA ~1 小時 Autel 素材 → 不夠再爬到分支**，逐檔加，別一開始就堆 190 小時。
+
+**影片規格**：720p+、切 **~5–12 秒 clip**（Cosmos 用 121-frame 窗）；每段配 VLM 自動 caption。**多樣性 > 純量**：晨/午/昏光照、天氣、高度、城市/郊區都要覆蓋；**視角要對**（中空斜視飛掠，別混純 nadir 遙測集，否則灌入域偏差）。**評測**用 held-out 有標真實航拍（如 UAVid val）＋ CARLA-Air sim（自帶 GT）跑「train-on-enhanced → test-on-real」mIoU。
+
 **先試零後訓的快路**：[2511.14719](https://arxiv.org/abs/2511.14719)（*Zero-shot Synthetic Video Realism Enhancement via Structure-aware Denoising*，**zero-shot、不微調**、建在 Cosmos-Transfer 上）——DDIM 反演合成影片 + 結構感知去噪 + 多條件 ControlNet。**先拿它對 CARLA-Air 一試**，再決定要不要花算力後訓。
 
 **誠實的風險（這是真難處，不是工程細節）**：
