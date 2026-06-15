@@ -80,6 +80,29 @@ flowchart LR
 
 你要準備的只有**一堆真實航拍影片**——**不用配對、不用標註**（control 是算出來的，真實影片可裸素材）。來源優先：**① Autel 自拍**（最對口、商用乾淨）> ② 公開（**UAVid/VisDrone 是 CC-BY-NC-SA 學術限定不能商用**；**MAVREC CC-BY 可商用但只 ~2.5hr**；**AeroScapes 是 Autel Robotics 自家合作建的、但只靜圖**）> ③ CARLA-Air render（免費自生）。量：**零後訓 0 / LoRA 10–50 clip / 分支 數十 hr**。商用乾淨的真實航拍**影片極稀缺 → Autel 該自拍 ~20–50 hr**。
 
+### 解析度怎麼對齊（常見誤會：720p 是模型規格，不是 CARLA-Air 的上限）
+
+```mermaid
+flowchart LR
+    R["真實 4K 航拍"] -->|"降採樣"| H["720p · 16:9"]
+    C["CARLA-Air 渲染<br/>解析度自設、可更高"] -->|"降採樣 / supersample"| H
+    H --> EX["在 720p 抽 control<br/>兩邊同工具、同解析度"]
+    EX --> MODEL["Cosmos-Transfer2.5<br/>固定 720p / 16fps"]
+    MODEL --> OUT["720p photoreal 輸出"]
+    classDef src fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
+    classDef hub fill:#ede7f6,stroke:#5e35b1,color:#311b92
+    classDef m fill:#e8f5e9,stroke:#388e3c,color:#1b5e20
+    class R,C src
+    class H,EX hub
+    class MODEL,OUT m
+```
+*圖：高解析度真實影片、CARLA-Air 渲染、control 抽取，全部先 resample 到 720p、對到 16:9 才進模型——它們在 720p 會合，所以「真實很大 vs sim 720p」沒有 mismatch。*
+
+- **720p（1280×720）是 Cosmos-Transfer2.5「模型」鎖死的工作解析度**（video diffusion 在固定解析度上訓練、輸入輸出都 720p）；**不是 CARLA-Air 的上限**——CARLA / AirSim 相機解析度是你自設的（`image_size_x/y` / settings.json），要 1080p / 4K 都行（只受 GPU 限制）。
+- **原則：碰模型前一切先 resample 到 720p。** 真實 4K → 降採樣 720p；CARLA-Air → 渲 720p（或更高再降）；**control 兩邊都在 720p 抽**（同工具、同解析度，否則每像素的邊緣密度 / 深度梯度統計不一致 → 橋斷）；都對到 **16:9**。高於 720p 的細節模型用不到、直接丟——**不虧**（enhancer 學的是外觀分布、不是微細節；下游感知 / VIO 也多在中等解析度跑）。
+- **Trick**：CARLA-Air 渲在 1440p / 4K **再降到 720p ＝ supersampling**，給模型**更乾淨、去鋸齒**的輸入（勝過直接渲 720p）；真實 4K→720p 本身就是 supersample。
+- **真要 >720p 輸出**：Transfer1 有 4K upscaler 變體（2.5 是否含 `UNVERIFIED`）/ tile-patch 推論（有接縫＋時序成本）/ 事後接 video super-resolution；但**預設 720p 通常就夠，別為了解析度先把流程搞複雜**。
+
 ## 4. 研發路線圖：三階段 go/no-go
 
 **核心原則：用最便宜的問題，先殺掉最致命的不確定性。** 最大的風險不是「選哪種 control」，而是「**生成器在傾斜空拍視角下會不會直接崩**」——這個答案**不需要任何訓練或資料**就能取得，所以排第一。
