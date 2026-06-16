@@ -308,6 +308,20 @@ flowchart TD
 >
 > **由此定 CARLA-Air 的真正工作**：它唯一不可解耦的 USP＝空地單 tick 共模；那就是它該做、也只該做的——空地資料 + 評測，不是訓練迴圈、不是動力學真值、不是 photoreal 來源。對 Autel，A2 換進去的更該是**從自家真飛 log 辨識的殘差模型**（接 [sim-to-real-contract](./sim-to-real-contract.md)），photoreal 走自家商用乾淨素材的 Carla2Real-2026。
 
+> **「那我深入源碼，把吞吐改成 Isaac 那樣呢？」——三軸源碼級判決（scout swarm 查實，2026-06）。** 把 Isaac 的快拆成三項去問「能不能改 CARLA-Air 達成」，結論是**只有一項能改、而且改了沒用**：
+
+| 想改的 | 判決 | 源碼為什麼 |
+|---|---|---|
+| **像素 → state** | ✅ 近乎免費（免改源碼） | CARLA 原生 **no-rendering mode**（官方：GPU 不用、相機回空）＋ state 走 Python API。**但單獨做沒用**（見下） |
+| **物理串行 → GPU 並行多環境** | 🔴 **重寫等級** | CARLA 物理是 Unreal **內嵌**的（UE4＝PhysX·CPU／UE5＝Chaos·CPU，**都 CPU、都無「環境批次維度」**，一 server 一個 `World`）。Isaac 的快來自**脫離遊戲引擎**的 PhysX-5 GPU tensor pipeline（[Isaac Gym 2108.10470](https://arxiv.org/abs/2108.10470)）——**不能 bolt-on** 進 Unreal 內嵌物理 |
+| **PCIe 往返 → 全程 on-GPU** | 🔴 **重寫等級** | CARLA 是**兩進程 client-server ＋ rpclib ＋ TCP**（port 2000／2001，寫進 0.9.0 起核心），觀測每 tick 跨進程序列化；Isaac 是 **in-process、CUDA-interop、零拷貝**（sim buffer 即 PyTorch GPU tensor 的 view）。消除往返＝policy 併進 server ＋ 廢 socket ＋ 物理搬 GPU；公開生態**無任何 in-process CARLA 先例** |
+
+> **致命處：三堵牆是 AND、不是 OR。** 你最可能先動的「像素→state」最便宜，但拆掉它，另外兩堵（CPU 物理 ＋ RPC）還在——真實 RL loop 裡 CARLA 仍只**每秒幾～幾十步**（`UNVERIFIED`，文獻定性值），離 Isaac state-based 的 **~10⁵–10⁶ env-steps/s**（Aerial Gym 四旋翼達 4.43×10⁶ samples/s，[2305.16510](https://arxiv.org/abs/2305.16510)→[2503.01471](https://arxiv.org/abs/2503.01471)）差 3–4 個數量級。**三堵得同時拆，而後兩堵各自都是重寫。**
+>
+> **而且全做完＝自我抵消。** 讓 CARLA-Air 值得用的 photoreal 城市像素 ⇒ 重型渲染器必須在迴圈裡（連 Isaac Lab 的 tiled rendering 一開相機都從 ~10⁵ 掉到 ~10⁴，[2511.04831](https://arxiv.org/abs/2511.04831)；photoreal 更重只會更低）；富語意單一世界 ⇒ 巨大記憶體腳印，塞不下上千並行 env。**所以改造這三項＝重寫成 Isaac，而丟掉的恰是你選 CARLA-Air 的理由——不是難度問題、是目標自相矛盾。** 連升 CARLA 0.10／UE5 也救不了（Chaos 仍 CPU、仍無批次維度）。
+>
+> **所以「深入源碼」該往哪用：不是改快、是用對。** no-render state 快路（交通／規劃級 RL）＋ 下方 **A2**（RotorPy 解耦動力學）＋ 多 server 中等並行（進程級 8–32×、GPU 記憶體線性漲）；scale-RL 的 10⁸ 步主體留給 Isaac／Aerial Gym，CARLA-Air 只做 photoreal／空地 final-mile。
+
 下方 **A/B 是上表前兩列（AirSim 半邊：動力學、版本鎖）的具體做法**，均經內嵌源碼核對（檔案路徑見 §參考）。先用決策樹定位你該走哪條：
 
 ```mermaid
