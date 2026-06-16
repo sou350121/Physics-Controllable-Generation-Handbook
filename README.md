@@ -4,10 +4,10 @@
 >
 > **从 Sora 到 Genesis，从 GraphCast 到 GAIA** — 影片生成圈不讀 PDE solver 圈，diff-sim 圈不讀 latent WM 圈，自駕 closed-loop 圈和神經 surrogate 圈各自閉門造 conditioning。**本 handbook 做一件事：把這 5 條技術路線各自如何「把物理灌進生成」攤在桌上橫向對比，並標註誰違反守恆律、誰能 closed-loop、誰能拿 force 當輸入。**
 
-[![Read on GitHub](https://img.shields.io/badge/✅-53_dissections_·_7_use--cases-9d4edd?style=for-the-badge&logo=readme&logoColor=white)](./foundations/overview.md)
+[![Read on GitHub](https://img.shields.io/badge/✅-56_dissections_·_7_use--cases-9d4edd?style=for-the-badge&logo=readme&logoColor=white)](./foundations/overview.md)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue)](./LICENSE)
-[![Pages](https://img.shields.io/badge/nav_pages-117-orange)](./cheat-sheet/functional_map.md)
-[![Dissections](https://img.shields.io/badge/dissections-33_foundation_%2B_20_use--case-purple)](./foundations/overview.md)
+[![Pages](https://img.shields.io/badge/nav_pages-121-orange)](./cheat-sheet/functional_map.md)
+[![Dissections](https://img.shields.io/badge/dissections-34_foundation_%2B_22_use--case-purple)](./foundations/overview.md)
 [![Ontology](https://img.shields.io/badge/5--axis_ontology-v2.0-red)](./cheat-sheet/ontology.md)
 [![Audit](https://img.shields.io/badge/audit-8--check_✅_green-success)](./scripts/handbook_audit.py)
 [![Sister Repos](https://img.shields.io/badge/sister-VLA_%2B_Spatial-2a9d8f)](#三册一体vla--spatial--physics-gen-的分工)
@@ -42,7 +42,7 @@ flowchart LR
 | Phase | 內容 | 狀態 |
 |---|---|---|
 | **Phase 1** — Foundations + Ontology | 13 foundations zones + 5 USP wedges + **33 foundation anchor dissections** + 5-axis Ontology **v2.0**（每篇 dissection header enforce） | ✅ **完成 (2026-05)** — audit GREEN，13 zones 全有 anchor |
-| **Phase 2** — Use-cases 深度建設 | **全 7 個 use-case 深度增強** — 每個 2-6 篇一手來源 dissection，共 **20 篇 use-case 解析**；**aerial-sim 🚁 最深（6 篇）**；Pulsar 每日 arxiv → qwen 評級管線上線（`reports/physics-gen-daily/`，GitHub Actions weekday 00:40 UTC） | ✅ **完成 (2026-06)** — audit 8-check GREEN，53 dissection header 全有效 |
+| **Phase 2** — Use-cases 深度建設 | **全 7 個 use-case 深度增強** — 每個 2-8 篇一手來源 dissection，共 **22 篇 use-case 解析**；**aerial-sim 🚁 最深（8 篇，含 [sim-to-real 研究地景綜述](./use-cases/aerial-sim/aerial-sim2real-research.md) + [Carla2Real-2026 photoreal 升級路線](./use-cases/aerial-sim/carla2real-2026.md)）**；Pulsar 每日 arxiv → qwen 評級管線上線（`reports/physics-gen-daily/`，GitHub Actions weekday 00:40 UTC） | ✅ **完成 (2026-06)** — audit 8-check GREEN，56 dissection header 全有效 |
 | **Phase 3** — Mintlify + Cross-handbook | Mintlify Hobby 部署（docs.json v3-tabs 已備好，**待 dashboard 連線**）+ 三冊 cross-handbook insight + 第二批 foundation dissection | 🚧 進行中 |
 
 &nbsp;
@@ -67,13 +67,13 @@ flowchart LR
 |:---:|------|---------|-----------|
 | 🤖 | **VLA / robot policy 工程師** | 想用合成資料替代真實 demo | → [Cosmos WFM](./foundations/foundation-physics-models/cosmos-wfm.md) + [V-JEPA-2](./foundations/latent-world-models/v-jepa-2.md) + [`crossing/sim-vs-gen-data/`](./crossing/sim-vs-gen-data/) |
 | 🚗 | **自駕 closed-loop sim 工程師** | GAIA / Cosmos-Drive / Wayve 線 | → [GAIA-2](./foundations/video-world-models/gaia-2.md) + [`foundations/long-horizon-rollout/`](./foundations/long-horizon-rollout/) + [`use-cases/autonomous-driving-sim/`](./use-cases/autonomous-driving-sim/) |
-| 🚁 | **無人機 autonomy 工程師** | sim stack · Swift · Dream-to-Fly · 生成資料 · sim-to-real 契約 · CARLA-Air | → **[`use-cases/aerial-sim/`](./use-cases/aerial-sim/) ★ 6 篇（最深）** + [Aerial Gym](./foundations/differentiable-simulators/aerial-gym.md) + 跨冊 [bridge-to-spatial/aerial-embodiment](./bridge-to-spatial/aerial-embodiment.md) + Spatial `embodiments/aerial/` |
+| 🚁 | **無人機 autonomy 工程師** | sim stack · Swift · Dream-to-Fly · 生成資料 · sim-to-real 契約 · CARLA-Air | → **[`use-cases/aerial-sim/`](./use-cases/aerial-sim/) ★ 8 篇（最深）** + 先看 [sim-to-real 研究地景綜述](./use-cases/aerial-sim/aerial-sim2real-research.md)（一張可決策地圖：哪些成熟 / 哪些是可做缺口 / 哪些是結構性難題）+ [Aerial Gym](./foundations/differentiable-simulators/aerial-gym.md) + 跨冊 [bridge-to-spatial/aerial-embodiment](./bridge-to-spatial/aerial-embodiment.md) + Spatial `embodiments/aerial/` |
 | 🎬 | **影片生成工程師** | Sora / Veo / Kling 路線 | → [Sora](./foundations/video-world-models/sora.md) + [Veo](./foundations/video-world-models/veo.md) + [`crossing/conservation-violation-atlas/`](./crossing/conservation-violation-atlas/) |
 | 🧠 | **物理 conditioning 研究者** | PINN · HNN/LNN · PhysDiff · Force Prompting 線 | → [`foundations/physics-conditioning/`](./foundations/physics-conditioning/) ★★ — 整 zone 5 篇 anchor 是本倉 USP 核心 |
 | 🌊 | **神經 PDE / surrogate 研究者** | GraphCast / FNO / 氣象 / 流體 | → [GraphCast](./foundations/neural-surrogates/graphcast.md) + [FNO](./foundations/neural-surrogates/fno.md) + [`use-cases/scientific-discovery/`](./use-cases/scientific-discovery/) |
 | 🎮 | **互動式 latent WM 工程師** | Genie / Decart / V-JEPA / Dreamer | → [Genie-2](./foundations/latent-world-models/genie-2.md) + [DreamerV4](./foundations/latent-world-models/dreamer-v4.md) + [`crossing/pixel-vs-latent-physics/`](./crossing/pixel-vs-latent-physics/) |
 | 🧪 | **Diff-sim 工程師** | MuJoCo MJX / Genesis / Warp | → [Genesis](./foundations/differentiable-simulators/genesis.md) + [MuJoCo MJX](./foundations/differentiable-simulators/mujoco-mjx.md) + [`crossing/sim-vs-gen-data/`](./crossing/sim-vs-gen-data/) |
-| 🔬 | **找下一個 paper idea 的研究者** | 想看哪些 niche 沒人解 | → [`crossing/`](./crossing/overview.md) ★ — 5 個 wedge 即 5 條 paper-idea 礦脈（pixel-vs-latent · sim-vs-gen · controllability-vs-fidelity · 守恆律違反地圖 · text-action-trajectory 譜系）|
+| 🔬 | **找下一個 paper idea 的研究者** | 想看哪些 niche 沒人解 | → 先讀 [`frontier/`](./frontier/overview.md) ★ 把全書 §8 pitfall + 5 wedge 收斂成「這領域真正未解的硬骨頭」，再進 [`crossing/`](./crossing/overview.md) — 5 個 wedge 即 5 條 paper-idea 礦脈（pixel-vs-latent · sim-vs-gen · controllability-vs-fidelity · 守恆律違反地圖 · text-action-trajectory 譜系）|
 | 🏗️ | **多領域系統架構師** | 平台/公司同時做 robotics + driving + sim | → [`cheat-sheet/ontology.md`](./cheat-sheet/ontology.md) + [Cosmos WFM](./foundations/foundation-physics-models/cosmos-wfm.md) + [`companies/`](./companies/) |
 
 > 不接受 "HR / 招聘" 入口——這是技術 handbook，不是產業地圖（產業地圖見 [`companies/`](./companies/)）。
@@ -96,6 +96,8 @@ graph TD
 
     USE -->|"per-use-case 实战"| CROSS
 
+    CROSS -->|"5 wedge + 全書 pitfall 收斂"| FRONT["🧗 Frontier ★<br/>硬骨頭 / 研究選題入口"]
+
     CROSS --> BVLA["🌉 Bridge to VLA<br/>generation × action<br/>3 essays"]
     CROSS --> BSPA["🌉 Bridge to Spatial<br/>generation × perception<br/>3 essays"]
     CROSS --> COMP["🏢 Companies<br/>Cosmos / OpenAI / Google<br/>Meta / Wayve / WorldLabs"]
@@ -111,6 +113,7 @@ graph TD
     style FOUND fill:#1a1a2e,stroke:#4361ee,color:#fff
     style USE fill:#1a1a2e,stroke:#f77f00,color:#fff
     style CROSS fill:#0f3460,stroke:#e94560,color:#fff
+    style FRONT fill:#e94560,stroke:#0f3460,color:#fff
     style BVLA fill:#1a1a2e,stroke:#2a9d8f,color:#fff
     style BSPA fill:#1a1a2e,stroke:#2a9d8f,color:#fff
     style COMP fill:#1a1a2e,stroke:#9d4edd,color:#fff
@@ -120,7 +123,7 @@ graph TD
     style REP fill:#533483,stroke:#533483,color:#fff
 ```
 
-> **读图方式**：`foundations/` 是 13 条技术路线的工具箱（任何 use-case / crossing wedge 都会回引用它）；`crossing/` 是把这 13 条线横切的 USP 视角（市面上没有的内容）；`use-cases/` 是下游应用 lane（不是 embodiments — physics-gen 是 upstream pipeline，同一套生成模型服务多个下游）；两条 `bridge-to-*/` 把本仓显式接到 sister handbook 的契约面；其余 5 个目录是支撑层。Pulsar daily reports 接在 benchmarks + deployment 下游，已部署排程（GitHub Actions，weekday 00:40 UTC），首篇待第一个排程工作日。
+> **读图方式**：`foundations/` 是 13 条技术路线的工具箱（任何 use-case / crossing wedge 都会回引用它）；`crossing/` 是把这 13 条线横切的 USP 视角（市面上没有的内容），`frontier/` 再把 crossing 的 5 wedge 与全书 §8 pitfall 收敛成「这领域真正未解的硬骨头」研究选题入口；`use-cases/` 是下游应用 lane（不是 embodiments — physics-gen 是 upstream pipeline，同一套生成模型服务多个下游）；两条 `bridge-to-*/` 把本仓显式接到 sister handbook 的契约面；其余 5 个目录是支撑层。Pulsar daily reports 接在 benchmarks + deployment 下游，已部署排程（GitHub Actions，weekday 00:40 UTC），首篇待第一个排程工作日。
 
 &nbsp;
 
@@ -166,7 +169,7 @@ graph TD
 
 | 子目录 | 主轴 | 深度 |
 |--------|------|------|
-| [`aerial-sim/`](./use-cases/aerial-sim/) 🚁 ★ | 無人機 closed-loop sim + 合成 aerial footage | **6 篇（最深）** |
+| [`aerial-sim/`](./use-cases/aerial-sim/) 🚁 ★ | 無人機 closed-loop sim + 合成 aerial footage + sim-to-real 研究地景 | **8 篇（最深）** |
 | [`robotics-data-gen/`](./use-cases/robotics-data-gen/) | 生成 video/latent/sim 替代真实 demo | 3 篇 |
 | [`autonomous-driving-sim/`](./use-cases/autonomous-driving-sim/) | Closed-loop driving WM | 3 篇 |
 | [`embodied-policy-rollout/`](./use-cases/embodied-policy-rollout/) | WM-as-policy / planning-on-WM + 信任契約 | 2 篇 |
@@ -176,8 +179,8 @@ graph TD
 
 > 与 sister handbook 对应：`robotics-data-gen` / `embodied-policy-rollout` ↔ VLA-Handbook；`autonomous-driving-sim` ↔ Spatial-Handbook driving embodiment；**`aerial-sim` ↔ Spatial-Handbook `embodiments/aerial/` ★**（spatial 最深 embodiment）；`digital-twin` / `scientific-discovery` 是本仓独有下游。
 
-> 🚁 **無人機線是目前最深的 use-case（6 篇深度解析）**，也是本倉接 Spatial-Handbook 最深 embodiment 的線。完整閱讀路徑（即 canonical index）見 **[`use-cases/aerial-sim/overview.md`](./use-cases/aerial-sim/overview.md)**：
-> [Swift 冠軍級競速](./use-cases/aerial-sim/champion-level-drone-racing.md) → [Dream-to-Fly（DreamerV3 飛無人機）](./use-cases/aerial-sim/dream-to-fly.md) → [Aerial Sim Stack 七套對比](./use-cases/aerial-sim/aerial-sim-stack.md) → [生成航拍資料](./use-cases/aerial-sim/generative-aerial-data.md) → [Sim-to-Real 契約（讀 Science Robotics）](./use-cases/aerial-sim/sim-to-real-contract.md) → [CARLA-Air 空地一體](./use-cases/aerial-sim/carla-air.md)。foundation 工具 [Aerial Gym](./foundations/differentiable-simulators/aerial-gym.md)，跨冊資料契約 [bridge-to-spatial/aerial-embodiment](./bridge-to-spatial/aerial-embodiment.md)，產業玩家（Skydio / DJI / Autel / UZH RPG / NTNU）見 [companies](./companies/overview.md)。
+> 🚁 **無人機線是目前最深的 use-case（8 篇深度解析）**，也是本倉接 Spatial-Handbook 最深 embodiment 的線。完整閱讀路徑（即 canonical index）見 **[`use-cases/aerial-sim/overview.md`](./use-cases/aerial-sim/overview.md)**：
+> [Swift 冠軍級競速](./use-cases/aerial-sim/champion-level-drone-racing.md) → [Dream-to-Fly（DreamerV3 飛無人機）](./use-cases/aerial-sim/dream-to-fly.md) → [Aerial Sim Stack 七套對比](./use-cases/aerial-sim/aerial-sim-stack.md) → [生成航拍資料](./use-cases/aerial-sim/generative-aerial-data.md) → [Sim-to-Real 契約（讀 Science Robotics）](./use-cases/aerial-sim/sim-to-real-contract.md) → [CARLA-Air 空地一體](./use-cases/aerial-sim/carla-air.md) → [Carla2Real-2026（把 CARLA-Air 升 photoreal 的研發路線）](./use-cases/aerial-sim/carla2real-2026.md)，最後用 **[空中具身 sim-to-real 研究地景（2024–2026）](./use-cases/aerial-sim/aerial-sim2real-research.md)** 收束成一張可決策地圖（四條研究線全景 + ~40 篇逐一核驗 arXiv + 最大可做缺口判斷）。foundation 工具 [Aerial Gym](./foundations/differentiable-simulators/aerial-gym.md)，跨冊資料契約 [bridge-to-spatial/aerial-embodiment](./bridge-to-spatial/aerial-embodiment.md)，產業玩家（Skydio / DJI / Autel / UZH RPG / NTNU）見 [companies](./companies/overview.md)。
 
 </details>
 
@@ -199,6 +202,8 @@ graph TD
 | [`text-action-trajectory-spectrum/`](./crossing/text-action-trajectory-spectrum/) | Controllability input 的光谱 — 为什么 text 不够、action 不够、需 multi |
 
 **写入门槛极高**：每个 wedge 需要明确 thesis、跨 ≥2 条技术路线、≥3 个 anchor 方法的失效实测、一张对比表、不写 paper summary。详见 [`crossing/overview.md`](./crossing/overview.md)。
+
+> 🧗 **登顶 → [`frontier/`](./frontier/overview.md)**：crossing 写「这条线跟那条线在哪冲突」，frontier 再把全书每个 zone 的 §8 pitfall + 这 5 个 wedge **收敛成一句话能讲的「这领域真正未解的硬骨头」** — 一个中心张力如何生出所有的墙。要选研究题目，从这里开始（每根硬骨头都连回它在书里的出处）。
 
 </details>
 
@@ -481,15 +486,16 @@ crossing/sim-vs-gen-data
 
 &nbsp;
 
-### 🔬 找下一个 paper idea（3 篇）
+### 🔬 找下一个 paper idea（4 篇）
 
 ```
+frontier/overview (硬骨头全景：哪几根真未解) →
 crossing/conservation-violation-atlas →
 crossing/text-action-trajectory-spectrum →
 crossing/controllability-vs-fidelity
 ```
 
-[开始 →](./crossing/conservation-violation-atlas/) — 三条 crossing wedge 各自有一打 "无人占坑" 的 atlas cell / spectrum 中段 / Pareto 前沿点
+[开始 →](./frontier/overview.md) — 先用 frontier 拿到「这领域真正未解的硬骨头」全景，再下钻三条 crossing wedge 各自一打 "无人占坑" 的 atlas cell / spectrum 中段 / Pareto 前沿点
 
 &nbsp;
 
@@ -538,12 +544,13 @@ foundations/overview.md
 | 🐉 | Boss Hunter | 读完下方 boss monsters 中的 3 篇 |
 | ⚡ | Speed Runner | 完成任意一条 Speed Run |
 | 🧮 | Ontology Master | 读 ontology v1 + v1.1 review + 从 5 轴各取 ≥ 1 篇代表作 |
-| 👑 | Handbook Master | 12 个顶层目录（foundations / crossing / use-cases / companies / benchmarks / cheat-sheet / bridge-to-vla / bridge-to-spatial / deployment / reports / docs / scripts）各读 ≥ 1 篇 + 完成 ≥ 3 条 Speed Run |
+| 👑 | Handbook Master | 13 个顶层目录（foundations / crossing / frontier / use-cases / companies / benchmarks / cheat-sheet / bridge-to-vla / bridge-to-spatial / deployment / reports / docs / scripts）各读 ≥ 1 篇 + 完成 ≥ 3 条 Speed Run |
 
 **🐉 Boss Monsters（整本 handbook 最难的几篇）**
 
 | 文章 | Why It's Hard |
 |------|---------------|
+| [frontier/overview 🧗](./frontier/overview.md) | 把全书 13 zone 的 §8 pitfall + 5 个 crossing wedge 收敛成「一个中心张力生出所有的墙」，每根硬骨头都要连回出处 — 最难的不是读懂任一篇，是把全书压成一句话 |
 | [crossing/conservation-violation-atlas](./crossing/conservation-violation-atlas/) | 5 条守恒律 × N 种方法的完整 atlas，每 cell 都要 paper-level evidence + 工程数字 |
 | [crossing/pixel-vs-latent-physics](./crossing/pixel-vs-latent-physics/) | LeCun line vs scale-pill line 的范式之争，要看懂两边判据、当下 evidence 落点、未来 falsifier |
 | [foundations/foundation-physics-models/cosmos-wfm](./foundations/foundation-physics-models/cosmos-wfm.md) | 一篇要跨 Cosmos 4 条子线（Predict / Reason / Drive / Robotics），「物理基础模型」这个概念到底成不成立 |
@@ -597,4 +604,4 @@ Apache 2.0 · 欢迎 Issue 和 PR：补 dissection · WFM 实测 · benchmark �
 
 &nbsp;
 
-[→ Foundations (工具箱)](./foundations/overview.md) · [→ Crossing ★ USP](./crossing/overview.md) · [→ Use Cases](./use-cases/overview.md) · [→ Bridge to VLA](./bridge-to-vla/overview.md) · [→ Bridge to Spatial](./bridge-to-spatial/overview.md) · [姊妹仓：VLA-Handbook](https://github.com/sou350121/VLA-Handbook) · [Spatial-Intelligence-Handbook](https://github.com/sou350121/Spatial-Intelligence-Handbook)
+[→ Foundations (工具箱)](./foundations/overview.md) · [→ Crossing ★ USP](./crossing/overview.md) · [→ Frontier 🧗 硬骨頭](./frontier/overview.md) · [→ Use Cases](./use-cases/overview.md) · [→ Bridge to VLA](./bridge-to-vla/overview.md) · [→ Bridge to Spatial](./bridge-to-spatial/overview.md) · [姊妹仓：VLA-Handbook](https://github.com/sou350121/VLA-Handbook) · [Spatial-Intelligence-Handbook](https://github.com/sou350121/Spatial-Intelligence-Handbook)
