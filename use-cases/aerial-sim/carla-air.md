@@ -304,7 +304,7 @@ flowchart TD
 | 不可微 | UE 渲染 | 要梯度＝那段換 crazyflow/JAX（§8.6） | role decision |
 | **~20 FPS、無並行** | **CARLA/UE** | **——無法在此架構自救** | 🔴 **架構地板** |
 
-> 🔴 **有一條救不了，務必認清**：**吞吐**（單環境、無 GPU 並行萬級）是唯一無法解耦掉的繼承侷限——它來自「渲染器在迴圈裡」這件事本身，補丁救不了。全頁多次點名的「大規模 RL 回 [Aerial Gym](./aerial-sim-stack.md)」不是一條 workaround、是**架構地板**。所以這條的「自救」是**角色決定、不是補丁**：scale-RL 在並行 sim 練，CARLA-Air 只當**空地資料 / photoreal 評測引擎**。一旦你想讓它當 RL 訓練迴圈，沒有補丁救得了你。
+> 🔴 **有一條救不了，務必認清**：**吞吐**（單環境、無 GPU 並行萬級）是唯一無法解耦掉的繼承侷限——它來自「渲染器在迴圈裡」這件事本身，補丁救不了。全頁多次點名的「大規模 RL 回 [Aerial Gym](./aerial-sim-stack.md)」不是一條 workaround、是**架構地板**。所以這條的「自救」是**角色決定、不是補丁**：scale-RL 在並行 sim 練，CARLA-Air 只當**空地資料 / photoreal 評測引擎**。一旦你想讓它當 RL 訓練迴圈，沒有補丁救得了你。（這道地板＝全書 [frontier 工程牆「即時牆／吞吐牆」](../../frontier/overview.md) 在 CARLA-Air 上的具體源碼形態——同一個「重型渲染 / 世界在迴圈裡」的根。）
 >
 > **由此定 CARLA-Air 的真正工作**：它唯一不可解耦的 USP＝空地單 tick 共模；那就是它該做、也只該做的——空地資料 + 評測，不是訓練迴圈、不是動力學真值、不是 photoreal 來源。對 Autel，A2 換進去的更該是**從自家真飛 log 辨識的殘差模型**（接 [sim-to-real-contract](./sim-to-real-contract.md)），photoreal 走自家商用乾淨素材的 Carla2Real-2026。
 

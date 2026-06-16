@@ -111,6 +111,8 @@ flowchart TD
 
 **即時牆**：當前 video-WM 是秒級/clip，閉環控制要 <~100ms（contact-rich ~10ms）→ 生成模型只能離線當**資料工廠 / 評測 oracle**，不能即時當控制環裡的 simulator（見 [deployment/inference-cost](../deployment/inference-cost/overview.md)）。in-loop 物理仍歸 diff-sim。這不是要被「解決」的研究題，是選型時的硬約束。
 
+**同一道牆的另一面——吞吐牆**：同一個「重型渲染器/世界在迴圈裡」的根，在**訓練側**長成另一道牆。遊戲引擎型 sim（如 CARLA-Air ~20 FPS 單環境）出不了 scale-RL 要的 ~10⁵⁺ env-steps/s——正因它**不能像 GPU-tensor-sim（Isaac / Aerial Gym）那樣把上千環境批次到 GPU**；想把它「改快」＝重寫成另一個引擎、且會抵消它的 photoreal USP（「能不能深入源碼改成 Isaac」的**三軸源碼級判決**見 [use-cases/aerial-sim/carla-air §自救](../use-cases/aerial-sim/carla-air.md#自救如何補強--繞過鎖死)）。**兩面同一個解**：重型渲染/世界只當離線**資料 / 評測**、不進迴圈——即時牆對控制環、吞吐牆對訓練環，殊途同歸。
+
 ## 怎麼用這頁
 
 - **選研究題**：④（物理評測）是 meta——解了它其餘才量得動，ROI 最高；①②③ 是經典硬骨頭、競爭激烈；⑥⑦ 偏系統/實證、缺口明確。
