@@ -157,6 +157,7 @@ flowchart TD
 - [Generative Aerial Data — 外觀靠生成、動力學靠物理](./generative-aerial-data.md) — 生成航拍資料的契約、驗證過的證據（SOUS VIDE / FlightDiffusion / UAV-Sim）與 metric-scale 陷阱
 - [Sim-to-Real 契約（無人機篇）](./sim-to-real-contract.md) — 讀近年 Science Robotics 的無人機論文（含 2026-06 gap-flight、RAPTOR、Neural-Fly），逐條讀出「什麼必須真、什麼可以學」
 - [CARLA-Air — 空地一體城市模擬](./carla-air.md) — 把 AirSim 飛控塞進 CARLA 城市，空中+地面共用一個物理 tick；唯一「城市 photoreal + 空地統一」的公開基座
+- [具身航拍 Sim-to-Real 研究地圖](./aerial-sim2real-research.md) — 四條研究線（策略 sim2real / real2sim2real·3DGS / 航拍具身 VLA / 世界模型與生成資料）全景測繪；~40 篇逐一核驗 arXiv，判斷最大可做缺口＝無 drone-native 語意條件航拍 VLA 基礎策略（RAPTOR 是跨平台控制基礎策略、非此類）
 
 ## 未來前沿
 
