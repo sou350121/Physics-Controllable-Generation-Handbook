@@ -18,6 +18,17 @@ Usage
     pip install --user numpy   # optional but recommended
     python3 scripts/ontology_kmeans_audit.py [--cap N] [--axis output|injection|...]
 
+NOTE — deliberately NOT migrated to DeepSeek (2026-09-10)
+    The Pulsar rating pipeline moved to deepseek-flash when the DASHSCOPE_API_KEY
+    Actions secret was revoked, but this tool cannot follow it: it needs an
+    EMBEDDINGS endpoint (DashScope text-embedding-v3), not chat-completions, and
+    DeepSeek publishes no embeddings API — GET /models returns exactly
+    ["deepseek-flash", "deepseek-v4-pro"] and POST /embeddings answers 404
+    (both verified 2026-09-10). This script is manual-only (writes to /tmp, run
+    by no workflow — audit.yml only runs handbook_audit.py), so a stale
+    DASHSCOPE_API_KEY degrades an ad-hoc audit rather than the daily pipeline.
+    Re-pointing it needs a live embeddings provider, not a model-id swap.
+
 Output
 ------
     /tmp/ontology-kmeans-audit-YYYY-MM-DD.md

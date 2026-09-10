@@ -222,6 +222,6 @@ Sources:
 ## Pulsar pipeline 接口
 
 `reports/physics-gen-daily/` 是 Pulsar Phase 1 自動產出區。
-- daily：arxiv cs.LG/cs.CV/cs.GR/cs.RO + arxiv physics.flu-dyn / cond-mat.soft → keyword filter → qwen3.5-plus 評 ⚡/🔧/📖/❌
+- daily：arxiv cs.LG/cs.CV/cs.GR/cs.RO + arxiv physics.flu-dyn / cond-mat.soft → keyword filter → `deepseek-flash` 評 ⚡/🔧/📖/❌（qwen 降級備援）
 - 不接 TG，git push only（Mintlify rebuild 7s）
 - 詳見 [`docs/pulsar-integration.md`](docs/pulsar-integration.md)

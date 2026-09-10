@@ -13,17 +13,22 @@
 
 | 檔 | 角色 |
 |---|---|
-| `_config.py` | RSS / qwen / keyword 集中 config |
+| `_config.py` | RSS / LLM / keyword 集中 config |
+| `_llm.py` | 共用 LLM transport：DeepSeek 主、qwen 備援、salvage、斷路器 |
 | `collect.py` | 4-5 arxiv RSS (cs.LG/CV/GR/RO + physics.flu-dyn) → keyword filter → dedup |
-| `rate.py` | qwen3.5-plus 評 ⚡/🔧/📖/❌ |
+| `rate.py` | `deepseek-flash` 評 ⚡/🔧/📖/❌（qwen 降級備援） |
 | `post.py` | markdown 落地；不接 TG（純 git） |
 | `run_daily.py` | 一次 orchestrate |
 
 ## 環境變數
 
-- `DASHSCOPE_API_KEY` — 必需，從 spatial 共用 `sk-3cb6841934bd4df987d2a4fe8dac5839`
+- `DEEPSEEK_API_KEY` — 必需，主要評級模型 `deepseek-flash`
+- `DASHSCOPE_API_KEY` — 選用，qwen 降級備援
 - `PHYS_DRY_RUN=1` — test 模式
 - `PHYS_DATE=YYYY-MM-DD` — backfill
+
+> ⚠️ API key 一律只存在 GitHub Actions Secret 或 `~/.clawdbot/.env`，**不要寫進倉庫任何檔案**。
+> 此處原本內嵌一把明碼 DashScope key，已於 2026-09-10 移除（該 key 亦已被撤銷）。
 
 ## Keyword pool（v0.1 候選）
 

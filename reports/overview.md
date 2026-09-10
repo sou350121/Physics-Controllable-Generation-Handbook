@@ -1,6 +1,6 @@
 # Reports · Pulsar-pipeline 自動產出
 
-Pulsar 每個 weekday 自動掃 arxiv、用 qwen3.5-plus 評級、把當天 physics-controllable-generation
+Pulsar 每個 weekday 自動掃 arxiv、用 `deepseek-flash` 評級（qwen 為降級備援）、把當天 physics-controllable-generation
 相關論文寫成一份 markdown，append 進 `physics-gen-daily/`。**不接 Telegram，整合走 git**（同 VLA / Spatial
 姊妹倉決定）；commit 後 Mintlify 7s rebuild 即線上可讀。
 
@@ -13,7 +13,7 @@ Pulsar 每個 weekday 自動掃 arxiv、用 qwen3.5-plus 評級、把當天 phys
 
 ```
 arxiv RSS → keyword-A 寬鬆過濾 ∩ ¬keyword-C reject → 60d dedup
-          → qwen3.5-plus 評 ⚡/🔧/📖/❌（5 軸 tag：output/injection/control/temporal/domain）
+          → deepseek-flash 評 ⚡/🔧/📖/❌（5 軸 tag：output/injection/control/temporal/domain）
           → 寫 physics-gen-daily/YYYY-MM-DD.md（90d 自動 prune）
           → git commit（scoped）→ push → Mintlify rebuild
 ```

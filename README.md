@@ -337,7 +337,7 @@ graph TD
 
 | 项目 | 状态 |
 |------|------|
-| GitHub Actions workflow | ✅ **已部署** — `pulsar-physics-gen-daily.yml`（weekday 00:40 UTC）+ weekly，DASHSCOPE secret 已设 |
+| GitHub Actions workflow | ✅ **已部署** — `pulsar-physics-gen-daily.yml`（weekday 00:40 UTC）+ weekly，`DEEPSEEK_API_KEY` secret 已设（qwen 降级备援） |
 | `physics-gen-daily/YYYY-MM-DD.md` | ⏳ 首篇待第一个排程工作日产出（arxiv 周末无新，周一起跑） |
 | 评级语义 | ⚡ 重大 / 🔧 工程有料 / 📖 值得知道 / ❌ 不收 |
 

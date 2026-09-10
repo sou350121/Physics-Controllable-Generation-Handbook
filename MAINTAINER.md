@@ -9,10 +9,12 @@
 
 ## Pulsar integration (Phase 2)
 
-- Daily arxiv 抓 → qwen3.5-plus 評級 → 寫 `reports/physics-gen-daily/`
+- Daily arxiv 抓 → `deepseek-flash` 評級（qwen 降級備援）→ 寫 `reports/physics-gen-daily/`
 - GitHub Actions workflow: `.github/workflows/pulsar-physics-gen-daily.yml`（待加）
 - Schedule: weekday 00:30 UTC (沿用 spatial 模式，避免同分鐘搶 DashScope quota — 建議改成 00:40 UTC)
-- Secret: `DASHSCOPE_API_KEY`（從 spatial 復用 value `sk-3cb6841934bd4df987d2a4fe8dac5839`）
+- Secrets（Settings → Secrets → Actions，**只存 value，勿寫進任何檔案**）：
+  - `DEEPSEEK_API_KEY` — 主要評級模型 `deepseek-flash`
+  - `DASHSCOPE_API_KEY` — qwen 降級備援（選用；2026-09-10 時該 secret 已被撤銷）
 
 ## 評級 keyword pool (待調)
 
