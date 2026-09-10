@@ -2,7 +2,7 @@
 """Weekly forward-looking synthesis from the week's daily reports.
 
 Reads the last WEEKLY_LOOKBACK_DAYS of reports/physics-gen-daily/*.md, pulls the
-⚡/🔧 entries, and asks qwen3.5-plus for a forward-looking weekly (themes / surprises
+⚡/🔧 entries, and asks the rater (DeepSeek, qwen fallback) for a forward-looking weekly (themes / surprises
 / 5-axis heat / falsifiable watch-list) — per the VLA convention: weekly = scout,
 not a retrospective index. Writes reports/weekly/YYYY-Www.md.
 
@@ -11,22 +11,19 @@ Usage:
     PHYSGEN_DRY_RUN=1 python3 scripts/pulsar/run_weekly.py   # print to stdout, don't write
     PHYSGEN_DATE=2026-06-19 python3 scripts/pulsar/run_weekly.py   # override "today"
 
-Requires: DASHSCOPE_API_KEY. Pure stdlib + urllib.
+Requires: DEEPSEEK_API_KEY (primary); DASHSCOPE_API_KEY enables the qwen
+fallback. Pure stdlib + urllib.
 """
 from __future__ import annotations
 import datetime
-import json
 import sys
-import time
-import urllib.request
-import urllib.error
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
+import _llm
 from _config import (
     REPORTS_DIR, WEEKLY_DIR, WEEKLY_TITLE, WEEKLY_LOOKBACK_DAYS, WEEKLY_RETENTION_WEEKS,
-    WEEKLY_PROMPT_SYSTEM, DASHSCOPE_BASE_URL, LLM_MODEL, LLM_TIMEOUT,
-    LLM_RETRY, LLM_RETRY_BACKOFF, today_str, is_dry_run, get_env,
+    WEEKLY_PROMPT_SYSTEM, today_str, is_dry_run,
 )
 
 
@@ -64,32 +61,20 @@ def _extract_load_bearing(md: str) -> str:
 
 
 def call_qwen(system: str, user: str, api_key: str) -> str:
-    payload = {
-        "model": LLM_MODEL,
-        "messages": [
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
-        ],
-        "temperature": 0.3,
-    }
-    req = urllib.request.Request(
-        f"{DASHSCOPE_BASE_URL}/chat/completions",
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"},
-        method="POST",
+    """Weekly-synthesis LLM call. DeepSeek primary, qwen fallback.
+
+    Name and signature kept for back-compat; transport lives in _llm.chat.
+    `api_key` is accepted but unused — _llm resolves each provider's own key.
+    expect_json=False: the weekly output is prose markdown, not JSON, so the
+    salvage layer must not be applied to it. Raises if BOTH providers fail,
+    which is what stops a keyless run from writing an empty weekly.
+    """
+    return _llm.chat(
+        [{"role": "system", "content": system},
+         {"role": "user", "content": user}],
+        temperature=0.3,
+        expect_json=False,
     )
-    last_err = None
-    for attempt in range(LLM_RETRY):
-        try:
-            with urllib.request.urlopen(req, timeout=LLM_TIMEOUT) as r:
-                data = json.loads(r.read().decode("utf-8"))
-            return data["choices"][0]["message"]["content"]
-        except (urllib.error.HTTPError, urllib.error.URLError, KeyError) as e:
-            last_err = e
-            print(f"  WARN: qwen weekly call failed (attempt {attempt+1}): {e}", file=sys.stderr)
-            if attempt < LLM_RETRY - 1:
-                time.sleep(LLM_RETRY_BACKOFF * (attempt + 1))
-    raise RuntimeError(f"qwen weekly all {LLM_RETRY} attempts failed: {last_err}")
 
 
 def iso_week_label(d: datetime.date) -> str:
@@ -126,13 +111,14 @@ def main() -> int:
     corpus = "\n\n".join(blocks)
     print(f"  Aggregating {len(used)} daily report(s) ({start}–{today})…", file=sys.stderr)
 
-    api_key = get_env("DASHSCOPE_API_KEY")
-    body = call_qwen(WEEKLY_PROMPT_SYSTEM, corpus, api_key)
+    _llm.preflight()
+    body = call_qwen(WEEKLY_PROMPT_SYSTEM, corpus, "")
 
     label = iso_week_label(today)
     header = (
         f"# {WEEKLY_TITLE} — {label}\n\n"
-        f"> Pulsar 週度前瞻偵察 · {start} – {today} · 彙整 {len(used)} 份日報的 ⚡/🔧 · qwen3.5-plus 綜合\n"
+        f"> Pulsar 週度前瞻偵察 · {start} – {today} · 彙整 {len(used)} 份日報的 ⚡/🔧 · "
+        f"{_llm.provider_banner()} 綜合\n"
         f"> 源檔：{', '.join(f.stem for f in used)}\n\n---\n\n"
     )
     footer = (

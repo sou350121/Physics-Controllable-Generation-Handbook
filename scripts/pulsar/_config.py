@@ -5,9 +5,12 @@ Sister pipeline to Spatial-Intelligence-Handbook's scripts/pulsar/ — same shap
 physics-gen domain tuning (arxiv categories, keywords, rating prompt, 5-axis tags).
 
 Env vars required:
-    DASHSCOPE_API_KEY   — Aliyun qwen3.5-plus (OpenAI-compatible)
+    DEEPSEEK_API_KEY    — DeepSeek deepseek-flash (primary rater)
 
 Env vars optional:
+    DASHSCOPE_API_KEY   — Aliyun qwen (fallback rater; run degrades loudly
+                          without it rather than emitting placeholder sheets)
+    PHYSGEN_DEEPSEEK_MODEL — override the DeepSeek model id
     TELEGRAM_BOT_TOKEN  — enable TG push (skipped gracefully if absent)
     TELEGRAM_CHAT_ID    — TG target chat ID
     PHYSGEN_DRY_RUN=1   — collect + rate only, skip writes (dev/test)
@@ -27,6 +30,22 @@ REPORTS_DIR = REPO_ROOT / "reports" / "physics-gen-daily"
 WEEKLY_DIR = REPO_ROOT / "reports" / "weekly"
 
 # ---- LLM ------------------------------------------------------------
+# Primary: DeepSeek. Fallback: DashScope qwen. Transport lives in _llm.py —
+# see that module's docstring for the measurements behind these constants.
+#
+# DeepSeek became primary on 2026-09-10 after the DASHSCOPE_API_KEY Actions
+# secret was revoked and every CI rating call started returning HTTP 401 while
+# the workflow still reported success (reports/ 08-31..09-04 are placeholders).
+DEEPSEEK_BASE_URL = "https://api.deepseek.com"
+# `deepseek-flash` is the real id; deepseek-v4-flash / deepseek-chat /
+# deepseek-reasoner are aliases onto it. deepseek-v4.1-* does not exist.
+DEEPSEEK_MODEL = os.environ.get("PHYSGEN_DEEPSEEK_MODEL", "deepseek-flash")
+# 65536 is load-bearing, not arbitrary: DeepSeek scales how much it reasons to
+# the max_tokens it is given, and reasoning is charged against the same budget.
+# At 1024 it spent the entire budget thinking and returned EMPTY content with
+# finish_reason="length" (measured on this repo's single-paper prompt).
+DEEPSEEK_MAX_TOKENS = 65536
+
 # DashScope OpenAI-compatible endpoint (CodingPlan Pro since 2026-04)
 DASHSCOPE_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 LLM_MODEL = "qwen-plus"  # qwen3.5-plus alias on DashScope; cheaper than max
@@ -44,14 +63,24 @@ TG_MAX_LEN = 4096  # Telegram message limit
 # arxiv categories most relevant to physics-controllable *generation* / world models.
 # Differs from Spatial (which is perception-side): we add cs.GR (graphics/sim/render),
 # physics.flu-dyn (CFD surrogates) and cond-mat.soft (MPM / particle / soft-matter).
+#
+# HOST: must be rss.arxiv.org, NOT export.arxiv.org.
+# Measured 2026-09-10: http://export.arxiv.org/rss/<cat> 301-redirects to https and
+# then returns HTTP 200 with a *well-formed but item-less* channel — zero <item>
+# elements for all 7 categories, while https://rss.arxiv.org/rss/<cat> returns
+# 34–860. The dead feed even self-identifies: its <link> and <atom:link href> both
+# point at rss.arxiv.org. Because it is a 200 with valid XML, fetch_rss raised
+# nothing and the pipeline logged the cheerful "Fetched: 0 papers across 7 feeds"
+# on 09-08 and 09-09 while exiting 0. Do not "simplify" this back to export.*.
+ARXIV_RSS_HOST = "https://rss.arxiv.org/rss"
 ARXIV_FEEDS = {
-    "cs.CV": "http://export.arxiv.org/rss/cs.CV",            # video gen / diffusion / 3D
-    "cs.LG": "http://export.arxiv.org/rss/cs.LG",            # world models / neural surrogates
-    "cs.AI": "http://export.arxiv.org/rss/cs.AI",            # foundation models
-    "cs.GR": "http://export.arxiv.org/rss/cs.GR",            # graphics / simulation / rendering
-    "cs.RO": "http://export.arxiv.org/rss/cs.RO",            # robotics-data-gen / sim-to-real
-    "physics.flu-dyn": "http://export.arxiv.org/rss/physics.flu-dyn",  # fluid surrogates
-    "cond-mat.soft": "http://export.arxiv.org/rss/cond-mat.soft",      # MPM / particle / soft matter
+    "cs.CV": f"{ARXIV_RSS_HOST}/cs.CV",            # video gen / diffusion / 3D
+    "cs.LG": f"{ARXIV_RSS_HOST}/cs.LG",            # world models / neural surrogates
+    "cs.AI": f"{ARXIV_RSS_HOST}/cs.AI",            # foundation models
+    "cs.GR": f"{ARXIV_RSS_HOST}/cs.GR",            # graphics / simulation / rendering
+    "cs.RO": f"{ARXIV_RSS_HOST}/cs.RO",            # robotics-data-gen / sim-to-real
+    "physics.flu-dyn": f"{ARXIV_RSS_HOST}/physics.flu-dyn",  # fluid surrogates
+    "cond-mat.soft": f"{ARXIV_RSS_HOST}/cond-mat.soft",      # MPM / particle / soft matter
 }
 
 # Category sort priority (lower = surfaced first). Shared by rate.py + post.py.

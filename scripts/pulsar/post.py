@@ -61,13 +61,19 @@ def build_markdown(papers: list[dict], date: str) -> str:
         if r in by_rating:
             by_rating[r].append(p)
 
+    # Report the model that actually produced these ratings. The header used to
+    # hardcode "qwen3.5-plus", so the 2026-08-31..09-04 placeholder sheets all
+    # claimed to be qwen-rated on days when every qwen call returned HTTP 401.
+    raters = sorted({p.get("rated_by") for p in papers if p.get("rated_by")})
+    rater = " + ".join(raters) if raters else "unknown"
+
     lines = [
         f"# Physics-Gen Daily — {date}",
         "",
         f"> Pulsar pipeline auto-generated. {len(papers)} papers rated; "
         f"⚡ {len(by_rating['⚡'])} · 🔧 {len(by_rating['🔧'])} · 📖 {len(by_rating['📖'])}",
         f"> Sources: arxiv cs.CV / cs.LG / cs.GR / cs.RO / cs.AI / physics.flu-dyn / cond-mat.soft "
-        f"· Filter: keyword-A ∩ ¬reject-C · Rate: qwen3.5-plus",
+        f"· Filter: keyword-A ∩ ¬reject-C · Rate: {rater}",
         "",
         "---",
         "",
