@@ -71,6 +71,18 @@ jobs:
             exit 0
           fi
 
+          # Persist the dedup cache. This runner is stateless: every run starts
+          # from a fresh actions/checkout, so scripts/pulsar/state/ came back
+          # empty each morning, load_seen() returned {} and the dedup in
+          # collect.py never fired once — 273 cross-day re-emissions of the same
+          # arXiv id across reports/physics-gen-daily/, 272 of them inside the
+          # window (measured 2026-09-16). The repo is the only durable store here.
+          #
+          # Staged AFTER the no-change check on purpose: the cache is rewritten
+          # on every run (pruning alone changes it), so staging it earlier would
+          # turn "nothing to report" into a daily empty commit.
+          git add scripts/pulsar/state/seen_arxiv_ids.json
+
           DATE=$(date +%F)
           MSG=$(cat <<EOF
           auto(pulsar): physics-gen daily ${DATE}

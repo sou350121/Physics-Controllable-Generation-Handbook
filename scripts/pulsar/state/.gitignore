@@ -1,3 +1,12 @@
 *
 !.gitignore
 !.gitkeep
+# The dedup cache is pipeline STATE, not scratch. Phase 1 ran from
+# cron_runner.sh on a persistent host, so ignoring everything here was correct.
+# The pipeline now runs in GitHub Actions: every run starts from a fresh
+# actions/checkout, so an ignored cache file is an ABSENT cache file, load_seen()
+# returns {} and the 60-day dedup has never once fired in CI. Measured
+# 2026-09-16 over reports/physics-gen-daily/: 273 cross-day re-emissions of the
+# same arXiv id, 272 of them (99.6%) inside the window the cache was supposed to
+# cover. The repo is the only durable store this deployment has — track it.
+!seen_arxiv_ids.json

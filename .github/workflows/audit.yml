@@ -19,6 +19,13 @@ jobs:
         with:
           python-version: "3.11"
 
+      # Added 2026-09-16, mirroring the sibling Spatial repo's audit.yml. The
+      # collect-stage dedup had two independent holes (no cross-feed dedup, and
+      # a gitignored cache on a stateless runner) and nothing in CI could see
+      # either: both failure modes produce a green run and a plausible report.
+      - name: Pipeline gates
+        run: python scripts/pulsar/test_pipeline.py
+
       - name: Run audit
         run: python scripts/handbook_audit.py
 

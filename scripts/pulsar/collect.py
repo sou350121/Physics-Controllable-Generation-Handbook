@@ -158,6 +158,25 @@ def collect_today() -> list[dict]:
             "likely retired or blocking this runner; check the HTTP lines above"
         )
 
+    # Within-day dedup across feeds: arxiv cross-lists one paper under several
+    # categories, so the raw union of 7 feeds counts it once per listing. Ported
+    # from the sibling Spatial pipeline (98587c2), which has had this since July
+    # while this repo never got it. Measured 2026-09-16 over the 44 committed
+    # sheets: 359 duplicate lines on 43 of the 44 days. 2026-09-14 alone listed
+    # 11 entries for 7 papers — 2609.12441 appeared three times (cs.CV, cs.RO,
+    # cs.LG), each occurrence separately rated and separately billed.
+    # Keep the first occurrence (ARXIV_FEEDS order is priority).
+    deduped, seen_today = [], set()
+    for p in all_papers:
+        if p["id"] in seen_today:
+            continue
+        seen_today.add(p["id"])
+        deduped.append(p)
+    if len(deduped) < len(all_papers):
+        print(f"  Cross-feed dedup: {len(all_papers)} → {len(deduped)} "
+              f"(dropped {len(all_papers) - len(deduped)} cross-listed dupes)", file=sys.stderr)
+    all_papers = deduped
+
     # Dedup against seen
     new_papers = [p for p in all_papers if p["id"] not in seen]
     print(f"  After dedup: {len(new_papers)} new (was {len(all_papers)})", file=sys.stderr)
